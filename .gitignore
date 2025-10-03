@@ -1,0 +1,29 @@
+# Environment files
+.env
+*.env
+
+# Node modules (if using Node.js)
+node_modules/
+
+# Python virtual environment
+venv/
+__pycache__/
+*.pyc
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE / Editor files
+.vscode/
+.idea/
+
+# Build or dist folders
+dist/
+build/
+
+# Kiro folder to never push
+.kiro/
