@@ -27,3 +27,18 @@ build/
 
 # Kiro folder to never push
 .kiro/
+
+# Documentation and debug files (exclude from git)
+*.md
+!README.md
+!API_DOCUMENTATION.md
+
+# Batch files and scripts
+*.bat
+start-dev.bat
+check-backend.bat
+test-setup.bat
+
+# Test and debug files
+frontend/src/TestPage.jsx
+

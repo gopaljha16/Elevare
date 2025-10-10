@@ -1,407 +1,365 @@
-const Otp = require("../models/otp");
-const User = require("../models/user");
-const Cart = require("../models/Cart");
-const validate = require("../utils/validator");
-const crypto = require("crypto");
-const { sendEmail, generateOTP } = require("../utils/sendEmail");
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const redisClient = require("../config/redis");
-const { generateAccessToken, generateRefreshToken } = require("../utils/token");
+const User = require('../models/User');
+const { generateToken, generateRefreshToken, verifyToken } = require('../utils/jwt');
+const { asyncHandler, AppError } = require('../middleware/errorHandler');
+const { sanitizeInput, isCommonPassword } = require('../utils/validation');
+const { safeRedisUtils } = require('../middleware/redis');
 
-const register = async (req, res) => {
-    try {
-        validate(req.body);
 
-        const { firstName, email, password, confirmPassword } = req.body;
+const register = asyncHandler(async (req, res) => {
+  const { name, email, password } = req.body;
 
-        if (!firstName || !email || !password || !confirmPassword) {
-            throw new Error("All credentials are required");
-        }
 
-        if (password !== confirmPassword) {
-            throw new Error("Password Doesn't Match");
-        }
+  const sanitizedName = sanitizeInput(name);
+  const sanitizedEmail = sanitizeInput(email).toLowerCase();
 
-        delete req.body.confirmPassword;
 
-        const otpRecord = await Otp.findOne({ email });
+  const existingUser = await User.findOne({ email: sanitizedEmail });
+  if (existingUser) {
+    throw new AppError('User with this email already exists', 400);
+  }
 
-        if (!otpRecord || !otpRecord.isVerified) {
-            throw new Error("Email is not verified. Please verify your email before registering.");
-        }
+  if (isCommonPassword(password)) {
+    throw new AppError('Please choose a stronger password', 400);
+  }
 
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            throw new Error("User already exists with this email");
-        }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+  const user = new User({
+    name: sanitizedName,
+    email: sanitizedEmail,
+    password,
+  });
 
-        const userData = {
-            firstName,
-            email,
-            password: hashedPassword,
-            role: "user",
-            isVerified: true,
-        };
+  await user.save();
 
-        const user = await User.create(userData);
+  const token = generateToken({ userId: user._id });
+  const refreshToken = generateRefreshToken({ userId: user._id });
 
-        // ✅ Create an empty cart for the new user
-        try {
-            await Cart.create({
-                userId: user._id,
-                items: [],
-                updatedAt: new Date()
-            });
-            console.log(`Cart created for new user: ${user.email}`);
-        } catch (cartError) {
-            console.error('Error creating cart for user:', cartError);
-            // Don't fail registration if cart creation fails
-        }
+  await user.updateOne({ lastLogin: new Date() });
 
-        const accessToken = generateAccessToken({ _id: user._id, email: user.email, role: user.role });
-        const refreshToken = generateRefreshToken({ _id: user._id, email: user.email, role: user.role });
+  // Store session and refresh token in Redis
+  const sessionData = {
+    userId: user._id.toString(),
+    email: user.email,
+    loginTime: new Date().toISOString(),
+    lastActivity: new Date().toISOString()
+  };
 
-        res.cookie("token", accessToken, {
-            httpOnly: true,
-            maxAge: 60 * 60 * 1000,
-        });
+  await safeRedisUtils.setUserSession(user._id.toString(), sessionData);
+  await safeRedisUtils.setRefreshToken(user._id.toString(), refreshToken);
 
-        res.cookie("refreshToken", refreshToken, {
-            httpOnly: true,
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-        });
+  res.status(201).json({
+    success: true,
+    message: 'User registered successfully',
+    data: {
+      user: user.toJSON(),
+      token,
+      refreshToken,
+    },
+  });
+});
 
-        const reply = {
-            firstName: user.firstName,
-            email: user.email,
-            _id: user._id,
-            role: user.role,
-            cart:Cart
-        };
+// Login user
+const login = asyncHandler(async (req, res) => {
+  const { email, password, rememberMe } = req.body;
 
-        res.status(201).json({
-            user: reply,
-            accessToken,
-            message: `${user.role.charAt(0).toUpperCase() + user.role.slice(1)} Registered Successfully
-        `});
+  const sanitizedEmail = sanitizeInput(email).toLowerCase();
 
-    } catch (err) {
-        console.error("Register Error:", err.message);
-        res.status(401).send("Error :- " + err.message);
+  const user = await User.findByEmail(sanitizedEmail);
+  if (!user) {
+    throw new AppError('Invalid email or password', 401);
+  }
+
+  if (user.isLocked) {
+    throw new AppError('Account is temporarily locked due to too many failed login attempts. Please try again later.', 423);
+  }
+
+  const isPasswordValid = await user.comparePassword(password);
+  if (!isPasswordValid) {
+    await user.incLoginAttempts();
+    throw new AppError('Invalid email or password', 401);
+  }
+
+
+  await user.resetLoginAttempts();
+
+  const tokenExpiry = rememberMe ? '30d' : '7d';
+  const token = generateToken({ userId: user._id }, tokenExpiry);
+  const refreshToken = generateRefreshToken({ userId: user._id });
+
+  // Store session and refresh token in Redis
+  const sessionData = {
+    userId: user._id.toString(),
+    email: user.email,
+    loginTime: new Date().toISOString(),
+    lastActivity: new Date().toISOString(),
+    rememberMe: !!rememberMe
+  };
+
+  const sessionExpiry = rememberMe ? 2592000 : 604800; // 30 days or 7 days
+  await safeRedisUtils.setUserSession(user._id.toString(), sessionData, sessionExpiry);
+  await safeRedisUtils.setRefreshToken(user._id.toString(), refreshToken);
+
+  res.json({
+    success: true,
+    message: 'Login successful',
+    data: {
+      user: user.toJSON(),
+      token,
+      refreshToken,
+    },
+  });
+});
+
+const getProfile = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.userId);
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  res.json({
+    success: true,
+    data: {
+      user: user.toJSON(),
+    },
+  });
+});
+
+const updateProfile = asyncHandler(async (req, res) => {
+  const { name, email } = req.body;
+  const userId = req.userId;
+
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  if (email && email !== user.email) {
+    const sanitizedEmail = sanitizeInput(email).toLowerCase();
+    const existingUser = await User.findOne({ email: sanitizedEmail });
+    if (existingUser) {
+      throw new AppError('Email already in use', 400);
     }
-};
+    user.email = sanitizedEmail;
+  }
 
-const login = async (req, res) => {
-    try {
-        const { email, password } = req.body;
+  if (name) {
+    user.name = sanitizeInput(name);
+  }
 
-        if (!email || !password)
-            return res.status(400).json({ message: "Credentials missing" });
+  await user.save();
 
-        const user = await User.findOne({ email: email });
+  res.json({
+    success: true,
+    message: 'Profile updated successfully',
+    data: {
+      user: user.toJSON(),
+    },
+  });
+});
 
-        if (!user)
-            return res.status(401).json({ message: "Invalid email or password" });
+const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const userId = req.userId;
 
-        if (!user.isVerified)
-            return res.status(403).json({ message: "Please verify your email before logging in." });
+  // Find user with password
+  const user = await User.findById(userId).select('+password');
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
 
-        const match = await bcrypt.compare(password, user.password);
-        if (!match)
-            return res.status(401).json({ message: "Invalid email or password" });
+  // Verify current password
+  const isCurrentPasswordValid = await user.comparePassword(currentPassword);
+  if (!isCurrentPasswordValid) {
+    throw new AppError('Current password is incorrect', 400);
+  }
 
-        // ✅ Ensure user has a cart (create if doesn't exist)
-        try {
-            const existingCart = await Cart.findOne({ userId: user._id });
-            if (!existingCart) {
-                await Cart.create({
-                    userId: user._id,
-                    items: [],
-                    updatedAt: new Date()
-                });
-                console.log(`Cart created for existing user on login: ${user.email}`);
-            }
-        } catch (cartError) {
-            console.error('Error ensuring cart exists for user:', cartError);
-            // Don't fail login if cart creation fails
-        }
+  if (currentPassword === newPassword) {
+    throw new AppError('New password must be different from current password', 400);
+  }
 
-        const accessToken = generateAccessToken({ _id: user._id, email: user.email, role: user.role });
-        const refreshToken = generateRefreshToken({ _id: user._id, email: user.email, role: user.role });
+  if (isCommonPassword(newPassword)) {
+    throw new AppError('Please choose a stronger password', 400);
+  }
 
-        res.cookie("token", accessToken, {
-            httpOnly: true,
-            maxAge: 60 * 60 * 1000,
-        });
+  user.password = newPassword;
+  await user.save();
 
-        res.cookie("refreshToken", refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production', // ✅ Fixed: only secure in production
-            sameSite: "Strict",
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-        });
+  res.json({
+    success: true,
+    message: 'Password changed successfully',
+  });
+});
 
-        const reply = {
-            firstName: user.firstName,
-            email: user.email,
-            _id: user._id,
-            role: user.role,
-            token: accessToken // ✅ Add token to reply for frontend
-        };
+const logout = asyncHandler(async (req, res) => {
+  const token = req.token;
+  const userId = req.userId;
 
-        res.status(200).json({
-            user: reply, // ✅ Fixed: should be 'user' not 'reply'
-            accessToken,
-            message: "User Logged In Successfully" // ✅ Fixed syntax error
-        });
+  if (!token || !userId) {
+    throw new AppError('Invalid logout request', 400);
+  }
 
-    } catch (err) {
-        console.error("Login Error:", err);
-        res.status(500).json({ message: "Internal server error" });
+  try {
+    // Blacklist the current token in Redis
+    // Calculate token expiration time for blacklist TTL
+    const decoded = verifyToken(token);
+    const currentTime = Math.floor(Date.now() / 1000);
+    const tokenTTL = decoded.exp - currentTime;
+
+    if (tokenTTL > 0) {
+      await safeRedisUtils.blacklistToken(token, tokenTTL);
     }
-};
 
-const sendOtp = async (req, res) => {
-    try {
-        const { email } = req.body;
+    // Delete user session from Redis
+    await safeRedisUtils.deleteUserSession(userId.toString());
 
-        if (!email || !email.includes("@")) {
-            return res.status(400).json({ message: "Valid email is required" });
-        }
+    // Delete refresh token from Redis
+    await safeRedisUtils.deleteRefreshToken(userId.toString());
 
-        await Otp.deleteMany({ email });
+    res.json({
+      success: true,
+      message: 'Logout successful',
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    // Even if Redis operations fail, we should still respond with success
+    // as the client will discard the token anyway
+    res.json({
+      success: true,
+      message: 'Logout successful',
+    });
+  }
+});
 
-        const otpCode = generateOTP(6);
-        const hashedOTP = crypto.createHash("sha256").update(otpCode.toString()).digest("hex");
+const refreshToken = asyncHandler(async (req, res) => {
+  const { refreshToken: token } = req.body;
 
-        console.log("Creating OTP for:", email);
-        console.log("Hashed OTP:", hashedOTP);
+  if (!token) {
+    throw new AppError('Refresh token is required', 400);
+  }
 
-        const newOtp = await Otp.create({ email, otp: hashedOTP });
+  try {
+    const decoded = verifyToken(token);
+    const userId = decoded.userId;
 
-        console.log("OTP saved:", newOtp);
-        await newOtp.save();
-
-        const message = `<p>Your OTP for verification is: <b>${otpCode}</b></p>`;
-        await sendEmail(email, "Verify your email", message);
-
-        res.status(200).json({ message: "OTP sent successfully", otp: otpCode });
-    } catch (err) {
-        console.error("Error in sendOtp:", err.message, err.stack);
-        res.status(500).json({ message: "Server error. Try again later." });
+    // Check if refresh token exists in Redis
+    const storedRefreshToken = await safeRedisUtils.getRefreshToken(userId);
+    if (!storedRefreshToken || storedRefreshToken !== token) {
+      throw new AppError('Invalid refresh token', 401);
     }
-};
 
-const verifyEmail = async (req, res) => {
-    try {
-        const { email, otp } = req.body;
-
-        if (!email || !otp) {
-            return res.status(400).json({ message: "Email and OTP are required" });
-        }
-
-        const hashedOTP = crypto.createHash("sha256").update(otp.toString()).digest("hex");
-
-        const existingOtp = await Otp.findOne({ email, otp: hashedOTP });
-
-        if (!existingOtp) {
-            return res.status(400).json({ message: "Invalid or expired OTP" });
-        }
-
-        if (existingOtp.expiresAt && existingOtp.expiresAt < Date.now()) {
-            return res.status(400).json({ message: "OTP expired" });
-        }
-
-        await Otp.updateOne({ email }, { $set: { isVerified: true } });
-
-        const message = `<p>Your email <b>${email}</b> has been successfully verified! </p>`;
-        await sendEmail(email, "Email Verified Successfully", message);
-
-        res.status(200).json({ message: "OTP verified successfully" });
-    } catch (error) {
-        console.error("Error verifying OTP:", error);
-        res.status(500).json({ message: "Server error" });
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new AppError('Invalid refresh token', 401);
     }
-};
 
-const logout = async (req, res) => {
-    try {
-        const token = req.cookies.token;
-
-        if (!token) {
-            return res.status(400).json({ message: "No token found in cookies" });
-        }
-
-        const payload = jwt.decode(token);
-
-        if (!payload || !payload.exp) {
-            return res.status(400).json({ message: "Invalid token" });
-        }
-
-        await redisClient.set(`token:${token}`, "Blocked");
-        await redisClient.expireAt(`token:${token}`, payload.exp * 1000);
-
-        res.clearCookie("token");
-        res.clearCookie("refreshToken");
-
-        if (req.session) {
-            req.session.destroy();
-        }
-
-        res.cookie("token", "", {
-            httpOnly: true,
-            expires: new Date(0),
-        });
-
-        res.status(200).json({ message: "User Logged Out Successfully" });
-
-    } catch (err) {
-        console.error("Logout Error:", err.message);
-        res.status(500).json({ message: "Error logging out", error: err.message });
+    // Check if user account is locked
+    if (user.isLocked) {
+      throw new AppError('Account is temporarily locked', 423);
     }
-};
 
-const forgotPassword = async (req, res) => {
-    try {
-        const { email } = req.body;
-        if (!email || !email.includes("@")) {
-            return res.status(400).json({ message: "Valid email is required" });
-        }
+    // Generate new tokens
+    const newToken = generateToken({ userId: user._id });
+    const newRefreshToken = generateRefreshToken({ userId: user._id });
 
-        const user = await User.findOne({ email });
-        if (!user) return res.status(404).json({ message: "User not found" });
+    // Update refresh token in Redis
+    await safeRedisUtils.setRefreshToken(userId, newRefreshToken);
 
-        await Otp.deleteMany({ email });
-
-        const otp = generateOTP(6);
-        const hashedOTP = crypto.createHash("sha256").update(otp.toString()).digest("hex");
-
-        await Otp.create({ email, otp: hashedOTP });
-
-        const message = `<p>Your OTP for password reset is <b>${otp}</b>. Valid for 5 minutes.</p>`;
-        await sendEmail(email, "Reset Your Password", message);
-
-        res.status(200).json({ message: "OTP sent to your email", otp }); // remove otp in prod
-    } catch (err) {
-        console.error("Forgot Password Error:", err);
-        res.status(500).json({ message: "Server error" });
+    // Update user session
+    const sessionData = await safeRedisUtils.getUserSession(userId);
+    if (sessionData) {
+      sessionData.lastActivity = new Date().toISOString();
+      await safeRedisUtils.setUserSession(userId, sessionData);
     }
-};
 
-const verifyOtp = async (req, res) => {
-    try {
-        const { email, otp } = req.body;
-        if (!email || !otp) return res.status(400).json({ message: "Email & OTP required" });
+    res.json({
+      success: true,
+      data: {
+        token: newToken,
+        refreshToken: newRefreshToken,
+      },
+    });
+  } catch (error) {
+    throw new AppError('Invalid refresh token', 401);
+  }
+});
 
-        const hashedOtp = crypto.createHash("sha256").update(otp.toString()).digest("hex");
-        const existingOtp = await Otp.findOne({ email, otp: hashedOtp });
+const logoutAllDevices = asyncHandler(async (req, res) => {
+  const userId = req.userId;
+  const currentToken = req.token;
 
-        if (!existingOtp) return res.status(400).json({ message: "Invalid or expired OTP" });
+  if (!userId) {
+    throw new AppError('Invalid request', 400);
+  }
 
-        existingOtp.isVerified = true;
-        await existingOtp.save();
-        res.status(200).json({ message: "OTP verified successfully" });
-    } catch (err) {
-        console.error("Verify OTP Error:", err);
-        res.status(500).json({ message: "Server error" });
+  try {
+    // Delete user session from Redis
+    await safeRedisUtils.deleteUserSession(userId.toString());
+
+    // Delete refresh token from Redis
+    await safeRedisUtils.deleteRefreshToken(userId.toString());
+
+    // Blacklist current token
+    if (currentToken) {
+      const decoded = verifyToken(currentToken);
+      const currentTime = Math.floor(Date.now() / 1000);
+      const tokenTTL = decoded.exp - currentTime;
+
+      if (tokenTTL > 0) {
+        await safeRedisUtils.blacklistToken(currentToken, tokenTTL);
+      }
     }
-};
 
-const resetPassword = async (req, res) => {
-    try {
-        const { email, newPassword } = req.body;
+    res.json({
+      success: true,
+      message: 'Logged out from all devices successfully',
+    });
+  } catch (error) {
+    console.error('Logout all devices error:', error);
+    res.json({
+      success: true,
+      message: 'Logged out from all devices successfully',
+    });
+  }
+});
 
-        if (!email || !newPassword) {
-            return res.status(400).json({ message: "Email and password are required" });
-        }
+const getUserStats = asyncHandler(async (req, res) => {
+  const userId = req.userId;
 
-        const user = await User.findOne({ email });
-        if (!user) return res.status(404).json({ message: "User not found" });
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
 
-        const otpEntry = await Otp.findOne({ email });
-        if (!otpEntry || !otpEntry.isVerified) {
-            return res.status(401).json({ message: "OTP not verified" });
-        }
+  // Get session data from Redis
+  const sessionData = await safeRedisUtils.getUserSession(userId.toString());
 
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
+  const stats = {
+    joinDate: user.createdAt,
+    lastLogin: user.lastLogin,
+    isEmailVerified: user.isEmailVerified,
+    totalLogins: 1,
+    currentSession: sessionData ? {
+      loginTime: sessionData.loginTime,
+      lastActivity: sessionData.lastActivity
+    } : null
+  };
 
-        user.password = hashedPassword;
-        await user.save();
+  res.json({
+    success: true,
+    data: {
+      stats,
+    },
+  });
+});
 
-        await Otp.deleteOne({ email });
-
-        res.status(200).json({ message: "Password has been reset successfully" });
-    } catch (error) {
-        console.error("Error resetting password:", error);
-        res.status(500).json({ message: "Server error" });
-    }
-};
-
-const promoteToAdmin = async (req, res) => {
-    try {
-        const { userId } = req.body;
-
-        if (!userId) {
-            return res.status(400).json({ message: "User ID is required" });
-        }
-
-        const user = await User.findById(userId);
-
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
-
-        if (user.role === "admin") {
-            return res.status(400).json({ message: "User is already an admin" });
-        }
-
-        user.role = "admin";
-        await user.save();
-
-        res.status(200).json({ message: "User promoted to admin successfully" });
-    } catch (error) {
-        res.status(500).json({ message: "Something went wrong", error: error.message });
-    }
-};
-
-const refreshToken = async (req, res) => {
-    try {
-        const token = req.cookies.refreshToken;
-
-        if (!token) throw new Error("No refresh token");
-
-        const payload = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
-
-        const newAccessToken = jwt.sign(
-            { _id: payload._id, email: payload.email, role: payload.role },
-            process.env.JWT_SECRET,
-            { expiresIn: "1h" }
-        );
-
-        res.cookie("token", newAccessToken, {
-            httpOnly: true,
-            maxAge: 60 * 60 * 1000, // 1 hour
-        });
-
-        res.status(200).json({ success: true, newAccessToken, message: "New Access Token Generated" });
-    } catch (err) {
-        console.error(err.message);
-        res.status(403).json({ error: "Invalid refresh token" });
-    }
-};
-
-module.exports = { 
-    register, 
-    sendOtp, 
-    verifyEmail, 
-    login, 
-    logout, 
-    forgotPassword, 
-    verifyOtp, 
-    resetPassword, 
-    refreshToken, 
-    promoteToAdmin 
+module.exports = {
+  register,
+  login,
+  getProfile,
+  updateProfile,
+  changePassword,
+  logout,
+  logoutAllDevices,
+  refreshToken,
+  getUserStats,
 };
