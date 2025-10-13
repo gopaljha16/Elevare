@@ -1,8 +1,11 @@
+// load environment variables first
+const dotenv = require('dotenv');
+dotenv.config();
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const dotenv = require('dotenv');
 const connectDB = require('./config/database');
 const { connectRedis } = require('./config/redis');
 const authRoutes = require('./routes/auth');
@@ -13,8 +16,7 @@ const dashboardRoutes = require('./routes/dashboard');
 const coverLetterRoutes = require('./routes/coverLetter');
 const { errorHandler } = require('./middleware/errorHandler');
 
-// load environment variables
-dotenv.config();
+
 
 const app = express();
 const PORT = process.env.PORT_NO || 5000;

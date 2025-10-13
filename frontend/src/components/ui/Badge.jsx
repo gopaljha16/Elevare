@@ -1,29 +1,69 @@
 import React from 'react';
-import { cn } from '../../utils/cn';
+import { cva } from 'class-variance-authority';
+import { cn } from '../../lib/utils';
 
-const badgeVariants = {
-  default: "bg-gray-900 text-gray-50 hover:bg-gray-900/80 dark:bg-gray-50 dark:text-gray-900 dark:hover:bg-gray-50/80",
-  secondary: "bg-gray-100 text-gray-900 hover:bg-gray-100/80 dark:bg-gray-800 dark:text-gray-50 dark:hover:bg-gray-800/80",
-  destructive: "bg-red-500 text-gray-50 hover:bg-red-500/80 dark:bg-red-900 dark:text-gray-50 dark:hover:bg-red-900/80",
-  outline: "text-gray-950 dark:text-gray-50 border border-gray-200 dark:border-gray-800",
-  success: "bg-green-500 text-white hover:bg-green-500/80",
-  warning: "bg-yellow-500 text-white hover:bg-yellow-500/80",
-  info: "bg-blue-500 text-white hover:bg-blue-500/80",
-};
+const badgeVariants = cva(
+  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  {
+    variants: {
+      variant: {
+        default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
+        secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
+        outline: "text-foreground",
+        success: "border-transparent bg-green-500 text-white hover:bg-green-600",
+        warning: "border-transparent bg-yellow-500 text-white hover:bg-yellow-600",
+        info: "border-transparent bg-blue-500 text-white hover:bg-blue-600",
+        glass: "bg-white/10 dark:bg-gray-900/10 backdrop-blur-md border-white/20 dark:border-gray-700/20 text-gray-900 dark:text-white",
+        gradient: "bg-gradient-to-r from-blue-500 to-purple-600 text-white border-transparent hover:from-blue-600 hover:to-purple-700"
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+);
 
-const Badge = React.forwardRef(({ className, variant = "default", ...props }, ref) => {
+function Badge({ className, variant, ...props }) {
   return (
-    <div
+    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+  );
+}
+
+// Animated Badge with pulse effect
+const AnimatedBadge = React.forwardRef(({ className, children, ...props }, ref) => (
+  <Badge
+    ref={ref}
+    className={cn("animate-pulse", className)}
+    {...props}
+  >
+    {children}
+  </Badge>
+));
+AnimatedBadge.displayName = "AnimatedBadge";
+
+// Status Badge with dot indicator
+const StatusBadge = React.forwardRef(({ className, status = "default", children, ...props }, ref) => {
+  const statusColors = {
+    online: "bg-green-500",
+    offline: "bg-gray-500", 
+    busy: "bg-red-500",
+    away: "bg-yellow-500",
+    default: "bg-blue-500"
+  };
+
+  return (
+    <Badge
       ref={ref}
-      className={cn(
-        "inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-gray-950 focus:ring-offset-2 dark:focus:ring-gray-300",
-        badgeVariants[variant],
-        className
-      )}
+      variant="outline"
+      className={cn("flex items-center gap-2", className)}
       {...props}
-    />
+    >
+      <div className={cn("w-2 h-2 rounded-full", statusColors[status])} />
+      {children}
+    </Badge>
   );
 });
-Badge.displayName = "Badge";
+StatusBadge.displayName = "StatusBadge";
 
-export { Badge, badgeVariants };
+export { Badge, AnimatedBadge, StatusBadge, badgeVariants };

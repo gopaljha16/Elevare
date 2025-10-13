@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const axiosClient = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: "http://localhost:5001/api",
   withCredentials: true, 
   headers: {
     "Content-Type": "application/json",
@@ -38,7 +38,7 @@ axiosClient.interceptors.response.use(
       if (refreshToken) {
         try {
           const response = await axios.post(
-            'http://localhost:5000/api/auth/refresh-token',
+            'http://localhost:5001/api/auth/refresh-token',
             { refreshToken }
           );
 
