@@ -1,72 +1,70 @@
 const express = require('express');
+const {
+  createResume,
+  getResumes,
+  getResume,
+  updateResume,
+  deleteResume,
+  duplicateResume,
+  optimizeResume,
+  calculateATSScore,
+  matchJobDescription,
+  getResumeAnalytics
+} = require('../controllers/resumeController');
+const {
+  generateResumePDF,
+  downloadResumePDF,
+  getPDFHistory,
+  previewResumeWithTemplate
+} = require('../controllers/pdfController');
+const {
+  getTemplates,
+  getTemplate,
+  getTemplateCategories
+} = require('../controllers/templateController');
+const { authenticate } = require('../middleware/auth');
+const rateLimit = require('express-rate-limit');
+
 const router = express.Router();
-const { authenticateToken } = require('../middleware/auth');
 
-// Resume CRUD operations
-router.post('/', authenticateToken, async (req, res) => {
-    // Create new resume
-    // Controller: createResume
+// rate limiting for resume operations
+const resumeLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 50,
+  message: {
+    success: false,
+    message: 'Too many resume operations, please try again later.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
-router.get('/', authenticateToken, async (req, res) => {
-    // Get all user resumes
-    // Controller: getUserResumes
-});
+// apply authentication to all routes
+router.use(authenticate);
 
-router.get('/:id', authenticateToken, async (req, res) => {
-    // Get specific resume
-    // Controller: getResumeById
-});
+// resume crud operations
+router.post('/', resumeLimiter, createResume);
+router.get('/', getResumes);
+router.get('/analytics', getResumeAnalytics);
+router.get('/:resumeId', getResume);
+router.put('/:resumeId', resumeLimiter, updateResume);
+router.delete('/:resumeId', deleteResume);
 
-router.put('/:id', authenticateToken, async (req, res) => {
-    // Update resume
-    // Controller: updateResume
-});
+// resume operations
+router.post('/:resumeId/duplicate', duplicateResume);
+router.post('/:resumeId/optimize', optimizeResume);
+router.get('/:resumeId/ats-score', calculateATSScore);
+router.post('/:resumeId/match-job', matchJobDescription);
 
-router.delete('/:id', authenticateToken, async (req, res) => {
-    // Delete resume
-    // Controller: deleteResume
-});
+// pdf operations
+router.post('/:resumeId/generate-pdf', generateResumePDF);
+router.get('/:resumeId/download', downloadResumePDF);
+router.post('/:resumeId/preview', previewResumeWithTemplate);
+router.get('/pdf/history', getPDFHistory);
 
-// Resume templates
-router.get('/templates/list', async (req, res) => {
-    // Get available resume templates
-    // Controller: getResumeTemplates
-});
-
-router.post('/:id/apply-template', authenticateToken, async (req, res) => {
-    // Apply template to resume
-    // Controller: applyTemplate
-});
-
-// PDF generation
-router.post('/:id/generate-pdf', authenticateToken, async (req, res) => {
-    // Generate PDF from resume
-    // Controller: generateResumePDF
-});
-
-// AI optimization
-router.post('/:id/optimize', authenticateToken, async (req, res) => {
-    // AI optimize resume content
-    // Controller: optimizeResume
-});
-
-// ATS scoring
-router.post('/:id/ats-score', authenticateToken, async (req, res) => {
-    // Calculate ATS score
-    // Controller: calculateATSScore
-});
-
-// Job description matching
-router.post('/:id/match-job', authenticateToken, async (req, res) => {
-    // Match resume with job description
-    // Controller: matchJobDescription
-});
-
-// Resume analytics
-router.get('/:id/analytics', authenticateToken, async (req, res) => {
-    // Get resume performance analytics
-    // Controller: getResumeAnalytics
-});
+// template operations
+router.get('/templates', getTemplates);
+router.get('/templates/categories', getTemplateCategories);
+router.get('/templates/:templateId', getTemplate);
 
 module.exports = router;

@@ -1,91 +1,42 @@
 const express = require('express');
+const {
+  startInterviewSession,
+  getCurrentQuestion,
+  submitAnswer,
+  getInterviewSession,
+  getUserInterviewSessions,
+  getInterviewStats,
+  getQuestionMetadata
+} = require('../controllers/interviewController');
+const { authenticate } = require('../middleware/auth');
+const rateLimit = require('express-rate-limit');
+
 const router = express.Router();
-const { authenticateToken } = require('../middleware/auth');
 
-// Mock interview sessions
-router.post('/sessions', authenticateToken, async (req, res) => {
-    // Create new mock interview session
-    // Controller: createInterviewSession
+// Rate limiting for interview operations
+const interviewLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30, // 30 requests per window
+  message: {
+    success: false,
+    message: 'Too many interview operations, please try again later.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
-router.get('/sessions', authenticateToken, async (req, res) => {
-    // Get user's interview sessions
-    // Controller: getUserInterviewSessions
-});
+// Apply authentication to all routes
+router.use(authenticate);
 
-router.get('/sessions/:id', authenticateToken, async (req, res) => {
-    // Get specific interview session
-    // Controller: getInterviewSession
-});
+// Interview session management
+router.post('/sessions', interviewLimiter, startInterviewSession);
+router.get('/sessions', getUserInterviewSessions);
+router.get('/sessions/:sessionId', getInterviewSession);
+router.get('/sessions/:sessionId/current-question', getCurrentQuestion);
+router.post('/sessions/:sessionId/submit-answer', submitAnswer);
 
-router.put('/sessions/:id', authenticateToken, async (req, res) => {
-    // Update interview session
-    // Controller: updateInterviewSession
-});
-
-// Question generation
-router.post('/generate-questions', authenticateToken, async (req, res) => {
-    // Generate AI interview questions based on role/company
-    // Controller: generateInterviewQuestions
-});
-
-router.get('/questions/categories', async (req, res) => {
-    // Get question categories (technical, behavioral, etc.)
-    // Controller: getQuestionCategories
-});
-
-router.get('/questions/by-role/:role', async (req, res) => {
-    // Get questions filtered by role
-    // Controller: getQuestionsByRole
-});
-
-// Practice tracking
-router.post('/practice', authenticateToken, async (req, res) => {
-    // Record practice attempt
-    // Controller: recordPracticeAttempt
-});
-
-router.get('/practice/history', authenticateToken, async (req, res) => {
-    // Get practice history
-    // Controller: getPracticeHistory
-});
-
-router.get('/practice/stats', authenticateToken, async (req, res) => {
-    // Get practice statistics
-    // Controller: getPracticeStats
-});
-
-// Answer evaluation
-router.post('/evaluate-answer', authenticateToken, async (req, res) => {
-    // AI evaluate user's answer
-    // Controller: evaluateAnswer
-});
-
-router.get('/suggested-answers/:questionId', authenticateToken, async (req, res) => {
-    // Get AI suggested answers/hints
-    // Controller: getSuggestedAnswers
-});
-
-// Interview scoring
-router.post('/sessions/:id/score', authenticateToken, async (req, res) => {
-    // Calculate interview confidence score
-    // Controller: calculateInterviewScore
-});
-
-router.get('/sessions/:id/feedback', authenticateToken, async (req, res) => {
-    // Get detailed feedback for interview session
-    // Controller: getInterviewFeedback
-});
-
-// Company-specific preparation
-router.get('/companies/:company/questions', async (req, res) => {
-    // Get company-specific interview questions
-    // Controller: getCompanyQuestions
-});
-
-router.get('/companies/:company/tips', async (req, res) => {
-    // Get company-specific interview tips
-    // Controller: getCompanyTips
-});
+// Interview statistics and metadata
+router.get('/stats', getInterviewStats);
+router.get('/metadata', getQuestionMetadata);
 
 module.exports = router;

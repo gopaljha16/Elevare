@@ -6,22 +6,27 @@ const dotenv = require('dotenv');
 const connectDB = require('./config/database');
 const { connectRedis } = require('./config/redis');
 const authRoutes = require('./routes/auth');
+const resumeRoutes = require('./routes/resume');
+const interviewRoutes = require('./routes/interview');
+const learningRoutes = require('./routes/learning');
+const dashboardRoutes = require('./routes/dashboard');
+const coverLetterRoutes = require('./routes/coverLetter');
 const { errorHandler } = require('./middleware/errorHandler');
 
-// Load environment variables
+// load environment variables
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT_NO || 5000;
 
-// Connect to MongoDB and Redis
+// connect to mongodb and redis
 connectDB();
 connectRedis();
 
-// Security middleware
+// security middleware
 app.use(helmet());
 
-// Rate limiting (environment-based)
+// rate limiting (environment-based)
 const isDevelopment = process.env.NODE_ENV === 'development';
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -30,7 +35,7 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// CORS configuration
+// cors configuration
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true,
@@ -38,11 +43,11 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// Body parsing middleware
+// body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Health check route
+// health check route
 app.get('/health', async (req, res) => {
   const { safeRedisUtils } = require('./middleware/redis');
 
@@ -67,8 +72,13 @@ app.get('/health', async (req, res) => {
   });
 });
 
-// API routes
+// api routes
 app.use('/api/auth', authRoutes);
+app.use('/api/resumes', resumeRoutes);
+app.use('/api/interviews', interviewRoutes);
+app.use('/api/learning', learningRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/cover-letters', coverLetterRoutes);
 
 // 404 handler for unmatched routes
 app.use((req, res, next) => {
@@ -78,10 +88,10 @@ app.use((req, res, next) => {
   });
 });
 
-// Error handling middleware (must be last)
+// error handling middleware (must be last)
 app.use(errorHandler);
 
-// Start server
+// start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);

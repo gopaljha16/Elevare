@@ -5,6 +5,7 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import DashboardPage from './pages/DashboardPage';
+import DemoPage from './pages/DemoPage';
 import HealthCheck from './components/HealthCheck';
 
 
@@ -50,6 +51,7 @@ const App = () => {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<HomePage />} />
+        <Route path="/demo" element={<DemoPage />} />
         <Route
           path="/login"
           element={
