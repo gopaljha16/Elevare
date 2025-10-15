@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import { Input, GlassInput, FloatingInput } from './Input';
+import { debounce } from '../../utils/debounce';
 
 const FormField = ({
   label,
@@ -20,17 +21,83 @@ const FormField = ({
   variant = "default",
   icon,
   helpText,
+  debounceMs = 300,
+  showSaveStatus = false,
+  multiline = false,
+  rows = 3,
+  onKeyPress,
   ...props
 }) => {
+  const [localValue, setLocalValue] = useState(value || '');
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState(null);
+  const debouncedOnChangeRef = useRef(null);
   const hasError = touched && error;
-  
-  const handleChange = (e) => {
-    onChange(name, e.target.value);
-  };
 
-  const handleBlur = () => {
-    onBlur(name);
-  };
+  // Create debounced onChange function
+  useEffect(() => {
+    if (onChange) {
+      debouncedOnChangeRef.current = debounce((newValue) => {
+        if (showSaveStatus) {
+          setIsSaving(true);
+        }
+        
+        // Call the original onChange with proper parameters
+        if (typeof onChange === 'function') {
+          if (name) {
+            onChange(name, newValue);
+          } else {
+            onChange({ target: { name, value: newValue } });
+          }
+        }
+        
+        if (showSaveStatus) {
+          setTimeout(() => {
+            setIsSaving(false);
+            setLastSaved(new Date());
+          }, 500);
+        }
+      }, debounceMs);
+    }
+    
+    return () => {
+      if (debouncedOnChangeRef.current) {
+        debouncedOnChangeRef.current.cancel?.();
+      }
+    };
+  }, [onChange, debounceMs, showSaveStatus, name]);
+
+  // Update local value when prop value changes
+  useEffect(() => {
+    setLocalValue(value || '');
+  }, [value]);
+
+  const handleChange = useCallback((e) => {
+    const newValue = e.target.value;
+    setLocalValue(newValue);
+    
+    if (debouncedOnChangeRef.current) {
+      debouncedOnChangeRef.current(newValue);
+    }
+  }, []);
+
+  const handleBlur = useCallback(() => {
+    if (onBlur) {
+      if (typeof onBlur === 'function') {
+        if (name) {
+          onBlur(name);
+        } else {
+          onBlur({ target: { name } });
+        }
+      }
+    }
+  }, [onBlur, name]);
+
+  const handleKeyPress = useCallback((e) => {
+    if (onKeyPress) {
+      onKeyPress(e);
+    }
+  }, [onKeyPress]);
 
   const InputComponent = {
     default: Input,
@@ -42,52 +109,114 @@ const FormField = ({
     <div className={cn("space-y-2", className)}>
       {/* Label */}
       {label && variant !== "floating" && (
-        <label 
-          htmlFor={name}
-          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-        >
-          {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
-        </label>
+        <div className="flex items-center justify-between">
+          <label 
+            htmlFor={name}
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            {label}
+            {required && <span className="text-red-500 ml-1">*</span>}
+          </label>
+          
+          {/* Save Status */}
+          {showSaveStatus && (
+            <div className="flex items-center space-x-1 text-xs">
+              {isSaving ? (
+                <>
+                  <div className="animate-spin w-3 h-3 border border-blue-500 border-t-transparent rounded-full" />
+                  <span className="text-blue-600">Saving...</span>
+                </>
+              ) : lastSaved ? (
+                <>
+                  <svg className="w-3 h-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-green-600">Saved</span>
+                </>
+              ) : null}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Input Container */}
       <div className="relative">
         {/* Icon */}
-        {icon && (
-          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+        {icon && !multiline && (
+          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-10">
             {icon}
           </div>
         )}
 
-        {/* Input */}
-        <InputComponent
-          id={name}
-          name={name}
-          type={type}
-          placeholder={placeholder}
-          value={value || ''}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          disabled={disabled}
-          label={variant === "floating" ? label : undefined}
-          className={cn(
-            "transition-all duration-200",
-            icon && "pl-10",
-            hasError && "border-red-500 focus:border-red-500 focus:ring-red-500/20",
-            inputClassName
-          )}
-          {...props}
-        />
+        {/* Input or Textarea */}
+        {multiline ? (
+          <textarea
+            id={name}
+            name={name}
+            placeholder={placeholder}
+            value={localValue}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            onKeyPress={handleKeyPress}
+            disabled={disabled}
+            rows={rows}
+            className={cn(
+              "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg",
+              "bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+              "placeholder-gray-500 dark:placeholder-gray-400",
+              "focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
+              "transition-all duration-200 resize-vertical",
+              variant === "glass" && "bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-white/20 dark:border-gray-700/20",
+              hasError && "border-red-500 focus:border-red-500 focus:ring-red-500/20",
+              disabled && "opacity-50 cursor-not-allowed",
+              inputClassName
+            )}
+            {...props}
+          />
+        ) : (
+          <InputComponent
+            id={name}
+            name={name}
+            type={type}
+            placeholder={placeholder}
+            value={localValue}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            onKeyPress={handleKeyPress}
+            disabled={disabled}
+            label={variant === "floating" ? label : undefined}
+            className={cn(
+              "transition-all duration-200",
+              icon && "pl-10",
+              hasError && "border-red-500 focus:border-red-500 focus:ring-red-500/20",
+              inputClassName
+            )}
+            {...props}
+          />
+        )}
 
-        {/* Error Icon */}
-        {hasError && (
-          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-red-500">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        {/* Status Icons */}
+        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
+          {/* Save Status Icon */}
+          {showSaveStatus && !hasError && (
+            <>
+              {isSaving ? (
+                <div className="animate-spin w-4 h-4 border border-blue-500 border-t-transparent rounded-full" />
+              ) : lastSaved ? (
+                <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              ) : null}
+            </>
+          )}
+          
+          {/* Error Icon */}
+          {hasError && (
+            <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Help Text */}

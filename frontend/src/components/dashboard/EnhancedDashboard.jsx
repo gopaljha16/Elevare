@@ -102,7 +102,7 @@ const EnhancedDashboard = () => {
                     <Button variant="glass" size="lg" onClick={() => window.location.href = '/resume-builder'}>
                       Create Resume
                     </Button>
-                    <Button variant="outline" size="lg" className="border-white/30 text-white hover:bg-white/10">
+                    <Button variant="outline" size="lg" className="border-white/30 text-white hover:bg-white/10" onClick={() => window.location.href = '/interview-prep'}>
                       Start Interview Prep
                     </Button>
                   </div>
@@ -287,11 +287,17 @@ const EnhancedDashboard = () => {
               }
               action={
                 <div className="space-y-2">
-                  <Button variant="outline" size="sm" className="w-full">
+                  <Button variant="outline" size="sm" className="w-full" onClick={() => window.location.href = '/resume-builder'}>
                     Create Resume
                   </Button>
-                  <Button variant="ghost" size="sm" className="w-full">
+                  <Button variant="ghost" size="sm" className="w-full" onClick={() => window.location.href = '/interview-prep'}>
                     Start Interview
+                  </Button>
+                  <Button variant="ghost" size="sm" className="w-full" onClick={() => window.location.href = '/learning-paths'}>
+                    Learning Paths
+                  </Button>
+                  <Button variant="ghost" size="sm" className="w-full" onClick={() => window.location.href = '/ai-features'}>
+                    AI Features
                   </Button>
                 </div>
               }

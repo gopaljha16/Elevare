@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthContext } from '../../contexts/AuthContext';
-import Button from '../ui/Button';
+import { Button } from '../ui/Button';
 
 const Navbar = () => {
   const { isAuthenticated, user, logout } = useAuthContext();

@@ -8,18 +8,44 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/database');
 const { connectRedis } = require('./config/redis');
+const aiConfig = require('./config/aiConfig');
+const { requestMonitoring, errorMonitoring, healthCheck, metricsEndpoint } = require('./middleware/monitoring');
 const authRoutes = require('./routes/auth');
 const resumeRoutes = require('./routes/resume');
 const interviewRoutes = require('./routes/interview');
 const learningRoutes = require('./routes/learning');
 const dashboardRoutes = require('./routes/dashboard');
 const coverLetterRoutes = require('./routes/coverLetter');
-const { errorHandler } = require('./middleware/errorHandler');
+const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
+const logger = require('./utils/logger');
+const { 
+  performanceMonitoring,
+  responseCompression,
+  memoryMonitoring,
+  requestSizeLimiting
+} = require('./middleware/performance');
+const {
+  validateAPIKeys,
+  trackAPIUsage,
+  validateEnvironment,
+  securityMonitoring
+} = require('./middleware/apiKeyValidation');
 
 
 
 const app = express();
 const PORT = process.env.PORT_NO || 5000;
+
+// validate ai configuration
+console.log('🔧 Validating AI configuration...');
+try {
+  aiConfig.validateConfiguration();
+} catch (error) {
+  console.error('❌ AI configuration validation failed:', error.message);
+  if (process.env.NODE_ENV === 'production') {
+    process.exit(1);
+  }
+}
 
 // connect to mongodb and redis
 connectDB();
@@ -27,6 +53,16 @@ connectRedis();
 
 // security middleware
 app.use(helmet());
+app.use(validateEnvironment);
+app.use(validateAPIKeys);
+app.use(securityMonitoring);
+app.use(trackAPIUsage);
+
+// performance middleware
+app.use(performanceMonitoring);
+app.use(responseCompression);
+app.use(memoryMonitoring);
+app.use(requestSizeLimiting('10mb'));
 
 // rate limiting (environment-based)
 const isDevelopment = process.env.NODE_ENV === 'development';
@@ -49,30 +85,12 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// health check route
-app.get('/health', async (req, res) => {
-  const { safeRedisUtils } = require('./middleware/redis');
+// monitoring middleware
+app.use(requestMonitoring);
 
-  // Check Redis health
-  let redisStatus = 'disconnected';
-  try {
-    await safeRedisUtils.setUserSession('health-check', { test: true }, 1);
-    await safeRedisUtils.deleteUserSession('health-check');
-    redisStatus = 'connected';
-  } catch (error) {
-    redisStatus = 'error';
-  }
-
-  res.status(200).json({
-    status: 'OK',
-    message: 'Server is running',
-    timestamp: new Date().toISOString(),
-    services: {
-      database: 'connected', // Assuming MongoDB is connected if server is running
-      redis: redisStatus
-    }
-  });
-});
+// health check and metrics routes
+app.get('/health', healthCheck);
+app.get('/metrics', metricsEndpoint);
 
 // api routes
 app.use('/api/auth', authRoutes);
@@ -83,12 +101,10 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/cover-letters', coverLetterRoutes);
 
 // 404 handler for unmatched routes
-app.use((req, res, next) => {
-  res.status(404).json({
-    success: false,
-    message: `Route ${req.method} ${req.originalUrl} not found`,
-  });
-});
+app.use(notFoundHandler);
+
+// error monitoring and logging middleware
+app.use(errorMonitoring);
 
 // error handling middleware (must be last)
 app.use(errorHandler);

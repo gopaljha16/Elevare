@@ -9,6 +9,9 @@ import DashboardPage from './pages/DashboardPage';
 import DemoPage from './pages/DemoPage';
 import HealthCheck from './components/HealthCheck';
 import ResumeBuilder from './components/resume/ResumeBuilder';
+import ResumeManagement from './components/resume/ResumeManagement';
+import InterviewPrep from './components/interview/InterviewPrep';
+import ComprehensiveDashboard from './components/dashboard/ComprehensiveDashboard';
 
 
 // Protected Route Component
@@ -86,6 +89,30 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <ResumeBuilder />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/interview-prep"
+            element={
+              <ProtectedRoute>
+                <InterviewPrep />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resumes"
+            element={
+              <ProtectedRoute>
+                <ResumeManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/career-dashboard"
+            element={
+              <ProtectedRoute>
+                <ComprehensiveDashboard />
               </ProtectedRoute>
             }
           />

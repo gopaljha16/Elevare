@@ -659,6 +659,162 @@ const getResumeAnalytics = asyncHandler(async (req, res) => {
   });
 });
 
+// Input validation for AI analysis
+const validateResumeAnalysisInput = (resumeData) => {
+  if (!resumeData || typeof resumeData !== 'object') {
+    throw new AppError('Resume data is required and must be an object', 400);
+  }
+  
+  // Validate personal info
+  if (!resumeData.personalInfo || typeof resumeData.personalInfo !== 'object') {
+    throw new AppError('Personal information is required', 400);
+  }
+  
+  // Sanitize and validate arrays
+  const sanitizedData = {
+    personalInfo: {
+      firstName: sanitizeInput(resumeData.personalInfo.firstName || ''),
+      lastName: sanitizeInput(resumeData.personalInfo.lastName || ''),
+      email: sanitizeInput(resumeData.personalInfo.email || '').toLowerCase(),
+      phone: sanitizeInput(resumeData.personalInfo.phone || ''),
+      location: sanitizeInput(resumeData.personalInfo.location || ''),
+      linkedin: sanitizeInput(resumeData.personalInfo.linkedin || ''),
+      portfolio: sanitizeInput(resumeData.personalInfo.portfolio || '')
+    },
+    experience: Array.isArray(resumeData.experience) ? resumeData.experience.slice(0, 20) : [],
+    education: Array.isArray(resumeData.education) ? resumeData.education.slice(0, 10) : [],
+    skills: Array.isArray(resumeData.skills) ? 
+      resumeData.skills.slice(0, 50).map(skill => sanitizeInput(skill)) : [],
+    projects: Array.isArray(resumeData.projects) ? resumeData.projects.slice(0, 15) : [],
+    achievements: Array.isArray(resumeData.achievements) ? 
+      resumeData.achievements.slice(0, 20).map(achievement => sanitizeInput(achievement)) : []
+  };
+  
+  return sanitizedData;
+};
+
+// New endpoint for comprehensive AI analysis
+const analyzeResumeWithAI = asyncHandler(async (req, res) => {
+  const userId = req.userId;
+  const rawResumeData = req.body;
+  
+  // Validate and sanitize input
+  const resumeData = validateResumeAnalysisInput(rawResumeData);
+  
+  // Import required modules
+  const aiService = require('../services/aiService');
+  const { safeRedisUtils } = require('../middleware/redis');
+  const crypto = require('crypto');
+  
+  // Create cache key based on resume content hash
+  const resumeHash = crypto
+    .createHash('md5')
+    .update(JSON.stringify(resumeData))
+    .digest('hex');
+  const cacheKey = `resume_analysis:${userId}:${resumeHash}`;
+  
+  // Check cache first (cache for 2 hours)
+  try {
+    const cachedResult = await safeRedisUtils.getUserSession(cacheKey);
+    if (cachedResult && cachedResult.data) {
+      return res.json({
+        success: true,
+        data: cachedResult.data,
+        cached: true,
+        analyzedAt: cachedResult.analyzedAt
+      });
+    }
+  } catch (cacheError) {
+    console.error('Cache read error:', cacheError);
+    // Continue without cache
+  }
+  
+  try {
+    const startTime = Date.now();
+    
+    // Perform comprehensive AI analysis
+    const analysis = await aiService.analyzeResumeComprehensive(resumeData);
+    
+    const processingTime = Date.now() - startTime;
+    
+    // Enhance analysis with metadata
+    const enhancedAnalysis = {
+      ...analysis,
+      metadata: {
+        analyzedAt: new Date().toISOString(),
+        processingTime,
+        aiModel: 'gemini-1.5-flash',
+        version: '1.0'
+      }
+    };
+    
+    // Cache the result (2 hours TTL)
+    try {
+      await safeRedisUtils.setUserSession(cacheKey, {
+        data: enhancedAnalysis,
+        analyzedAt: enhancedAnalysis.metadata.analyzedAt
+      }, 7200); // 2 hours
+    } catch (cacheError) {
+      console.error('Cache write error:', cacheError);
+      // Continue without caching
+    }
+    
+    // Update analytics
+    try {
+      let analytics = await UserAnalytics.findOne({ userId });
+      if (analytics) {
+        await analytics.trackAction('ai_analysis_performed', {
+          overallScore: analysis.overallScore,
+          suggestionsCount: analysis.actionableFeedback?.length || 0,
+          processingTime,
+          cached: false
+        });
+        
+        await analytics.addRecentActivity(
+          'ai_analysis', 
+          `AI analyzed resume with score: ${analysis.overallScore}/100`, 
+          'analysis'
+        );
+      }
+    } catch (analyticsError) {
+      console.error('Analytics update error:', analyticsError);
+    }
+    
+    res.json({
+      success: true,
+      data: enhancedAnalysis,
+      cached: false,
+      message: 'Resume analysis completed successfully'
+    });
+    
+  } catch (error) {
+    console.error('AI analysis error:', error);
+    
+    // Return fallback analysis on AI failure
+    const fallbackAnalysis = aiService.getFallbackComprehensiveAnalysis();
+    
+    // Add metadata to fallback
+    const enhancedFallback = {
+      ...fallbackAnalysis,
+      metadata: {
+        analyzedAt: new Date().toISOString(),
+        processingTime: 0,
+        aiModel: 'fallback',
+        version: '1.0',
+        fallback: true
+      }
+    };
+    
+    res.json({
+      success: true,
+      data: enhancedFallback,
+      fallback: true,
+      message: 'AI analysis temporarily unavailable, showing basic analysis'
+    });
+  }
+});
+  
+
 module.exports = {
   createResume,
   getResumes,
@@ -669,5 +825,6 @@ module.exports = {
   optimizeResume,
   calculateATSScore,
   matchJobDescription,
-  getResumeAnalytics
+  getResumeAnalytics,
+  analyzeResumeWithAI
 };

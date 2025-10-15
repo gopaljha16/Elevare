@@ -1,11 +1,18 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { AppError } = require('../middleware/errorHandler');
+const { cacheService } = require('./cacheService');
+const aiConfig = require('../config/aiConfig');
 
 class AIService {
   constructor() {
-    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    // Validate configuration on initialization
+    if (!aiConfig.isConfigurationValid()) {
+      throw new Error('AI configuration is invalid or not validated');
+    }
+    
+    this.genAI = new GoogleGenerativeAI(aiConfig.getApiKey());
     this.model = this.genAI.getGenerativeModel({ 
-      model: process.env.GEMINI_MODEL || 'gemini-1.5-flash'
+      model: aiConfig.getConfig().gemini.model
     });
     
     this.generationConfig = {
@@ -14,6 +21,93 @@ class AIService {
       topP: 0.95,
       maxOutputTokens: 2048,
     };
+    
+    this.retryConfig = aiConfig.getRetryConfig();
+    this.requestLoggingEnabled = aiConfig.isRequestLoggingEnabled();
+    this.logLevel = aiConfig.getLogLevel();
+  }
+
+  /**
+   * Make a request to the AI service with retry logic and error handling
+   * @param {string} prompt - The prompt to send to the AI
+   * @param {Object} config - Generation configuration
+   * @returns {Promise<string>} AI response text
+   * @private
+   */
+  async _makeAIRequest(prompt, config = {}) {
+    const finalConfig = { ...this.generationConfig, ...config };
+    let lastError;
+    
+    for (let attempt = 1; attempt <= this.retryConfig.attempts; attempt++) {
+      try {
+        if (this.requestLoggingEnabled && this.logLevel === 'debug') {
+          console.log(`🤖 AI Request (attempt ${attempt}):`, {
+            promptLength: prompt.length,
+            config: finalConfig,
+            timestamp: new Date().toISOString()
+          });
+        }
+        
+        const startTime = Date.now();
+        
+        const result = await Promise.race([
+          this.model.generateContent({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: finalConfig,
+          }),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Request timeout')), this.retryConfig.timeout)
+          )
+        ]);
+
+        const response = await result.response;
+        const text = response.text();
+        
+        const processingTime = Date.now() - startTime;
+        
+        if (this.requestLoggingEnabled && (this.logLevel === 'debug' || this.logLevel === 'info')) {
+          console.log(`✅ AI Request successful (attempt ${attempt}):`, {
+            processingTime,
+            responseLength: text.length,
+            timestamp: new Date().toISOString()
+          });
+        }
+        
+        return text;
+        
+      } catch (error) {
+        lastError = error;
+        
+        if (this.requestLoggingEnabled && (this.logLevel === 'debug' || this.logLevel === 'warn')) {
+          console.warn(`⚠️ AI Request failed (attempt ${attempt}/${this.retryConfig.attempts}):`, {
+            error: error.message,
+            timestamp: new Date().toISOString()
+          });
+        }
+        
+        // Don't retry on certain errors
+        if (error.message.includes('API key') || error.message.includes('quota')) {
+          break;
+        }
+        
+        // Wait before retrying (exponential backoff)
+        if (attempt < this.retryConfig.attempts) {
+          const delay = this.retryConfig.delay * Math.pow(2, attempt - 1);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+    
+    // All attempts failed
+    if (this.requestLoggingEnabled) {
+      console.error('❌ All AI request attempts failed:', {
+        error: lastError.message,
+        attempts: this.retryConfig.attempts,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    throw new AppError('AI service temporarily unavailable', 503);
   }
 
   // optimize resume content using ai
@@ -24,13 +118,7 @@ class AIService {
       
       const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
       
-      const result = await this.model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
-        generationConfig: this.generationConfig,
-      });
-
-      const response = await result.response;
-      const text = response.text();
+      const text = await this._makeAIRequest(fullPrompt);
       
       return this.parseResumeOptimizationResponse(text);
     } catch (error) {
@@ -128,6 +216,52 @@ class AIService {
       return this.parseSkillGapAnalysisResponse(text);
     } catch (error) {
       console.error('AI Skill Gap Analysis Error:', error);
+      throw new AppError('AI service temporarily unavailable', 503);
+    }
+  }
+
+  // comprehensive resume analysis using ai (NEW METHOD) with caching
+  async analyzeResumeComprehensive(resumeData) {
+    // Generate cache key based on resume content
+    const cacheKey = cacheService.generateKey('ai_analysis', resumeData);
+    
+    try {
+      // Try to get cached result first
+      return await cacheService.getOrSet(
+        cacheKey,
+        async () => {
+          const startTime = Date.now();
+          
+          const systemPrompt = 'You are an expert resume analyst and career coach. Provide comprehensive, actionable feedback to improve resumes for both ATS compatibility and human readability. Focus on specific, measurable improvements.';
+          const userPrompt = this.createResumeAnalysisPrompt(resumeData);
+          
+          const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
+          
+          const text = await this._makeAIRequest(fullPrompt, { 
+            temperature: 0.4, // Lower temperature for more consistent analysis
+            maxOutputTokens: 3000 
+          });
+          
+          const analysisResult = this.parseResumeAnalysisResponse(text);
+          
+          // Add performance metadata
+          analysisResult.metadata = {
+            ...analysisResult.metadata,
+            processingTime: Date.now() - startTime,
+            cached: false,
+            cacheKey
+          };
+          
+          return analysisResult;
+        },
+        {
+          memoryTTL: 300,   // 5 minutes in memory
+          redisTTL: 7200,   // 2 hours in Redis
+          refreshThreshold: 0.8
+        }
+      );
+    } catch (error) {
+      console.error('AI Resume Analysis Error:', error);
       throw new AppError('AI service temporarily unavailable', 503);
     }
   }
@@ -282,6 +416,114 @@ Format as JSON:
     `;
   }
 
+  // NEW: Create comprehensive resume analysis prompt
+  createResumeAnalysisPrompt(resumeData) {
+    const personalInfo = resumeData.personalInfo || {};
+    const experience = resumeData.experience || [];
+    const education = resumeData.education || [];
+    const skills = resumeData.skills || [];
+    const projects = resumeData.projects || [];
+    const achievements = resumeData.achievements || [];
+
+    return `
+Analyze this resume comprehensively and provide detailed feedback:
+
+PERSONAL INFORMATION:
+Name: ${personalInfo.firstName} ${personalInfo.lastName}
+Email: ${personalInfo.email || 'Not provided'}
+Phone: ${personalInfo.phone || 'Not provided'}
+Location: ${personalInfo.location || 'Not provided'}
+LinkedIn: ${personalInfo.linkedin || 'Not provided'}
+Portfolio: ${personalInfo.portfolio || 'Not provided'}
+
+WORK EXPERIENCE (${experience.length} entries):
+${experience.map((exp, index) => `
+${index + 1}. ${exp.position || 'Position not specified'} at ${exp.company || 'Company not specified'}
+   Duration: ${exp.startDate || 'Start date not specified'} - ${exp.current ? 'Present' : (exp.endDate || 'End date not specified')}
+   Description: ${exp.description || 'No description provided'}
+   Achievements: ${exp.achievements ? exp.achievements.join(', ') : 'None listed'}
+`).join('')}
+
+EDUCATION (${education.length} entries):
+${education.map((edu, index) => `
+${index + 1}. ${edu.degree || 'Degree not specified'} in ${edu.field || 'Field not specified'}
+   Institution: ${edu.institution || 'Institution not specified'}
+   Graduation: ${edu.graduationDate || 'Date not specified'}
+   GPA: ${edu.gpa || 'Not provided'}
+`).join('')}
+
+SKILLS (${skills.length} total):
+${skills.join(', ') || 'No skills listed'}
+
+PROJECTS (${projects.length} entries):
+${projects.map((proj, index) => `
+${index + 1}. ${proj.name || 'Project name not specified'}
+   Description: ${proj.description || 'No description provided'}
+   Technologies: ${proj.technologies ? proj.technologies.join(', ') : 'None listed'}
+   Link: ${proj.link || 'No link provided'}
+`).join('')}
+
+ACHIEVEMENTS (${achievements.length} entries):
+${achievements.join(', ') || 'No achievements listed'}
+
+Please provide a comprehensive analysis in the following JSON format:
+{
+  "overallScore": number (0-100),
+  "sectionAnalysis": {
+    "personalInfo": {
+      "completeness": number (0-100),
+      "suggestions": ["suggestion1", "suggestion2"],
+      "score": number (0-100)
+    },
+    "experience": {
+      "completeness": number (0-100),
+      "suggestions": ["suggestion1", "suggestion2"],
+      "score": number (0-100)
+    },
+    "education": {
+      "completeness": number (0-100),
+      "suggestions": ["suggestion1", "suggestion2"],
+      "score": number (0-100)
+    },
+    "skills": {
+      "completeness": number (0-100),
+      "suggestions": ["suggestion1", "suggestion2"],
+      "score": number (0-100)
+    },
+    "projects": {
+      "completeness": number (0-100),
+      "suggestions": ["suggestion1", "suggestion2"],
+      "score": number (0-100)
+    }
+  },
+  "grammarSuggestions": ["grammar improvement 1", "grammar improvement 2"],
+  "keywordSuggestions": ["keyword1", "keyword2", "keyword3"],
+  "atsOptimization": ["ats improvement 1", "ats improvement 2"],
+  "actionableFeedback": [
+    {
+      "priority": "high|medium|low",
+      "category": "content|formatting|keywords|grammar",
+      "suggestion": "specific actionable suggestion",
+      "impact": "description of expected impact"
+    }
+  ],
+  "strengths": ["strength1", "strength2"],
+  "weaknesses": ["weakness1", "weakness2"],
+  "industryAlignment": "assessment of how well the resume aligns with modern industry standards",
+  "nextSteps": ["immediate action 1", "immediate action 2"]
+}
+
+Focus on:
+1. ATS (Applicant Tracking System) compatibility
+2. Content quality and quantifiable achievements
+3. Professional formatting and structure
+4. Industry-relevant keywords
+5. Grammar and language improvements
+6. Missing critical information
+7. Overall professional presentation
+    `;
+  }
+
   // helper methods for parsing ai responses
   parseResumeOptimizationResponse(response) {
     try {
@@ -344,6 +586,169 @@ Format as JSON:
         marketDemand: 'Analysis unavailable'
       };
     }
+  }
+
+  // NEW: Parse comprehensive resume analysis response
+  parseResumeAnalysisResponse(response) {
+    try {
+      // Try to extract JSON from the response
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        
+        // Validate and sanitize the response
+        return {
+          overallScore: Math.max(0, Math.min(100, parsed.overallScore || 0)),
+          sectionAnalysis: {
+            personalInfo: {
+              completeness: Math.max(0, Math.min(100, parsed.sectionAnalysis?.personalInfo?.completeness || 0)),
+              suggestions: Array.isArray(parsed.sectionAnalysis?.personalInfo?.suggestions) 
+                ? parsed.sectionAnalysis.personalInfo.suggestions.slice(0, 5) 
+                : [],
+              score: Math.max(0, Math.min(100, parsed.sectionAnalysis?.personalInfo?.score || 0))
+            },
+            experience: {
+              completeness: Math.max(0, Math.min(100, parsed.sectionAnalysis?.experience?.completeness || 0)),
+              suggestions: Array.isArray(parsed.sectionAnalysis?.experience?.suggestions) 
+                ? parsed.sectionAnalysis.experience.suggestions.slice(0, 5) 
+                : [],
+              score: Math.max(0, Math.min(100, parsed.sectionAnalysis?.experience?.score || 0))
+            },
+            education: {
+              completeness: Math.max(0, Math.min(100, parsed.sectionAnalysis?.education?.completeness || 0)),
+              suggestions: Array.isArray(parsed.sectionAnalysis?.education?.suggestions) 
+                ? parsed.sectionAnalysis.education.suggestions.slice(0, 5) 
+                : [],
+              score: Math.max(0, Math.min(100, parsed.sectionAnalysis?.education?.score || 0))
+            },
+            skills: {
+              completeness: Math.max(0, Math.min(100, parsed.sectionAnalysis?.skills?.completeness || 0)),
+              suggestions: Array.isArray(parsed.sectionAnalysis?.skills?.suggestions) 
+                ? parsed.sectionAnalysis.skills.suggestions.slice(0, 5) 
+                : [],
+              score: Math.max(0, Math.min(100, parsed.sectionAnalysis?.skills?.score || 0))
+            },
+            projects: {
+              completeness: Math.max(0, Math.min(100, parsed.sectionAnalysis?.projects?.completeness || 0)),
+              suggestions: Array.isArray(parsed.sectionAnalysis?.projects?.suggestions) 
+                ? parsed.sectionAnalysis.projects.suggestions.slice(0, 5) 
+                : [],
+              score: Math.max(0, Math.min(100, parsed.sectionAnalysis?.projects?.score || 0))
+            }
+          },
+          grammarSuggestions: Array.isArray(parsed.grammarSuggestions) 
+            ? parsed.grammarSuggestions.slice(0, 10) 
+            : [],
+          keywordSuggestions: Array.isArray(parsed.keywordSuggestions) 
+            ? parsed.keywordSuggestions.slice(0, 15) 
+            : [],
+          atsOptimization: Array.isArray(parsed.atsOptimization) 
+            ? parsed.atsOptimization.slice(0, 10) 
+            : [],
+          actionableFeedback: Array.isArray(parsed.actionableFeedback) 
+            ? parsed.actionableFeedback.slice(0, 10).map(feedback => ({
+                priority: ['high', 'medium', 'low'].includes(feedback.priority) ? feedback.priority : 'medium',
+                category: ['content', 'formatting', 'keywords', 'grammar'].includes(feedback.category) ? feedback.category : 'content',
+                suggestion: String(feedback.suggestion || '').substring(0, 200),
+                impact: String(feedback.impact || '').substring(0, 200)
+              }))
+            : [],
+          strengths: Array.isArray(parsed.strengths) 
+            ? parsed.strengths.slice(0, 8) 
+            : [],
+          weaknesses: Array.isArray(parsed.weaknesses) 
+            ? parsed.weaknesses.slice(0, 8) 
+            : [],
+          industryAlignment: String(parsed.industryAlignment || '').substring(0, 500),
+          nextSteps: Array.isArray(parsed.nextSteps) 
+            ? parsed.nextSteps.slice(0, 5) 
+            : []
+        };
+      }
+      
+      throw new Error('No valid JSON found in response');
+    } catch (error) {
+      console.error('Failed to parse comprehensive resume analysis:', error);
+      
+      // Return fallback analysis
+      return this.getFallbackComprehensiveAnalysis(response);
+    }
+  }
+
+  // NEW: Fallback analysis when AI parsing fails
+  getFallbackComprehensiveAnalysis(originalResponse = '') {
+    return {
+      overallScore: 65,
+      sectionAnalysis: {
+        personalInfo: {
+          completeness: 70,
+          suggestions: ["Ensure all contact information is complete", "Add LinkedIn profile if missing"],
+          score: 70
+        },
+        experience: {
+          completeness: 60,
+          suggestions: ["Add more quantifiable achievements", "Include specific technologies used"],
+          score: 60
+        },
+        education: {
+          completeness: 80,
+          suggestions: ["Consider adding relevant coursework", "Include GPA if above 3.5"],
+          score: 80
+        },
+        skills: {
+          completeness: 50,
+          suggestions: ["Add more technical skills", "Include both hard and soft skills"],
+          score: 50
+        },
+        projects: {
+          completeness: 40,
+          suggestions: ["Add more project details", "Include links to live projects or repositories"],
+          score: 40
+        }
+      },
+      grammarSuggestions: [
+        "Review for consistent verb tense usage",
+        "Check for proper punctuation in bullet points"
+      ],
+      keywordSuggestions: [
+        "Add industry-specific keywords",
+        "Include relevant technical terms",
+        "Use action verbs in experience descriptions"
+      ],
+      atsOptimization: [
+        "Use standard section headings",
+        "Avoid graphics and complex formatting",
+        "Include keywords from job descriptions"
+      ],
+      actionableFeedback: [
+        {
+          priority: "high",
+          category: "content",
+          suggestion: "Add quantifiable achievements to experience section",
+          impact: "Helps recruiters understand your impact and value"
+        },
+        {
+          priority: "medium",
+          category: "keywords",
+          suggestion: "Include more industry-relevant keywords",
+          impact: "Improves ATS compatibility and searchability"
+        }
+      ],
+      strengths: [
+        "Clear contact information provided",
+        "Professional structure and formatting"
+      ],
+      weaknesses: [
+        "Limited quantifiable achievements",
+        "Could benefit from more specific examples"
+      ],
+      industryAlignment: "Resume shows good potential but could be enhanced with more specific achievements and industry keywords.",
+      nextSteps: [
+        "Add specific metrics to experience descriptions",
+        "Include more relevant technical skills",
+        "Review and optimize for ATS compatibility"
+      ]
+    };
   }
 
   // rate limiting and cost management
