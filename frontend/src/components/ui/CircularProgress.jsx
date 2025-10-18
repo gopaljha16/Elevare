@@ -1,78 +1,13 @@
 import React from 'react';
 import { cn } from '../../utils/cn';
 
-const Progress = ({ 
-  value = 0, 
-  className = '', 
-  indicatorClassName = '',
-  size = 'default'
-}) => {
-  const sizeClasses = {
-    sm: 'h-1',
-    default: 'h-2',
-    lg: 'h-3'
-  };
-
-  return (
-    <div className={cn(
-      "relative w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700",
-      sizeClasses[size],
-      className
-    )}>
-      <div
-        className={cn(
-          "h-full w-full flex-1 bg-blue-600 transition-all duration-500 ease-out",
-          indicatorClassName
-        )}
-        style={{
-          transform: `translateX(-${100 - Math.min(100, Math.max(0, value))}%)`
-        }}
-      />
-    </div>
-  );
-};
-
-// Animated Progress component with motion
-const AnimatedProgress = ({ 
-  value = 0, 
-  className = '', 
-  indicatorClassName = '',
-  size = 'default',
-  animated = true
-}) => {
-  const sizeClasses = {
-    sm: 'h-1',
-    default: 'h-2',
-    lg: 'h-3'
-  };
-
-  return (
-    <div className={cn(
-      "relative w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700",
-      sizeClasses[size],
-      className
-    )}>
-      <div
-        className={cn(
-          "h-full w-full flex-1 bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-1000 ease-out",
-          indicatorClassName
-        )}
-        style={{
-          transform: `translateX(-${100 - Math.min(100, Math.max(0, value))}%)`,
-          transition: animated ? 'transform 1000ms ease-out' : 'none'
-        }}
-      />
-    </div>
-  );
-};
-
-// Circular Progress component
-const CircularProgress = ({ 
-  value = 0, 
-  size = 120, 
-  strokeWidth = 6, 
+const CircularProgress = ({
+  value = 0,
+  size = 120,
+  strokeWidth = 6,
   className = '',
-  showValue = true
+  showValue = true,
+  color = 'blue'
 }) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
@@ -125,8 +60,11 @@ const CircularProgress = ({
       {showValue && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
-            <div className={cn("text-2xl font-bold", getColor())}>
+            <div className={cn("text-3xl font-bold", getColor())}>
               {Math.round(value)}%
+            </div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              ATS Score
             </div>
           </div>
         </div>
@@ -135,4 +73,4 @@ const CircularProgress = ({
   );
 };
 
-export { Progress, AnimatedProgress, CircularProgress };
+export default CircularProgress;

@@ -16,6 +16,7 @@ const interviewRoutes = require('./routes/interview');
 const learningRoutes = require('./routes/learning');
 const dashboardRoutes = require('./routes/dashboard');
 const coverLetterRoutes = require('./routes/coverLetter');
+const atsRoutes = require('./routes/ats');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const logger = require('./utils/logger');
 const { 
@@ -99,6 +100,7 @@ app.use('/api/interviews', interviewRoutes);
 app.use('/api/learning', learningRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/cover-letters', coverLetterRoutes);
+app.use('/api/ats', atsRoutes);
 
 // 404 handler for unmatched routes
 app.use(notFoundHandler);

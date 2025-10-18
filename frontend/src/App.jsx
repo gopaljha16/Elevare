@@ -12,6 +12,7 @@ import ResumeBuilder from './components/resume/ResumeBuilder';
 import ResumeManagement from './components/resume/ResumeManagement';
 import InterviewPrep from './components/interview/InterviewPrep';
 import ComprehensiveDashboard from './components/dashboard/ComprehensiveDashboard';
+import ATSAnalyzerPage from './pages/ATSAnalyzerPage';
 
 
 // Protected Route Component
@@ -113,6 +114,14 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <ComprehensiveDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ats-analyzer"
+            element={
+              <ProtectedRoute>
+                <ATSAnalyzerPage />
               </ProtectedRoute>
             }
           />

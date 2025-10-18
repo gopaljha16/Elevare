@@ -6,14 +6,35 @@ const aiConfig = require('../config/aiConfig');
 class AIService {
   constructor() {
     // Validate configuration on initialization
-    if (!aiConfig.isConfigurationValid()) {
-      throw new Error('AI configuration is invalid or not validated');
+    try {
+      if (!aiConfig.isConfigurationValid()) {
+        console.warn('⚠️ AI configuration validation failed, attempting to validate...');
+        aiConfig.validateConfiguration();
+      }
+    } catch (error) {
+      console.error('❌ AI configuration error:', error.message);
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('AI configuration is invalid or not validated');
+      } else {
+        console.warn('⚠️ Continuing in development mode with potentially invalid AI config');
+      }
     }
     
-    this.genAI = new GoogleGenerativeAI(aiConfig.getApiKey());
-    this.model = this.genAI.getGenerativeModel({ 
-      model: aiConfig.getConfig().gemini.model
-    });
+    try {
+      this.genAI = new GoogleGenerativeAI(aiConfig.getApiKey());
+      this.model = this.genAI.getGenerativeModel({ 
+        model: aiConfig.getConfig().gemini.model
+      });
+    } catch (error) {
+      console.error('❌ Failed to initialize Google Generative AI:', error.message);
+      if (process.env.NODE_ENV === 'production') {
+        throw error;
+      } else {
+        console.warn('⚠️ AI service will use fallback mode in development');
+        this.genAI = null;
+        this.model = null;
+      }
+    }
     
     this.generationConfig = {
       temperature: 0.7,
@@ -22,9 +43,199 @@ class AIService {
       maxOutputTokens: 2048,
     };
     
-    this.retryConfig = aiConfig.getRetryConfig();
-    this.requestLoggingEnabled = aiConfig.isRequestLoggingEnabled();
-    this.logLevel = aiConfig.getLogLevel();
+    // Set default values if configuration is not validated
+    try {
+      this.retryConfig = aiConfig.getRetryConfig();
+      this.requestLoggingEnabled = aiConfig.isRequestLoggingEnabled();
+      this.logLevel = aiConfig.getLogLevel();
+    } catch (error) {
+      console.warn('⚠️ Using default AI service configuration');
+      this.retryConfig = { attempts: 3, delay: 1000, timeout: 30000 };
+      this.requestLoggingEnabled = false;
+      this.logLevel = 'error';
+    }
+  }
+
+  /**
+   * Analyze resume text specifically for ATS compatibility
+   * @param {string} resumeText - Resume text content
+   * @returns {Promise<Object>} ATS analysis results
+   */
+  async analyzeResumeForATS(resumeText) {
+    // If AI is not available, use fallback immediately
+    if (!this.model || !this.genAI) {
+      console.warn('⚠️ AI service not available, using fallback analysis');
+      return this.getFallbackATSAnalysis(resumeText);
+    }
+
+    const prompt = this.createATSAnalysisPrompt(resumeText);
+    
+    try {
+      const response = await this._makeAIRequest(prompt, {
+        temperature: 0.4,
+        maxOutputTokens: 3000
+      });
+      
+      return this.parseATSAnalysisResponse(response);
+    } catch (error) {
+      console.error('ATS analysis failed:', error);
+      // Return fallback analysis
+      return this.getFallbackATSAnalysis(resumeText);
+    }
+  }
+
+  /**
+   * Create structured prompt for ATS analysis
+   * @param {string} resumeText - Resume text content
+   * @returns {string} Formatted prompt
+   * @private
+   */
+  createATSAnalysisPrompt(resumeText) {
+    return `
+Analyze the following resume for ATS (Applicant Tracking System) compatibility and provide a comprehensive assessment.
+
+RESUME TEXT:
+${resumeText}
+
+Please provide a detailed analysis in the following JSON format:
+
+{
+  "overallScore": <number 0-100>,
+  "sectionAnalysis": {
+    "personalInfo": {
+      "score": <number 0-25>,
+      "issues": ["list of specific issues"],
+      "suggestions": ["list of specific improvements"]
+    },
+    "experience": {
+      "score": <number 0-30>,
+      "issues": ["list of specific issues"],
+      "suggestions": ["list of specific improvements"]
+    },
+    "education": {
+      "score": <number 0-15>,
+      "issues": ["list of specific issues"],
+      "suggestions": ["list of specific improvements"]
+    },
+    "skills": {
+      "score": <number 0-20>,
+      "issues": ["list of specific issues"],
+      "suggestions": ["list of specific improvements"]
+    },
+    "structure": {
+      "score": <number 0-10>,
+      "issues": ["list of specific issues"],
+      "suggestions": ["list of specific improvements"]
+    }
+  },
+  "keywordAnalysis": {
+    "presentKeywords": ["list of good keywords found"],
+    "missingKeywords": ["list of important keywords missing"],
+    "keywordDensity": "assessment of keyword usage"
+  },
+  "atsCompatibility": {
+    "formatIssues": ["list of formatting problems"],
+    "parsingConcerns": ["list of potential parsing issues"],
+    "recommendations": ["list of ATS optimization suggestions"]
+  },
+  "strengths": ["list of resume strengths"],
+  "criticalIssues": ["list of high-priority problems"],
+  "actionableSteps": [
+    {
+      "priority": "high|medium|low",
+      "category": "content|format|keywords|structure",
+      "action": "specific action to take",
+      "impact": "expected improvement"
+    }
+  ]
+}
+
+Focus on:
+1. ATS parsing compatibility
+2. Keyword optimization
+3. Standard section headers
+4. Contact information completeness
+5. Quantifiable achievements
+6. Professional formatting
+7. Industry-specific terminology
+
+Provide specific, actionable feedback that will improve ATS pass-through rates.
+`;
+  }
+
+  /**
+   * Parse AI response for ATS analysis
+   * @param {string} response - Raw AI response
+   * @returns {Object} Parsed analysis data
+   * @private
+   */
+  parseATSAnalysisResponse(response) {
+    try {
+      // Extract JSON from response
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('No JSON found in response');
+      }
+      
+      const parsed = JSON.parse(jsonMatch[0]);
+      
+      // Validate and normalize the response
+      return {
+        overallScore: Math.min(100, Math.max(0, parsed.overallScore || 0)),
+        sectionAnalysis: parsed.sectionAnalysis || {},
+        keywordAnalysis: parsed.keywordAnalysis || {},
+        atsCompatibility: parsed.atsCompatibility || {},
+        strengths: parsed.strengths || [],
+        criticalIssues: parsed.criticalIssues || [],
+        actionableSteps: parsed.actionableSteps || []
+      };
+    } catch (error) {
+      console.error('Failed to parse ATS analysis response:', error);
+      throw new Error('Invalid AI response format');
+    }
+  }
+
+  /**
+   * Provide fallback ATS analysis when AI fails
+   * @param {string} resumeText - Resume text content
+   * @returns {Object} Basic analysis results
+   * @private
+   */
+  getFallbackATSAnalysis(resumeText) {
+    const text = resumeText.toLowerCase();
+    let score = 0;
+    const issues = [];
+    const suggestions = [];
+
+    // Basic scoring
+    if (text.includes('@')) score += 15;
+    else issues.push('Missing email address');
+
+    if (/\d{3}[-.]?\d{3}[-.]?\d{4}/.test(text)) score += 10;
+    else issues.push('Missing phone number');
+
+    if (text.includes('experience')) score += 20;
+    else issues.push('No clear experience section');
+
+    if (text.includes('education')) score += 15;
+    else suggestions.push('Add education section');
+
+    if (text.includes('skills')) score += 15;
+    else suggestions.push('Add skills section');
+
+    return {
+      overallScore: Math.min(score, 100),
+      sectionAnalysis: {
+        personalInfo: { score: score >= 25 ? 25 : score, issues, suggestions },
+        experience: { score: text.includes('experience') ? 20 : 0, issues: [], suggestions: [] },
+        education: { score: text.includes('education') ? 15 : 0, issues: [], suggestions: [] },
+        skills: { score: text.includes('skills') ? 15 : 0, issues: [], suggestions: [] },
+        structure: { score: 5, issues: [], suggestions: [] }
+      },
+      strengths: score > 50 ? ['Basic structure present'] : [],
+      criticalIssues: issues,
+      actionableSteps: suggestions.map(s => ({ priority: 'medium', action: s }))
+    };
   }
 
   /**
@@ -35,6 +246,10 @@ class AIService {
    * @private
    */
   async _makeAIRequest(prompt, config = {}) {
+    if (!this.model || !this.genAI) {
+      throw new Error('AI service is not properly initialized');
+    }
+    
     const finalConfig = { ...this.generationConfig, ...config };
     let lastError;
     

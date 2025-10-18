@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, BentoCard } from '../ui/Card'
 import { Badge } from '../ui/Badge';
 import { AnimatedProgress, CircularProgress } from '../ui/Progress';
 import { LineChart, BarChart, PieChart } from '../ui/Chart';
-import { cn } from '../../lib/utils';
+import { cn } from '../../utils/cn';
 
 const AnalyticsDashboard = () => {
   const [timeRange, setTimeRange] = useState('30d');

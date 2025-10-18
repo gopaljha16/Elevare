@@ -4,7 +4,7 @@ import { Button } from '../ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Progress } from '../ui/Progress';
-import { cn } from '../../lib/utils';
+import { cn } from '../../utils/cn';
 import { useResumeBuilder } from '../../contexts/ResumeBuilderContext';
 import { 
   usePerformanceMonitor, 

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
-import { cn } from '../../lib/utils';
+import { cn } from '../../utils/cn';
 
 const MainNavigation = ({ currentPage = 'dashboard' }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);

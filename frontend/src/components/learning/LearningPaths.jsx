@@ -4,7 +4,7 @@ import { Button } from '../ui/Button';
 import { Card, CardContent, CardHeader, CardTitle, BentoCard } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { AnimatedProgress, CircularProgress } from '../ui/Progress';
-import { cn } from '../../lib/utils';
+import { cn } from '../../utils/cn';
 
 const LearningPaths = () => {
   const [selectedCompany, setSelectedCompany] = useState('google');

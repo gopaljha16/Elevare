@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '../../lib/utils';
+import { cn } from '../../utils/cn';
 import { Input, GlassInput, FloatingInput } from './Input';
 import { debounce } from '../../utils/debounce';
 

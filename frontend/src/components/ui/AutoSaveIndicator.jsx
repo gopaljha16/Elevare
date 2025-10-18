@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Badge } from './Badge';
-import { cn } from '../../lib/utils';
+import { cn } from '../../utils/cn';
 import { useAutoSave } from '../../hooks/useAutoSave';
 
 /**

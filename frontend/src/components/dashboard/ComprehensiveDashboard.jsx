@@ -12,7 +12,7 @@ import { Badge } from '../ui/Badge';
 import { AnimatedProgress, CircularProgress } from '../ui/Progress';
 import { LineChart, BarChart, PieChart } from '../ui/Chart';
 import { useAuthContext } from '../../contexts/AuthContext';
-import { cn } from '../../lib/utils';
+import { cn } from '../../utils/cn';
 
 const ComprehensiveDashboard = () => {
   const { user } = useAuthContext();

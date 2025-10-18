@@ -105,14 +105,22 @@ const optimizePipeline = (pipeline) => {
  * Monitor slow queries
  */
 const monitorSlowQueries = () => {
-  // Enable MongoDB profiling for slow queries (> 100ms)
+  // Skip profiling for MongoDB Atlas (cloud) as it's not allowed
+  const isAtlas = process.env.DATABASE_URL && process.env.DATABASE_URL.includes('mongodb.net');
+  
+  if (isAtlas) {
+    console.log('ℹ️ MongoDB Atlas detected - profiling not available (this is normal)');
+    return;
+  }
+
+  // Enable MongoDB profiling for slow queries (> 100ms) - only for local MongoDB
   mongoose.connection.db.admin().command({
     profile: 2,
     slowms: 100
   }).then(() => {
     console.log('✅ MongoDB slow query profiling enabled');
   }).catch(error => {
-    console.error('❌ Error enabling MongoDB profiling:', error);
+    console.warn('⚠️ MongoDB profiling not available:', error.message);
   });
 };
 

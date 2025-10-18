@@ -95,14 +95,22 @@ class AIConfig {
     // Validate API key format (basic check)
     if (!gemini.apiKey.startsWith('AIza')) {
       this.validationErrors.push('GEMINI_API_KEY does not match expected format');
-      console.warn('⚠️ Gemini API key does not match expected format');
+      if (this.config.environment === 'production') {
+        throw new Error('Gemini API key does not match expected format');
+      } else {
+        console.warn('⚠️ Gemini API key does not match expected format, continuing in development mode');
+      }
     }
     
     // Validate model name
     const validModels = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro'];
     if (!validModels.includes(gemini.model)) {
-      this.validationErrors.push(`Invalid GEMINI_MODEL: ${gemini.model}`);
-      console.warn(`⚠️ Unknown Gemini model: ${gemini.model}`);
+      if (this.config.environment === 'production') {
+        this.validationErrors.push(`Invalid GEMINI_MODEL: ${gemini.model}`);
+        throw new Error(`Invalid Gemini model: ${gemini.model}`);
+      } else {
+        console.warn(`⚠️ Unknown Gemini model: ${gemini.model}, continuing in development mode`);
+      }
     }
     
     // Validate timeout

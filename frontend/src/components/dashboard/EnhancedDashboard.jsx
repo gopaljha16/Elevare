@@ -12,7 +12,7 @@ import { Badge } from '../ui/Badge';
 import { AnimatedProgress, CircularProgress } from '../ui/Progress';
 import { LineChart, BarChart, PieChart } from '../ui/Chart';
 import { useAuthContext } from '../../contexts/AuthContext';
-import { cn } from '../../lib/utils';
+import { cn } from '../../utils/cn';
 
 const EnhancedDashboard = () => {
   const { user } = useAuthContext();
@@ -101,6 +101,9 @@ const EnhancedDashboard = () => {
                   <div className="flex flex-wrap gap-3">
                     <Button variant="glass" size="lg" onClick={() => window.location.href = '/resume-builder'}>
                       Create Resume
+                    </Button>
+                    <Button variant="outline" size="lg" className="border-white/30 text-white hover:bg-white/10" onClick={() => window.location.href = '/ats-analyzer'}>
+                      ATS Score Analyzer
                     </Button>
                     <Button variant="outline" size="lg" className="border-white/30 text-white hover:bg-white/10" onClick={() => window.location.href = '/interview-prep'}>
                       Start Interview Prep

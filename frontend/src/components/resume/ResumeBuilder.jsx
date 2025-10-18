@@ -7,7 +7,7 @@ import { Progress } from '../ui/Progress';
 import { useForm, validationRules } from '../../hooks/useForm';
 import { FormField, EmailField, PhoneField } from '../ui/FormField';
 import { useToast } from '../ui/Toast';
-import { cn } from '../../lib/utils';
+import { cn } from '../../utils/cn';
 import { ResumeBuilderProvider, useResumeBuilder } from '../../contexts/ResumeBuilderContext';
 import LiveResumePreview from './LiveResumePreview';
 import AIInsightsPanel from './AIInsightsPanel';

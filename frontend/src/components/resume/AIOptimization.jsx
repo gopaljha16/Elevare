@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { CircularProgress, AnimatedProgress } from '../ui/Progress';
 import { useToast } from '../ui/Toast';
-import { cn } from '../../lib/utils';
+import { cn } from '../../utils/cn';
 
 const AIOptimization = ({ resumeId }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);

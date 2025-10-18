@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '../../lib/utils';
+import { cn } from '../../utils/cn';
 
 const ToastContext = createContext();
 

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, BentoCard } from '../ui/Card'
 import { Badge } from '../ui/Badge';
 import { FormField } from '../ui/FormField';
 import { useToast } from '../ui/Toast';
-import { cn } from '../../lib/utils';
+import { cn } from '../../utils/cn';
 
 const AIFeatures = () => {
   const [activeFeature, setActiveFeature] = useState('cover-letter');

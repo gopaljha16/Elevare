@@ -6,7 +6,7 @@ import { Badge } from '../ui/Badge';
 import { Input } from '../ui/Input';
 import { Progress } from '../ui/Progress';
 import { useToast } from '../ui/Toast';
-import { cn } from '../../lib/utils';
+import { cn } from '../../utils/cn';
 import { useAIAnalysis } from '../../hooks/useAIAnalysis';
 import { 
   SparklesIcon, 
