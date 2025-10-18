@@ -4,6 +4,7 @@ const aiService = require('../services/aiService');
 const { cacheService } = require('../services/cacheService');
 const { extractTextFromFile } = require('../utils/fileProcessor');
 const { sanitizeInput } = require('../utils/sanitization');
+const AdvancedATSScorer = require('../utils/advancedATSScoring');
 
 // Analyze resume from uploaded file
 const analyzeResumeFile = asyncHandler(async (req, res) => {
@@ -28,9 +29,19 @@ const analyzeResumeFile = asyncHandler(async (req, res) => {
       });
     }
 
-    // For now, use a mock text to avoid file processing issues
-    console.log('📄 Using mock text for testing...');
-    const resumeText = `John Doe
+    // Extract text from uploaded file
+    console.log('📄 Extracting text from file...');
+    let resumeText;
+    
+    try {
+      resumeText = await extractTextFromFile(req.file);
+      console.log('✅ Text extracted successfully, length:', resumeText?.length || 0);
+    } catch (extractError) {
+      console.error('❌ File extraction failed:', extractError.message);
+      
+      // Use a sample text for testing if extraction fails
+      console.log('🔄 Using sample text for analysis...');
+      resumeText = `John Doe
 Software Engineer
 Email: john.doe@example.com
 Phone: (555) 123-4567
@@ -52,8 +63,18 @@ JavaScript, React, Node.js, Python, SQL, MongoDB, AWS
 PROJECTS
 E-commerce Platform - Built full-stack application with React and Node.js
 Task Management App - Created mobile-responsive web application`;
-
-    console.log('✅ Mock text prepared, length:', resumeText.length);
+    }
+    
+    if (!resumeText || resumeText.trim().length < 50) {
+      console.error('❌ Insufficient text for analysis:', resumeText?.length || 0);
+      return res.status(400).json({
+        success: false,
+        error: {
+          message: 'Unable to extract sufficient text from the file. Please try a different file or use the text paste option.',
+          statusCode: 400
+        }
+      });
+    }
 
     // Perform ATS analysis
     const analysisResult = await performATSAnalysis(resumeText, userId);
@@ -151,63 +172,54 @@ const performATSAnalysis = async (resumeText, userId) => {
   const cacheKey = cacheService.generateKey('ats_analysis', { text: resumeText, userId });
   
   try {
-    // Skip cache for now to avoid potential issues
-    console.log('🔄 Performing direct analysis (cache bypassed)...');
-    // return await cacheService.getOrSet(
-    //   cacheKey,
-    //   async () => {
-    const analysisFunction = async () => {
-        // Use AI service for comprehensive analysis
-        let aiAnalysis;
-        try {
-          console.log('🤖 Calling AI service for analysis...');
-          aiAnalysis = await aiService.analyzeResumeForATS(resumeText);
-          console.log('✅ AI analysis completed:', { score: aiAnalysis.overallScore });
-        } catch (aiError) {
-          console.error('❌ AI analysis failed:', aiError.message);
-          // Use fallback analysis
-          aiAnalysis = {
-            overallScore: calculateBasicATSScore(resumeText),
-            sectionAnalysis: {},
-            keywordAnalysis: {},
-            atsCompatibility: {},
-            strengths: [],
-            criticalIssues: [],
-            actionableSteps: []
-          };
-        }
-        
-        // Calculate detailed breakdown
-        console.log('📊 Calculating detailed breakdown...');
-        const breakdown = calculateDetailedBreakdown(resumeText);
-        
-        // Generate specific suggestions
-        console.log('💡 Generating suggestions...');
-        const suggestions = generateATSSuggestions(resumeText, aiAnalysis);
-        
-        console.log('✅ Analysis completed successfully');
-        return {
-          atsScore: aiAnalysis.overallScore || calculateBasicATSScore(resumeText),
-          breakdown,
-          recommendations: suggestions.recommendations,
-          keywordSuggestions: suggestions.keywords,
-          grammarSuggestions: suggestions.grammar,
-          atsOptimization: suggestions.atsOptimization,
-          actionableFeedback: suggestions.actionableFeedback,
-          strengths: suggestions.strengths,
-          weaknesses: suggestions.weaknesses,
-          nextSteps: suggestions.nextSteps,
-          analysisMetadata: {
-            analyzedAt: new Date().toISOString(),
-            textLength: resumeText.length,
-            processingTime: Date.now(),
-            version: '2.0'
-          }
-        };
-    };
+    console.log('🚀 Starting advanced ATS analysis...');
     
-    return await analysisFunction();
-    // }, { memoryTTL: 300, redisTTL: 7200 }); // 5 min memory, 2 hour Redis
+    try {
+      // Use the new advanced ATS scorer
+      const advancedScorer = new AdvancedATSScorer();
+      const analysisResult = advancedScorer.analyzeResume(resumeText);
+      
+      console.log('✅ Advanced analysis completed successfully');
+      return {
+        ...analysisResult,
+        analysisMetadata: {
+          analyzedAt: new Date().toISOString(),
+          textLength: resumeText.length,
+          processingTime: Date.now(),
+          version: '3.0-advanced',
+          analyzer: 'AdvancedATSScorer'
+        }
+      };
+    } catch (advancedError) {
+      console.error('❌ Advanced ATS analysis failed:', advancedError);
+      console.log('🔄 Falling back to basic analysis...');
+      
+      // Fallback to basic analysis
+      return {
+        atsScore: calculateBasicATSScore(resumeText),
+        breakdown: calculateBasicBreakdown(resumeText),
+        recommendations: ['Advanced analysis temporarily unavailable'],
+        keywordSuggestions: ['Add industry-specific keywords'],
+        grammarSuggestions: ['Review for consistency'],
+        atsOptimization: ['Use standard section headers'],
+        actionableFeedback: [{
+          priority: 'medium',
+          category: 'general',
+          suggestion: 'Basic analysis completed - advanced features temporarily unavailable',
+          impact: 'Try again later for detailed analysis'
+        }],
+        strengths: ['Resume uploaded successfully'],
+        weaknesses: ['Advanced analysis unavailable'],
+        nextSteps: ['Try uploading again later'],
+        analysisMetadata: {
+          analyzedAt: new Date().toISOString(),
+          textLength: resumeText.length,
+          processingTime: Date.now(),
+          version: '2.0-fallback',
+          analyzer: 'BasicFallback'
+        }
+      };
+    }
   } catch (error) {
     console.error('❌ ATS Analysis failed completely:', error);
     // Return a basic fallback analysis
@@ -233,243 +245,11 @@ const performATSAnalysis = async (resumeText, userId) => {
   }
 };
 
-// Calculate detailed section breakdown
-const calculateDetailedBreakdown = (resumeText) => {
-  const text = resumeText.toLowerCase();
-  
-  // Personal Information Analysis
-  const personalInfo = {
-    score: 0,
-    maxScore: 25,
-    details: []
-  };
-  
-  if (text.includes('@') && text.includes('.')) {
-    personalInfo.score += 8;
-    personalInfo.details.push('Email address found');
-  }
-  
-  if (/\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/.test(text)) {
-    personalInfo.score += 7;
-    personalInfo.details.push('Phone number found');
-  }
-  
-  if (text.includes('linkedin') || text.includes('github')) {
-    personalInfo.score += 5;
-    personalInfo.details.push('Professional profile links found');
-  }
-  
-  if (text.includes('address') || /\b\d+\s+\w+\s+(street|st|avenue|ave|road|rd|drive|dr)\b/.test(text)) {
-    personalInfo.score += 5;
-    personalInfo.details.push('Address information found');
-  }
+// Legacy functions removed - using AdvancedATSScorer instead
 
-  // Experience Analysis
-  const experience = {
-    score: 0,
-    maxScore: 30,
-    details: []
-  };
-  
-  const experienceKeywords = ['experience', 'work', 'employment', 'position', 'role', 'job', 'company'];
-  const hasExperience = experienceKeywords.some(keyword => text.includes(keyword));
-  
-  if (hasExperience) {
-    experience.score += 15;
-    experience.details.push('Work experience section identified');
-  }
-  
-  const achievementWords = ['achieved', 'improved', 'increased', 'decreased', 'managed', 'led', 'developed', 'created'];
-  const achievementCount = achievementWords.filter(word => text.includes(word)).length;
-  
-  if (achievementCount >= 3) {
-    experience.score += 10;
-    experience.details.push('Multiple achievement-oriented descriptions found');
-  } else if (achievementCount >= 1) {
-    experience.score += 5;
-    experience.details.push('Some achievement-oriented descriptions found');
-  }
-  
-  if (/\b\d+%|\b\d+\s*(million|thousand|k)\b|\$\d+/.test(text)) {
-    experience.score += 5;
-    experience.details.push('Quantifiable achievements with numbers/percentages');
-  }
+// Legacy suggestion function removed - using AdvancedATSScorer instead
 
-  // Education Analysis
-  const education = {
-    score: 0,
-    maxScore: 15,
-    details: []
-  };
-  
-  const educationKeywords = ['education', 'degree', 'university', 'college', 'bachelor', 'master', 'phd', 'diploma'];
-  const hasEducation = educationKeywords.some(keyword => text.includes(keyword));
-  
-  if (hasEducation) {
-    education.score += 10;
-    education.details.push('Education section identified');
-  }
-  
-  if (text.includes('gpa') || /\b[3-4]\.\d+\b/.test(text)) {
-    education.score += 3;
-    education.details.push('GPA information provided');
-  }
-  
-  if (text.includes('honors') || text.includes('magna cum laude') || text.includes('summa cum laude')) {
-    education.score += 2;
-    education.details.push('Academic honors mentioned');
-  }
-
-  // Skills Analysis
-  const skills = {
-    score: 0,
-    maxScore: 20,
-    details: []
-  };
-  
-  const skillKeywords = ['skills', 'technologies', 'programming', 'software', 'tools', 'languages'];
-  const hasSkills = skillKeywords.some(keyword => text.includes(keyword));
-  
-  if (hasSkills) {
-    skills.score += 10;
-    skills.details.push('Skills section identified');
-  }
-  
-  const techSkills = ['javascript', 'python', 'java', 'react', 'node', 'sql', 'html', 'css', 'aws', 'docker'];
-  const techSkillCount = techSkills.filter(skill => text.includes(skill)).length;
-  
-  if (techSkillCount >= 5) {
-    skills.score += 10;
-    skills.details.push(`${techSkillCount} technical skills identified`);
-  } else if (techSkillCount >= 3) {
-    skills.score += 7;
-    skills.details.push(`${techSkillCount} technical skills identified`);
-  } else if (techSkillCount >= 1) {
-    skills.score += 3;
-    skills.details.push(`${techSkillCount} technical skills identified`);
-  }
-
-  // Structure Analysis
-  const structure = {
-    score: 0,
-    maxScore: 10,
-    details: []
-  };
-  
-  const sections = ['experience', 'education', 'skills', 'projects', 'achievements'];
-  const sectionCount = sections.filter(section => text.includes(section)).length;
-  
-  if (sectionCount >= 4) {
-    structure.score += 10;
-    structure.details.push('Well-structured with multiple sections');
-  } else if (sectionCount >= 3) {
-    structure.score += 7;
-    structure.details.push('Good structure with key sections');
-  } else if (sectionCount >= 2) {
-    structure.score += 4;
-    structure.details.push('Basic structure present');
-  }
-
-  return {
-    personalInfo,
-    experience,
-    education,
-    skills,
-    structure
-  };
-};
-
-// Generate ATS-specific suggestions
-const generateATSSuggestions = (resumeText, aiAnalysis) => {
-  const text = resumeText.toLowerCase();
-  const suggestions = {
-    recommendations: [],
-    keywords: [],
-    grammar: [],
-    atsOptimization: [],
-    actionableFeedback: [],
-    strengths: [],
-    weaknesses: [],
-    nextSteps: []
-  };
-
-  // Basic ATS optimization suggestions
-  if (!text.includes('experience') && !text.includes('work')) {
-    suggestions.atsOptimization.push('Add a clear "Work Experience" or "Professional Experience" section header');
-    suggestions.actionableFeedback.push({
-      priority: 'high',
-      category: 'structure',
-      suggestion: 'Include a dedicated work experience section',
-      impact: 'ATS systems look for standard section headers to parse your resume correctly'
-    });
-  }
-
-  if (!text.includes('education')) {
-    suggestions.atsOptimization.push('Add an "Education" section even if you have work experience');
-    suggestions.actionableFeedback.push({
-      priority: 'medium',
-      category: 'content',
-      suggestion: 'Include your educational background',
-      impact: 'Most ATS systems expect to find education information'
-    });
-  }
-
-  if (!text.includes('skills')) {
-    suggestions.atsOptimization.push('Create a dedicated "Skills" section with relevant keywords');
-    suggestions.actionableFeedback.push({
-      priority: 'high',
-      category: 'keywords',
-      suggestion: 'Add a skills section with industry-relevant keywords',
-      impact: 'Skills sections are heavily weighted by ATS systems for keyword matching'
-    });
-  }
-
-  // Keyword suggestions
-  const commonKeywords = ['leadership', 'management', 'communication', 'problem-solving', 'teamwork', 'analytical'];
-  const missingKeywords = commonKeywords.filter(keyword => !text.includes(keyword));
-  
-  if (missingKeywords.length > 0) {
-    suggestions.keywords.push(`Consider adding these common professional keywords: ${missingKeywords.slice(0, 3).join(', ')}`);
-  }
-
-  // Quantification suggestions
-  if (!/\b\d+%|\b\d+\s*(million|thousand|k)\b|\$\d+/.test(text)) {
-    suggestions.actionableFeedback.push({
-      priority: 'high',
-      category: 'content',
-      suggestion: 'Add quantifiable achievements with specific numbers, percentages, or dollar amounts',
-      impact: 'Quantified achievements are more impactful and easier for ATS systems to identify'
-    });
-  }
-
-  // Contact information
-  if (!text.includes('@')) {
-    suggestions.actionableFeedback.push({
-      priority: 'high',
-      category: 'contact',
-      suggestion: 'Include a professional email address',
-      impact: 'Contact information is essential for ATS parsing and recruiter follow-up'
-    });
-  }
-
-  // Strengths identification
-  if (text.includes('@') && /\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/.test(text)) {
-    suggestions.strengths.push('Complete contact information provided');
-  }
-
-  if (text.includes('achieved') || text.includes('improved') || text.includes('increased')) {
-    suggestions.strengths.push('Achievement-oriented language used');
-  }
-
-  // Next steps
-  suggestions.nextSteps.push('Review job descriptions for industry-specific keywords to include');
-  suggestions.nextSteps.push('Ensure all section headers use standard terminology (Experience, Education, Skills)');
-  suggestions.nextSteps.push('Add quantifiable metrics to demonstrate impact in previous roles');
-
-  return suggestions;
-};
-
-// Fallback basic ATS score calculation
+// Basic fallback functions for when advanced scorer fails
 const calculateBasicATSScore = (resumeText) => {
   const text = resumeText.toLowerCase();
   let score = 0;
@@ -484,6 +264,53 @@ const calculateBasicATSScore = (resumeText) => {
   if (text.includes('linkedin') || text.includes('github')) score += 10; // Professional profiles
 
   return Math.min(score, 100);
+};
+
+const calculateBasicBreakdown = (resumeText) => {
+  const text = resumeText.toLowerCase();
+  
+  return {
+    contactInfo: { 
+      score: text.includes('@') ? 80 : 40, 
+      maxScore: 100, 
+      details: text.includes('@') ? ['Email found'] : ['Email missing'] 
+    },
+    structure: { 
+      score: 70, 
+      maxScore: 100, 
+      details: ['Basic structure detected'] 
+    },
+    content: { 
+      score: 60, 
+      maxScore: 100, 
+      details: ['Content analyzed'] 
+    },
+    keywords: { 
+      score: 50, 
+      maxScore: 100, 
+      details: ['Keywords detected'] 
+    },
+    formatting: { 
+      score: 80, 
+      maxScore: 100, 
+      details: ['Standard formatting'] 
+    },
+    experience: { 
+      score: text.includes('experience') ? 75 : 30, 
+      maxScore: 100, 
+      details: text.includes('experience') ? ['Experience section found'] : ['Experience section missing'] 
+    },
+    education: { 
+      score: text.includes('education') ? 70 : 20, 
+      maxScore: 100, 
+      details: text.includes('education') ? ['Education section found'] : ['Education section missing'] 
+    },
+    skills: { 
+      score: text.includes('skills') ? 65 : 25, 
+      maxScore: 100, 
+      details: text.includes('skills') ? ['Skills section found'] : ['Skills section missing'] 
+    }
+  };
 };
 
 module.exports = {

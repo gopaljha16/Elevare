@@ -91,4 +91,32 @@ router.get('/health', (req, res) => {
   res.json({ success: true, message: 'ATS routes are working' });
 });
 
+// Test advanced scorer endpoint
+router.post('/test-advanced', (req, res) => {
+  console.log('🧪 Testing advanced ATS scorer...');
+  try {
+    const AdvancedATSScorer = require('../utils/advancedATSScoring');
+    const scorer = new AdvancedATSScorer();
+    const testText = req.body.text || 'John Doe Software Engineer john@example.com (555) 123-4567 Experience: Software Engineer at Tech Corp';
+    
+    const result = scorer.analyzeResume(testText);
+    console.log('✅ Advanced scorer test completed, score:', result.atsScore);
+    
+    res.json({
+      success: true,
+      data: result,
+      message: 'Advanced ATS scorer test completed'
+    });
+  } catch (error) {
+    console.error('❌ Advanced scorer test failed:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        message: 'Advanced scorer test failed: ' + error.message,
+        statusCode: 500
+      }
+    });
+  }
+});
+
 module.exports = router;
