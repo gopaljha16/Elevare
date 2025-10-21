@@ -11,6 +11,8 @@ import HealthCheck from './components/HealthCheck';
 import ResumeBuilder from './components/resume/ResumeBuilder';
 import ResumeManagement from './components/resume/ResumeManagement';
 import InterviewPrep from './components/interview/InterviewPrep';
+import InterviewPrepPlanner from './components/interview/InterviewPrepPlanner';
+import InterviewPlannerDemoPage from './pages/InterviewPlannerDemoPage';
 import ComprehensiveDashboard from './components/dashboard/ComprehensiveDashboard';
 import ATSAnalyzerPage from './pages/ATSAnalyzerPage';
 
@@ -59,6 +61,7 @@ const App = () => {
           {/* Public Routes */}
           <Route path="/" element={<HomePage />} />
           <Route path="/demo" element={<DemoPage />} />
+          <Route path="/interview-planner-demo" element={<InterviewPlannerDemoPage />} />
           <Route
             path="/login"
             element={
@@ -98,6 +101,14 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <InterviewPrep />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/interview-planner"
+            element={
+              <ProtectedRoute>
+                <InterviewPrepPlanner />
               </ProtectedRoute>
             }
           />

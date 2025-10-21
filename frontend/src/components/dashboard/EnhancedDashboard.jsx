@@ -106,7 +106,10 @@ const EnhancedDashboard = () => {
                       ATS Score Analyzer
                     </Button>
                     <Button variant="outline" size="lg" className="border-white/30 text-white hover:bg-white/10" onClick={() => window.location.href = '/interview-prep'}>
-                      Start Interview Prep
+                      Interview Practice
+                    </Button>
+                    <Button variant="outline" size="lg" className="border-white/30 text-white hover:bg-white/10" onClick={() => window.location.href = '/interview-planner'}>
+                      Interview Planner
                     </Button>
                   </div>
                 </div>
@@ -294,7 +297,10 @@ const EnhancedDashboard = () => {
                     Create Resume
                   </Button>
                   <Button variant="ghost" size="sm" className="w-full" onClick={() => window.location.href = '/interview-prep'}>
-                    Start Interview
+                    Interview Practice
+                  </Button>
+                  <Button variant="ghost" size="sm" className="w-full" onClick={() => window.location.href = '/interview-planner'}>
+                    Interview Planner
                   </Button>
                   <Button variant="ghost" size="sm" className="w-full" onClick={() => window.location.href = '/learning-paths'}>
                     Learning Paths

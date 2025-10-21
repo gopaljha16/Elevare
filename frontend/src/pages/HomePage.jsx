@@ -239,7 +239,7 @@ const HomePage = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">ATS Optimization</h3>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Roadmap Builder</h3>
               <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
                 Ensure your resume passes Applicant Tracking Systems with our advanced ATS scoring and optimization recommendations.
               </p>
