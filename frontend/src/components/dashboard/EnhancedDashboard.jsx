@@ -111,6 +111,9 @@ const EnhancedDashboard = () => {
                     <Button variant="outline" size="lg" className="border-white/30 text-white hover:bg-white/10" onClick={() => window.location.href = '/interview-planner'}>
                       Interview Planner
                     </Button>
+                    <Button variant="outline" size="lg" className="border-white/30 text-white hover:bg-white/10" onClick={() => window.location.href = '/portfolio-builder'}>
+                      Portfolio Builder
+                    </Button>
                   </div>
                 </div>
                 <div className="flex items-center justify-between mt-8">
@@ -301,6 +304,9 @@ const EnhancedDashboard = () => {
                   </Button>
                   <Button variant="ghost" size="sm" className="w-full" onClick={() => window.location.href = '/interview-planner'}>
                     Interview Planner
+                  </Button>
+                  <Button variant="ghost" size="sm" className="w-full" onClick={() => window.location.href = '/portfolio-builder'}>
+                    Portfolio Builder
                   </Button>
                   <Button variant="ghost" size="sm" className="w-full" onClick={() => window.location.href = '/learning-paths'}>
                     Learning Paths

@@ -14,9 +14,12 @@ const authRoutes = require('./routes/auth');
 const resumeRoutes = require('./routes/resume');
 const interviewRoutes = require('./routes/interview');
 const learningRoutes = require('./routes/learning');
+const learningPathRoutes = require('./routes/learningPath');
 const dashboardRoutes = require('./routes/dashboard');
 const coverLetterRoutes = require('./routes/coverLetter');
 const atsRoutes = require('./routes/ats');
+const portfolioRoutes = require('./routes/portfolio');
+const chatRoutes = require('./routes/chat');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const logger = require('./utils/logger');
 const { 
@@ -98,9 +101,21 @@ app.use('/api/auth', authRoutes);
 app.use('/api/resumes', resumeRoutes);
 app.use('/api/interviews', interviewRoutes);
 app.use('/api/learning', learningRoutes);
+app.use('/api/learning-paths', learningPathRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/cover-letters', coverLetterRoutes);
 app.use('/api/ats', atsRoutes);
+app.use('/api/portfolio', portfolioRoutes);
+app.use('/api/chat', chatRoutes);
+
+// seed route (development only)
+if (process.env.NODE_ENV === 'development') {
+  app.post('/api/seed/learning-paths', async (req, res) => {
+    const { seedLearningPaths } = require('./utils/seedLearningPaths');
+    const result = await seedLearningPaths();
+    res.json(result);
+  });
+}
 
 // 404 handler for unmatched routes
 app.use(notFoundHandler);

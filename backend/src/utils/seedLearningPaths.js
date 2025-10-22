@@ -1,407 +1,383 @@
 const LearningPath = require('../models/LearningPath');
 
-const sampleLearningPaths = [
-    {
-        company: 'Google',
-        title: 'Software Engineer Preparation Path',
-        description: 'Comprehensive preparation for Google Software Engineer positions focusing on algorithms, system design, and coding skills.',
-        skills: [
-            {
-                name: 'Data Structures and Algorithms',
-                description: 'Master fundamental data structures and algorithmic thinking',
-                difficulty: 'intermediate',
-                estimatedHours: 40,
-                category: 'algorithms',
-                priority: 10,
-                resources: [
-                    {
-                        type: 'course',
-                        title: 'Algorithms Specialization',
-                        url: 'https://www.coursera.org/specializations/algorithms',
-                        provider: 'Coursera',
-                        duration: 240,
-                        difficulty: 'intermediate'
-                    },
-                    {
-                        type: 'practice',
-                        title: 'LeetCode Algorithm Problems',
-                        url: 'https://leetcode.com/problemset/algorithms/',
-                        provider: 'LeetCode',
-                        duration: 60,
-                        difficulty: 'intermediate'
-                    },
-                    {
-                        type: 'video',
-                        title: 'Data Structures Easy to Advanced Course',
-                        url: 'https://www.youtube.com/watch?v=RBSGKlAvoiM',
-                        provider: 'YouTube',
-                        duration: 480,
-                        difficulty: 'beginner'
-                    }
-                ]
-            },
-            {
-                name: 'System Design',
-                description: 'Learn to design scalable distributed systems',
-                difficulty: 'advanced',
-                estimatedHours: 30,
-                category: 'system-design',
-                priority: 9,
-                resources: [
-                    {
-                        type: 'course',
-                        title: 'Grokking the System Design Interview',
-                        url: 'https://www.educative.io/courses/grokking-the-system-design-interview',
-                        provider: 'Other',
-                        duration: 180,
-                        difficulty: 'advanced'
-                    },
-                    {
-                        type: 'article',
-                        title: 'High Scalability Blog',
-                        url: 'http://highscalability.com/',
-                        provider: 'Other',
-                        duration: 30,
-                        difficulty: 'intermediate'
-                    }
-                ]
-            },
-            {
-                name: 'Python Programming',
-                description: 'Advanced Python programming concepts and best practices',
-                difficulty: 'intermediate',
-                estimatedHours: 25,
-                category: 'programming',
-                priority: 8,
-                resources: [
-                    {
-                        type: 'course',
-                        title: 'Python for Everybody Specialization',
-                        url: 'https://www.coursera.org/specializations/python',
-                        provider: 'Coursera',
-                        duration: 200,
-                        difficulty: 'beginner'
-                    },
-                    {
-                        type: 'documentation',
-                        title: 'Python Official Documentation',
-                        url: 'https://docs.python.org/3/',
-                        provider: 'Other',
-                        duration: 60,
-                        difficulty: 'intermediate'
-                    }
-                ]
-            }
+const samplePaths = [
+  {
+    pathId: 'full-stack-developer',
+    pathName: 'Full Stack Developer',
+    description: 'Master both frontend and backend development to become a complete full-stack developer',
+    category: 'Full Stack',
+    difficulty: 'Intermediate',
+    estimatedHours: 300,
+    isPublished: true,
+    tags: ['JavaScript', 'React', 'Node.js', 'MongoDB', 'Full Stack'],
+    nodes: [
+      {
+        nodeId: 'html-css-basics',
+        title: 'HTML & CSS Fundamentals',
+        description: 'Learn the building blocks of web development',
+        skills: ['HTML5', 'CSS3', 'Responsive Design', 'Flexbox', 'Grid'],
+        resources: [
+          {
+            type: 'course',
+            title: 'HTML & CSS Complete Course',
+            url: 'https://www.youtube.com/watch?v=mU6anWqZJcc',
+            duration: '4 hours',
+            provider: 'freeCodeCamp'
+          },
+          {
+            type: 'documentation',
+            title: 'MDN Web Docs',
+            url: 'https://developer.mozilla.org/en-US/docs/Web/HTML',
+            provider: 'Mozilla'
+          }
         ],
-        estimatedDuration: 95,
-        difficulty: 'intermediate',
-        roles: ['Software Engineer', 'Backend Developer', 'Full Stack Developer'],
-        tags: ['algorithms', 'system-design', 'python', 'coding-interview']
-    },
-    {
-        company: 'Microsoft',
-        title: 'Software Development Engineer Path',
-        description: 'Preparation path for Microsoft SDE roles with focus on C#, .NET, and cloud technologies.',
-        skills: [
-            {
-                name: 'C# and .NET Framework',
-                description: 'Master C# programming and .NET ecosystem',
-                difficulty: 'intermediate',
-                estimatedHours: 35,
-                category: 'programming',
-                priority: 10,
-                resources: [
-                    {
-                        type: 'course',
-                        title: 'C# Programming for Unity Game Development',
-                        url: 'https://www.coursera.org/specializations/programming-unity-game-development',
-                        provider: 'Coursera',
-                        duration: 180,
-                        difficulty: 'intermediate'
-                    },
-                    {
-                        type: 'documentation',
-                        title: 'Microsoft .NET Documentation',
-                        url: 'https://docs.microsoft.com/en-us/dotnet/',
-                        provider: 'Other',
-                        duration: 120,
-                        difficulty: 'intermediate'
-                    }
-                ]
-            },
-            {
-                name: 'Azure Cloud Services',
-                description: 'Learn Microsoft Azure cloud platform and services',
-                difficulty: 'intermediate',
-                estimatedHours: 30,
-                category: 'devops',
-                priority: 9,
-                resources: [
-                    {
-                        type: 'course',
-                        title: 'Microsoft Azure Fundamentals',
-                        url: 'https://docs.microsoft.com/en-us/learn/paths/azure-fundamentals/',
-                        provider: 'Other',
-                        duration: 240,
-                        difficulty: 'beginner'
-                    }
-                ]
-            },
-            {
-                name: 'Software Engineering Principles',
-                description: 'Best practices in software development and engineering',
-                difficulty: 'intermediate',
-                estimatedHours: 20,
-                category: 'soft-skills',
-                priority: 7,
-                resources: [
-                    {
-                        type: 'article',
-                        title: 'Clean Code Principles',
-                        url: 'https://blog.cleancoder.com/',
-                        provider: 'Other',
-                        duration: 60,
-                        difficulty: 'intermediate'
-                    }
-                ]
-            }
+        projects: [
+          {
+            title: 'Personal Portfolio Website',
+            description: 'Build a responsive portfolio website using HTML and CSS',
+            difficulty: 'Easy',
+            estimatedHours: 8
+          }
         ],
-        estimatedDuration: 85,
-        difficulty: 'intermediate',
-        roles: ['Software Development Engineer', 'Cloud Developer', '.NET Developer'],
-        tags: ['csharp', 'dotnet', 'azure', 'cloud', 'microsoft']
-    },
-    {
-        company: 'Amazon',
-        title: 'Software Development Engineer Path',
-        description: 'Complete preparation for Amazon SDE interviews focusing on leadership principles and technical excellence.',
-        skills: [
-            {
-                name: 'Java Programming',
-                description: 'Advanced Java programming and object-oriented design',
-                difficulty: 'intermediate',
-                estimatedHours: 30,
-                category: 'programming',
-                priority: 9,
-                resources: [
-                    {
-                        type: 'course',
-                        title: 'Java Programming Masterclass',
-                        url: 'https://www.udemy.com/course/java-the-complete-java-developer-course/',
-                        provider: 'Udemy',
-                        duration: 800,
-                        difficulty: 'beginner'
-                    },
-                    {
-                        type: 'practice',
-                        title: 'HackerRank Java Challenges',
-                        url: 'https://www.hackerrank.com/domains/java',
-                        provider: 'HackerRank',
-                        duration: 120,
-                        difficulty: 'intermediate'
-                    }
-                ]
-            },
-            {
-                name: 'AWS Cloud Platform',
-                description: 'Amazon Web Services fundamentals and advanced concepts',
-                difficulty: 'intermediate',
-                estimatedHours: 40,
-                category: 'devops',
-                priority: 10,
-                resources: [
-                    {
-                        type: 'course',
-                        title: 'AWS Certified Solutions Architect',
-                        url: 'https://aws.amazon.com/certification/certified-solutions-architect-associate/',
-                        provider: 'Other',
-                        duration: 300,
-                        difficulty: 'intermediate'
-                    }
-                ]
-            },
-            {
-                name: 'Leadership Principles',
-                description: 'Understanding Amazon\'s leadership principles and behavioral interviews',
-                difficulty: 'beginner',
-                estimatedHours: 15,
-                category: 'soft-skills',
-                priority: 8,
-                resources: [
-                    {
-                        type: 'article',
-                        title: 'Amazon Leadership Principles',
-                        url: 'https://www.amazon.jobs/en/principles',
-                        provider: 'Other',
-                        duration: 30,
-                        difficulty: 'beginner'
-                    }
-                ]
-            }
+        prerequisites: [],
+        sequentialOrder: 1,
+        difficulty: 'Beginner',
+        estimatedHours: 20,
+        position: { x: 0, y: 0 }
+      },
+      {
+        nodeId: 'javascript-fundamentals',
+        title: 'JavaScript Fundamentals',
+        description: 'Master the core concepts of JavaScript programming',
+        skills: ['Variables', 'Functions', 'Arrays', 'Objects', 'ES6+', 'DOM Manipulation'],
+        resources: [
+          {
+            type: 'course',
+            title: 'JavaScript Full Course',
+            url: 'https://www.youtube.com/watch?v=PkZNo7MFNFg',
+            duration: '8 hours',
+            provider: 'freeCodeCamp'
+          },
+          {
+            type: 'book',
+            title: 'Eloquent JavaScript',
+            url: 'https://eloquentjavascript.net/',
+            provider: 'Marijn Haverbeke'
+          }
         ],
-        estimatedDuration: 85,
-        difficulty: 'intermediate',
-        roles: ['Software Development Engineer', 'Cloud Engineer', 'Backend Developer'],
-        tags: ['java', 'aws', 'leadership-principles', 'amazon', 'cloud']
-    },
-    {
-        company: 'Meta',
-        title: 'Software Engineer Path',
-        description: 'Preparation for Meta (Facebook) Software Engineer roles with emphasis on scalability and user experience.',
-        skills: [
-            {
-                name: 'JavaScript and React',
-                description: 'Modern JavaScript and React development',
-                difficulty: 'intermediate',
-                estimatedHours: 35,
-                category: 'web-development',
-                priority: 10,
-                resources: [
-                    {
-                        type: 'course',
-                        title: 'React - The Complete Guide',
-                        url: 'https://www.udemy.com/course/react-the-complete-guide-incl-redux/',
-                        provider: 'Udemy',
-                        duration: 480,
-                        difficulty: 'intermediate'
-                    },
-                    {
-                        type: 'documentation',
-                        title: 'React Official Documentation',
-                        url: 'https://reactjs.org/docs/getting-started.html',
-                        provider: 'Other',
-                        duration: 120,
-                        difficulty: 'intermediate'
-                    }
-                ]
-            },
-            {
-                name: 'Mobile Development',
-                description: 'React Native and mobile app development',
-                difficulty: 'intermediate',
-                estimatedHours: 30,
-                category: 'mobile-development',
-                priority: 8,
-                resources: [
-                    {
-                        type: 'course',
-                        title: 'React Native - The Practical Guide',
-                        url: 'https://www.udemy.com/course/react-native-the-practical-guide/',
-                        provider: 'Udemy',
-                        duration: 300,
-                        difficulty: 'intermediate'
-                    }
-                ]
-            },
-            {
-                name: 'Large Scale Systems',
-                description: 'Building systems that serve billions of users',
-                difficulty: 'advanced',
-                estimatedHours: 25,
-                category: 'system-design',
-                priority: 9,
-                resources: [
-                    {
-                        type: 'article',
-                        title: 'Facebook Engineering Blog',
-                        url: 'https://engineering.fb.com/',
-                        provider: 'Other',
-                        duration: 60,
-                        difficulty: 'advanced'
-                    }
-                ]
-            }
+        projects: [
+          {
+            title: 'Todo List Application',
+            description: 'Create an interactive todo list with local storage',
+            difficulty: 'Medium',
+            estimatedHours: 10
+          }
         ],
-        estimatedDuration: 90,
-        difficulty: 'intermediate',
-        roles: ['Software Engineer', 'Frontend Developer', 'Mobile Developer'],
-        tags: ['javascript', 'react', 'react-native', 'mobile', 'scalability']
-    },
-    {
-        company: 'Netflix',
-        title: 'Senior Software Engineer Path',
-        description: 'Advanced preparation for Netflix engineering roles focusing on microservices and streaming technologies.',
-        skills: [
-            {
-                name: 'Microservices Architecture',
-                description: 'Design and implement microservices-based systems',
-                difficulty: 'advanced',
-                estimatedHours: 40,
-                category: 'system-design',
-                priority: 10,
-                resources: [
-                    {
-                        type: 'course',
-                        title: 'Microservices with Spring Boot and Spring Cloud',
-                        url: 'https://www.udemy.com/course/microservices-with-spring-boot-and-spring-cloud/',
-                        provider: 'Udemy',
-                        duration: 180,
-                        difficulty: 'advanced'
-                    }
-                ]
-            },
-            {
-                name: 'Distributed Systems',
-                description: 'Understanding distributed computing and fault tolerance',
-                difficulty: 'advanced',
-                estimatedHours: 35,
-                category: 'system-design',
-                priority: 9,
-                resources: [
-                    {
-                        type: 'course',
-                        title: 'Distributed Systems Course',
-                        url: 'https://www.edx.org/course/distributed-systems',
-                        provider: 'Other',
-                        duration: 240,
-                        difficulty: 'advanced'
-                    }
-                ]
-            },
-            {
-                name: 'Performance Optimization',
-                description: 'Optimizing applications for high performance and scale',
-                difficulty: 'advanced',
-                estimatedHours: 25,
-                category: 'system-design',
-                priority: 8,
-                resources: [
-                    {
-                        type: 'article',
-                        title: 'Netflix Tech Blog',
-                        url: 'https://netflixtechblog.com/',
-                        provider: 'Other',
-                        duration: 60,
-                        difficulty: 'advanced'
-                    }
-                ]
-            }
+        prerequisites: ['html-css-basics'],
+        sequentialOrder: 2,
+        difficulty: 'Beginner',
+        estimatedHours: 40,
+        position: { x: 1, y: 0 }
+      },
+      {
+        nodeId: 'react-basics',
+        title: 'React Fundamentals',
+        description: 'Learn modern frontend development with React',
+        skills: ['Components', 'Props', 'State', 'Hooks', 'JSX', 'React Router'],
+        resources: [
+          {
+            type: 'course',
+            title: 'React Course for Beginners',
+            url: 'https://www.youtube.com/watch?v=bMknfKXIFA8',
+            duration: '12 hours',
+            provider: 'freeCodeCamp'
+          },
+          {
+            type: 'documentation',
+            title: 'Official React Documentation',
+            url: 'https://react.dev/',
+            provider: 'React Team'
+          }
         ],
-        estimatedDuration: 100,
-        difficulty: 'advanced',
-        roles: ['Senior Software Engineer', 'Principal Engineer', 'Staff Engineer'],
-        tags: ['microservices', 'distributed-systems', 'performance', 'streaming', 'netflix']
-    }
+        projects: [
+          {
+            title: 'Weather App',
+            description: 'Build a weather application using React and a weather API',
+            difficulty: 'Medium',
+            estimatedHours: 15
+          }
+        ],
+        prerequisites: ['javascript-fundamentals'],
+        sequentialOrder: 3,
+        difficulty: 'Intermediate',
+        estimatedHours: 50,
+        position: { x: 2, y: 0 }
+      },
+      {
+        nodeId: 'nodejs-express',
+        title: 'Node.js & Express',
+        description: 'Build server-side applications with Node.js',
+        skills: ['Node.js', 'Express', 'REST APIs', 'Middleware', 'Authentication'],
+        resources: [
+          {
+            type: 'course',
+            title: 'Node.js and Express.js Full Course',
+            url: 'https://www.youtube.com/watch?v=Oe421EPjeBE',
+            duration: '8 hours',
+            provider: 'freeCodeCamp'
+          }
+        ],
+        projects: [
+          {
+            title: 'RESTful API',
+            description: 'Create a complete REST API with authentication',
+            difficulty: 'Medium',
+            estimatedHours: 20
+          }
+        ],
+        prerequisites: ['javascript-fundamentals'],
+        sequentialOrder: 4,
+        difficulty: 'Intermediate',
+        estimatedHours: 40,
+        position: { x: 3, y: 0 }
+      },
+      {
+        nodeId: 'mongodb-database',
+        title: 'MongoDB & Database Design',
+        description: 'Learn NoSQL database management with MongoDB',
+        skills: ['MongoDB', 'Mongoose', 'Database Design', 'CRUD Operations', 'Aggregation'],
+        resources: [
+          {
+            type: 'course',
+            title: 'MongoDB Crash Course',
+            url: 'https://www.youtube.com/watch?v=-56x56UppqQ',
+            duration: '2 hours',
+            provider: 'Traversy Media'
+          }
+        ],
+        projects: [
+          {
+            title: 'Blog Platform',
+            description: 'Build a blog platform with MongoDB backend',
+            difficulty: 'Medium',
+            estimatedHours: 25
+          }
+        ],
+        prerequisites: ['nodejs-express'],
+        sequentialOrder: 5,
+        difficulty: 'Intermediate',
+        estimatedHours: 30,
+        position: { x: 4, y: 0 }
+      },
+      {
+        nodeId: 'full-stack-project',
+        title: 'Full Stack Project',
+        description: 'Build a complete MERN stack application',
+        skills: ['MERN Stack', 'State Management', 'Deployment', 'Testing'],
+        resources: [
+          {
+            type: 'course',
+            title: 'MERN Stack Tutorial',
+            url: 'https://www.youtube.com/watch?v=7CqJlxBYj-M',
+            duration: '5 hours',
+            provider: 'Traversy Media'
+          }
+        ],
+        projects: [
+          {
+            title: 'E-commerce Platform',
+            description: 'Build a complete e-commerce application with cart, payments, and admin panel',
+            difficulty: 'Hard',
+            estimatedHours: 60
+          }
+        ],
+        prerequisites: ['react-basics', 'mongodb-database'],
+        sequentialOrder: 6,
+        difficulty: 'Advanced',
+        estimatedHours: 80,
+        position: { x: 5, y: 0 }
+      }
+    ],
+    connections: [
+      { from: 'html-css-basics', to: 'javascript-fundamentals', type: 'prerequisite' },
+      { from: 'javascript-fundamentals', to: 'react-basics', type: 'prerequisite' },
+      { from: 'javascript-fundamentals', to: 'nodejs-express', type: 'prerequisite' },
+      { from: 'nodejs-express', to: 'mongodb-database', type: 'prerequisite' },
+      { from: 'react-basics', to: 'full-stack-project', type: 'prerequisite' },
+      { from: 'mongodb-database', to: 'full-stack-project', type: 'prerequisite' }
+    ]
+  },
+  {
+    pathId: 'frontend-developer',
+    pathName: 'Frontend Developer',
+    description: 'Become a professional frontend developer with modern tools and frameworks',
+    category: 'Frontend',
+    difficulty: 'Beginner',
+    estimatedHours: 200,
+    isPublished: true,
+    tags: ['HTML', 'CSS', 'JavaScript', 'React', 'Frontend'],
+    nodes: [
+      {
+        nodeId: 'web-basics',
+        title: 'Web Development Basics',
+        description: 'Start your journey with HTML, CSS, and web fundamentals',
+        skills: ['HTML', 'CSS', 'Web Basics'],
+        resources: [
+          {
+            type: 'course',
+            title: 'Web Development for Beginners',
+            url: 'https://www.youtube.com/watch?v=ysEN5RaKOlA',
+            duration: '3 hours',
+            provider: 'freeCodeCamp'
+          }
+        ],
+        projects: [
+          {
+            title: 'Landing Page',
+            description: 'Create a modern landing page',
+            difficulty: 'Easy',
+            estimatedHours: 5
+          }
+        ],
+        prerequisites: [],
+        sequentialOrder: 1,
+        difficulty: 'Beginner',
+        estimatedHours: 25,
+        position: { x: 0, y: 0 }
+      },
+      {
+        nodeId: 'advanced-css',
+        title: 'Advanced CSS & Animations',
+        description: 'Master CSS Grid, Flexbox, and animations',
+        skills: ['CSS Grid', 'Flexbox', 'Animations', 'Transitions', 'Sass'],
+        resources: [
+          {
+            type: 'course',
+            title: 'Advanced CSS and Sass',
+            url: 'https://www.udemy.com/course/advanced-css-and-sass/',
+            provider: 'Udemy'
+          }
+        ],
+        projects: [
+          {
+            title: 'Animated Portfolio',
+            description: 'Build a portfolio with smooth animations',
+            difficulty: 'Medium',
+            estimatedHours: 12
+          }
+        ],
+        prerequisites: ['web-basics'],
+        sequentialOrder: 2,
+        difficulty: 'Intermediate',
+        estimatedHours: 30,
+        position: { x: 1, y: 0 }
+      },
+      {
+        nodeId: 'modern-javascript',
+        title: 'Modern JavaScript',
+        description: 'Learn ES6+ features and modern JavaScript',
+        skills: ['ES6+', 'Async/Await', 'Promises', 'Modules'],
+        resources: [
+          {
+            type: 'course',
+            title: 'Modern JavaScript',
+            url: 'https://javascript.info/',
+            provider: 'JavaScript.info'
+          }
+        ],
+        projects: [
+          {
+            title: 'API Dashboard',
+            description: 'Create a dashboard that fetches and displays API data',
+            difficulty: 'Medium',
+            estimatedHours: 15
+          }
+        ],
+        prerequisites: ['web-basics'],
+        sequentialOrder: 3,
+        difficulty: 'Intermediate',
+        estimatedHours: 40,
+        position: { x: 2, y: 0 }
+      },
+      {
+        nodeId: 'react-advanced',
+        title: 'React & State Management',
+        description: 'Build complex applications with React and Redux',
+        skills: ['React', 'Redux', 'Context API', 'Custom Hooks'],
+        resources: [
+          {
+            type: 'course',
+            title: 'Complete React Developer',
+            url: 'https://www.udemy.com/course/complete-react-developer-zero-to-mastery/',
+            provider: 'Udemy'
+          }
+        ],
+        projects: [
+          {
+            title: 'Social Media App',
+            description: 'Build a social media application with React',
+            difficulty: 'Hard',
+            estimatedHours: 40
+          }
+        ],
+        prerequisites: ['modern-javascript'],
+        sequentialOrder: 4,
+        difficulty: 'Advanced',
+        estimatedHours: 60,
+        position: { x: 3, y: 0 }
+      },
+      {
+        nodeId: 'testing-deployment',
+        title: 'Testing & Deployment',
+        description: 'Learn testing and deploy your applications',
+        skills: ['Jest', 'React Testing Library', 'CI/CD', 'Deployment'],
+        resources: [
+          {
+            type: 'course',
+            title: 'Testing React Applications',
+            url: 'https://testingjavascript.com/',
+            provider: 'Kent C. Dodds'
+          }
+        ],
+        projects: [
+          {
+            title: 'Production App',
+            description: 'Deploy a fully tested application to production',
+            difficulty: 'Medium',
+            estimatedHours: 20
+          }
+        ],
+        prerequisites: ['react-advanced'],
+        sequentialOrder: 5,
+        difficulty: 'Advanced',
+        estimatedHours: 45,
+        position: { x: 4, y: 0 }
+      }
+    ],
+    connections: [
+      { from: 'web-basics', to: 'advanced-css', type: 'prerequisite' },
+      { from: 'web-basics', to: 'modern-javascript', type: 'prerequisite' },
+      { from: 'modern-javascript', to: 'react-advanced', type: 'prerequisite' },
+      { from: 'react-advanced', to: 'testing-deployment', type: 'prerequisite' }
+    ]
+  }
 ];
 
 const seedLearningPaths = async () => {
-    try {
-        // Check if learning paths already exist
-        const existingCount = await LearningPath.countDocuments();
-        if (existingCount > 0) {
-            console.log(`${existingCount} learning paths already exist. Skipping seed.`);
-            return;
-        }
+  try {
+    // Clear existing paths
+    await LearningPath.deleteMany({});
+    console.log('Cleared existing learning paths');
 
-        // Insert sample learning paths
-        const insertedPaths = await LearningPath.insertMany(sampleLearningPaths);
-        console.log(`Successfully seeded ${insertedPaths.length} learning paths`);
-
-        return insertedPaths;
-    } catch (error) {
-        console.error('Error seeding learning paths:', error);
-        throw error;
-    }
+    // Insert sample paths
+    await LearningPath.insertMany(samplePaths);
+    console.log('Successfully seeded learning paths');
+    
+    return { success: true, message: 'Learning paths seeded successfully' };
+  } catch (error) {
+    console.error('Error seeding learning paths:', error);
+    return { success: false, error: error.message };
+  }
 };
 
-module.exports = { seedLearningPaths, sampleLearningPaths };
+module.exports = { seedLearningPaths, samplePaths };

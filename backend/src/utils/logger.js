@@ -48,13 +48,20 @@ class Logger {
   /**
    * Sanitize data to remove sensitive information
    * @param {any} data - Data to sanitize
+   * @param {Set} visited - Set to track visited objects (prevent circular references)
    * @returns {any} Sanitized data
    * @private
    */
-  sanitizeData(data) {
+  sanitizeData(data, visited = new Set()) {
     if (typeof data !== 'object' || data === null) {
       return data;
     }
+    
+    // Prevent circular references
+    if (visited.has(data)) {
+      return '[Circular Reference]';
+    }
+    visited.add(data);
     
     const sensitiveKeys = [
       'password', 'token', 'apikey', 'api_key', 'secret', 'auth',
@@ -70,12 +77,13 @@ class Logger {
       if (sensitiveKeys.some(sensitive => lowerKey.includes(sensitive))) {
         sanitized[key] = '[REDACTED]';
       } else if (typeof value === 'object' && value !== null) {
-        sanitized[key] = this.sanitizeData(value);
+        sanitized[key] = this.sanitizeData(value, visited);
       } else {
         sanitized[key] = value;
       }
     }
     
+    visited.delete(data);
     return sanitized;
   }
 

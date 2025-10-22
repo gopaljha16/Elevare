@@ -1,219 +1,143 @@
 const mongoose = require('mongoose');
 
-const resourceSchema = new mongoose.Schema({
-  type: {
+const nodeSchema = new mongoose.Schema({
+  nodeId: {
     type: String,
-    required: [true, 'Resource type is required'],
-    enum: ['video', 'article', 'course', 'practice', 'documentation', 'tutorial'],
-    index: true
+    required: true,
+    unique: true
   },
   title: {
     type: String,
-    required: [true, 'Resource title is required'],
-    trim: true
-  },
-  url: {
-    type: String,
-    required: [true, 'Resource URL is required'],
-    trim: true,
-    validate: {
-      validator: function(v) {
-        return /^https?:\/\/.+/.test(v);
-      },
-      message: 'Please enter a valid URL'
-    }
-  },
-  provider: {
-    type: String,
-    trim: true,
-    enum: ['YouTube', 'Coursera', 'Udemy', 'freeCodeCamp', 'MDN', 'LeetCode', 'HackerRank', 'GeeksforGeeks', 'Other']
-  },
-  duration: {
-    type: Number, // in minutes
-    min: [1, 'Duration must be at least 1 minute']
-  },
-  difficulty: {
-    type: String,
-    enum: ['beginner', 'intermediate', 'advanced'],
-    default: 'intermediate'
+    required: true
   },
   description: {
     type: String,
-    trim: true,
-    maxlength: [500, 'Description cannot exceed 500 characters']
+    required: true
   },
-  tags: [{
-    type: String,
-    trim: true,
-    lowercase: true
+  skills: [{
+    type: String
   }],
-  isActive: {
-    type: Boolean,
-    default: true
-  }
-});
-
-const skillSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: [true, 'Skill name is required'],
-    trim: true,
-    index: true
-  },
-  description: {
-    type: String,
-    trim: true,
-    maxlength: [1000, 'Description cannot exceed 1000 characters']
+  resources: [{
+    type: {
+      type: String,
+      enum: ['video', 'article', 'course', 'documentation', 'book', 'project']
+    },
+    title: String,
+    url: String,
+    duration: String,
+    provider: String
+  }],
+  projects: [{
+    title: String,
+    description: String,
+    difficulty: String,
+    estimatedHours: Number
+  }],
+  prerequisites: [{
+    type: String
+  }],
+  sequentialOrder: {
+    type: Number,
+    required: true
   },
   difficulty: {
     type: String,
-    enum: ['beginner', 'intermediate', 'advanced'],
-    default: 'intermediate'
+    enum: ['Beginner', 'Intermediate', 'Advanced'],
+    required: true
   },
   estimatedHours: {
     type: Number,
-    min: [1, 'Estimated hours must be at least 1'],
-    max: [200, 'Estimated hours cannot exceed 200']
+    required: true
   },
-  prerequisites: [{
+  position: {
+    x: Number,
+    y: Number
+  }
+});
+
+const connectionSchema = new mongoose.Schema({
+  from: String,
+  to: String,
+  type: {
     type: String,
-    trim: true
-  }],
-  resources: [resourceSchema],
-  category: {
-    type: String,
-    enum: ['programming', 'algorithms', 'system-design', 'databases', 'web-development', 'mobile-development', 'devops', 'soft-skills'],
-    index: true
-  },
-  priority: {
-    type: Number,
-    min: [1, 'Priority must be at least 1'],
-    max: [10, 'Priority cannot exceed 10'],
-    default: 5
+    enum: ['prerequisite', 'recommended', 'optional'],
+    default: 'prerequisite'
   }
 });
 
 const learningPathSchema = new mongoose.Schema({
-  company: {
+  pathId: {
     type: String,
-    required: [true, 'Company name is required'],
-    trim: true,
-    index: true
+    required: true,
+    unique: true
   },
-  title: {
+  pathName: {
     type: String,
-    required: [true, 'Learning path title is required'],
-    trim: true
+    required: true
   },
   description: {
     type: String,
-    trim: true,
-    maxlength: [2000, 'Description cannot exceed 2000 characters']
+    required: true
   },
-  skills: [skillSchema],
-  estimatedDuration: {
-    type: Number, // in hours
-    min: [1, 'Estimated duration must be at least 1 hour']
+  category: {
+    type: String,
+    enum: ['Frontend', 'Backend', 'Full Stack', 'Data Science', 'DevOps', 'Mobile', 'AI/ML', 'Cybersecurity', 'Cloud', 'Other'],
+    required: true
   },
   difficulty: {
     type: String,
-    enum: ['beginner', 'intermediate', 'advanced', 'mixed'],
-    default: 'intermediate'
+    enum: ['Beginner', 'Intermediate', 'Advanced'],
+    required: true
   },
-  prerequisites: [{
-    type: String,
-    trim: true
-  }],
-  roles: [{
-    type: String,
-    trim: true,
-    index: true
-  }],
-  tags: [{
-    type: String,
-    trim: true,
-    lowercase: true
-  }],
-  isActive: {
-    type: Boolean,
-    default: true,
-    index: true
+  estimatedHours: {
+    type: Number,
+    required: true
   },
   createdBy: {
-    type: String,
-    default: 'system'
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   },
-  version: {
-    type: String,
-    default: '1.0'
-  }
+  nodes: [nodeSchema],
+  connections: [connectionSchema],
+  tags: [{
+    type: String
+  }],
+  isPublished: {
+    type: Boolean,
+    default: false
+  },
+  enrollmentCount: {
+    type: Number,
+    default: 0
+  },
+  completionRate: {
+    type: Number,
+    default: 0
+  },
+  rating: {
+    type: Number,
+    default: 0
+  },
+  reviews: [{
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    rating: Number,
+    comment: String,
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }]
 }, {
   timestamps: true
 });
 
-// Indexes for efficient querying
-learningPathSchema.index({ company: 1, isActive: 1 });
-learningPathSchema.index({ roles: 1, difficulty: 1 });
-learningPathSchema.index({ tags: 1, isActive: 1 });
-
-// Virtual for total resources count
-learningPathSchema.virtual('totalResources').get(function() {
-  return this.skills.reduce((total, skill) => total + skill.resources.length, 0);
-});
-
-// Virtual for calculating estimated duration from skills
-learningPathSchema.virtual('calculatedDuration').get(function() {
-  return this.skills.reduce((total, skill) => total + (skill.estimatedHours || 0), 0);
-});
-
-// Method to get path summary
-learningPathSchema.methods.getSummary = function() {
-  return {
-    id: this._id,
-    company: this.company,
-    title: this.title,
-    description: this.description,
-    skillsCount: this.skills.length,
-    totalResources: this.totalResources,
-    estimatedDuration: this.estimatedDuration || this.calculatedDuration,
-    difficulty: this.difficulty,
-    roles: this.roles,
-    tags: this.tags
-  };
-};
-
-// Method to get skills by category
-learningPathSchema.methods.getSkillsByCategory = function() {
-  const categories = {};
-  
-  this.skills.forEach(skill => {
-    const category = skill.category || 'other';
-    if (!categories[category]) {
-      categories[category] = [];
-    }
-    categories[category].push(skill);
-  });
-  
-  return categories;
-};
-
-// Static method to find paths by company and role
-learningPathSchema.statics.findByCompanyAndRole = function(company, role) {
-  return this.find({
-    company: new RegExp(company, 'i'),
-    roles: new RegExp(role, 'i'),
-    isActive: true
-  }).sort({ createdAt: -1 });
-};
-
-// Static method to get popular companies
-learningPathSchema.statics.getPopularCompanies = function() {
-  return this.aggregate([
-    { $match: { isActive: true } },
-    { $group: { _id: '$company', count: { $sum: 1 } } },
-    { $sort: { count: -1 } },
-    { $limit: 20 }
-  ]);
-};
+// Indexes for better query performance
+learningPathSchema.index({ pathId: 1 });
+learningPathSchema.index({ category: 1, difficulty: 1 });
+learningPathSchema.index({ isPublished: 1 });
+learningPathSchema.index({ tags: 1 });
 
 module.exports = mongoose.model('LearningPath', learningPathSchema);

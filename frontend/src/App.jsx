@@ -13,8 +13,13 @@ import ResumeManagement from './components/resume/ResumeManagement';
 import InterviewPrep from './components/interview/InterviewPrep';
 import InterviewPrepPlanner from './components/interview/InterviewPrepPlanner';
 import InterviewPlannerDemoPage from './pages/InterviewPlannerDemoPage';
+import PortfolioBuilderPage from './pages/PortfolioBuilderPage';
 import ComprehensiveDashboard from './components/dashboard/ComprehensiveDashboard';
 import ATSAnalyzerPage from './pages/ATSAnalyzerPage';
+import LearningPathsPage from './pages/LearningPathsPage';
+import LearningPathDetailPage from './pages/LearningPathDetailPage';
+import LearningDashboardPage from './pages/LearningDashboardPage';
+import AdminPathCreatorPage from './pages/AdminPathCreatorPage';
 
 
 // Protected Route Component
@@ -113,6 +118,14 @@ const App = () => {
             }
           />
           <Route
+            path="/portfolio-builder"
+            element={
+              <ProtectedRoute>
+                <PortfolioBuilderPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/resumes"
             element={
               <ProtectedRoute>
@@ -133,6 +146,38 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <ATSAnalyzerPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/learning-paths"
+            element={
+              <ProtectedRoute>
+                <LearningPathsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/learning-paths/:pathId"
+            element={
+              <ProtectedRoute>
+                <LearningPathDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/learning-dashboard"
+            element={
+              <ProtectedRoute>
+                <LearningDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/learning-paths/create"
+            element={
+              <ProtectedRoute>
+                <AdminPathCreatorPage />
               </ProtectedRoute>
             }
           />

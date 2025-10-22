@@ -12,6 +12,8 @@
   "description": "",
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
+    "@octokit/rest": "^22.0.0",
+    "axios": "^1.12.2",
     "bcrypt": "^6.0.0",
     "compression": "^1.8.1",
     "cors": "^2.8.5",
@@ -25,7 +27,7 @@
     "mammoth": "^1.11.0",
     "mongoose": "^8.19.1",
     "multer": "^2.0.2",
-    "pdf-parse": "^2.4.3",
+    "pdf-parse": "^2.4.5",
     "redis": "^5.8.3"
   },
   "devDependencies": {

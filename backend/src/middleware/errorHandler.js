@@ -1,4 +1,4 @@
-const { logger } = require('../utils/logger');
+const logger = require('../utils/logger');
 
 /**
  * Custom error class for application errors
@@ -71,12 +71,12 @@ const categorizeError = (err) => {
   if (err.name === 'CastError') {
     return new NotFoundError('Invalid resource ID format');
   }
-  
+
   if (err.code === 11000) {
     const field = Object.keys(err.keyValue)[0];
     return new ValidationError(`${field} already exists`, { field, value: err.keyValue[field] });
   }
-  
+
   if (err.name === 'ValidationError') {
     const errors = Object.values(err.errors).map(val => ({
       field: val.path,
@@ -85,26 +85,26 @@ const categorizeError = (err) => {
     }));
     return new ValidationError('Validation failed', { errors });
   }
-  
+
   // JWT errors
   if (err.name === 'JsonWebTokenError') {
     return new AuthenticationError('Invalid token');
   }
-  
+
   if (err.name === 'TokenExpiredError') {
     return new AuthenticationError('Token expired');
   }
-  
+
   // AI service errors
   if (err.message?.includes('AI service')) {
     return new ExternalServiceError('gemini', err.message);
   }
-  
+
   // Redis errors
   if (err.message?.includes('Redis')) {
     return new ExternalServiceError('redis', 'Cache service temporarily unavailable');
   }
-  
+
   return err;
 };
 
@@ -113,7 +113,7 @@ const categorizeError = (err) => {
  */
 const generateErrorResponse = (err, req) => {
   const isDevelopment = process.env.NODE_ENV === 'development';
-  
+
   const response = {
     success: false,
     error: {
@@ -123,7 +123,7 @@ const generateErrorResponse = (err, req) => {
       timestamp: err.timestamp || new Date().toISOString()
     }
   };
-  
+
   // Add additional details in development
   if (isDevelopment) {
     response.error.stack = err.stack;
@@ -134,12 +134,12 @@ const generateErrorResponse = (err, req) => {
       response.error.details = err.details;
     }
   }
-  
+
   // Add retry information for rate limiting
   if (err.errorCode === 'RATE_LIMIT_ERROR' && err.details?.retryAfter) {
     response.retryAfter = err.details.retryAfter;
   }
-  
+
   return response;
 };
 
@@ -149,7 +149,7 @@ const generateErrorResponse = (err, req) => {
 const errorHandler = (err, req, res, next) => {
   // Categorize and enhance the error
   const categorizedError = categorizeError(err);
-  
+
   // Log the error with context
   const logLevel = categorizedError.statusCode >= 500 ? 'error' : 'warn';
   logger[logLevel]('Request error occurred', {
@@ -158,7 +158,7 @@ const errorHandler = (err, req, res, next) => {
     errorCode: categorizedError.errorCode,
     statusCode: categorizedError.statusCode
   });
-  
+
   // Log security-related errors
   if (categorizedError.statusCode === 401 || categorizedError.statusCode === 403) {
     logger.security('Authentication/Authorization failure', {
@@ -169,17 +169,17 @@ const errorHandler = (err, req, res, next) => {
       method: req.method
     }, req);
   }
-  
+
   // Generate appropriate response
   const errorResponse = generateErrorResponse(categorizedError, req);
-  
+
   // Set appropriate headers
   res.status(categorizedError.statusCode || 500);
-  
+
   if (categorizedError.errorCode === 'RATE_LIMIT_ERROR' && categorizedError.details?.retryAfter) {
     res.set('Retry-After', categorizedError.details.retryAfter);
   }
-  
+
   res.json(errorResponse);
 };
 
@@ -188,14 +188,14 @@ const errorHandler = (err, req, res, next) => {
  */
 const notFoundHandler = (req, res, next) => {
   const error = new NotFoundError(`Route ${req.method} ${req.originalUrl} not found`);
-  
+
   logger.warn('Route not found', {
     method: req.method,
     url: req.originalUrl,
     ip: req.ip,
     userAgent: req.get('User-Agent')
   });
-  
+
   next(error);
 };
 
