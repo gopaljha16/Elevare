@@ -9,8 +9,16 @@ const startInterviewSession = asyncHandler(async (req, res) => {
   const userId = req.userId;
   const { sessionType, company, role, difficulty = 'medium', questionCount = 10, useAI = true } = req.body;
 
+  console.log('📝 Starting interview session with:', { sessionType, company, role, difficulty, questionCount, useAI });
+
   if (!sessionType) {
     throw new AppError('Session type is required', 400);
+  }
+
+  // Validate sessionType
+  const validTypes = ['technical', 'behavioral', 'system-design', 'mixed', 'company-specific'];
+  if (!validTypes.includes(sessionType)) {
+    throw new AppError(`Invalid session type. Must be one of: ${validTypes.join(', ')}`, 400);
   }
 
   let questions = [];
@@ -88,11 +96,13 @@ const startInterviewSession = asyncHandler(async (req, res) => {
     company: company ? sanitizeInput(company) : undefined,
     role: role ? sanitizeInput(role) : undefined,
     difficulty,
-    questions: questions.map(q => q._id),
+    // Only store ObjectIds for database questions, AI questions stored in metadata
+    questions: aiGenerated ? [] : questions.map(q => q._id),
     status: 'in-progress',
     metadata: {
       aiGenerated,
-      questionData: questions // Store AI questions temporarily
+      questionData: questions, // Store all questions (AI or DB) for reference
+      totalQuestions: questions.length
     }
   });
 
@@ -129,11 +139,12 @@ const startInterviewSession = asyncHandler(async (req, res) => {
         company: session.company,
         role: session.role,
         difficulty: session.difficulty,
-        totalQuestions: questions.length,
+        totalQuestions: session.metadata.totalQuestions || questions.length,
         currentQuestion: 1,
         status: session.status,
         startedAt: session.startedAt,
-        aiGenerated
+        aiGenerated,
+        questions: questions // Include full questions data for frontend
       },
       currentQuestion: {
         _id: firstQuestion._id,
@@ -164,12 +175,19 @@ const getCurrentQuestion = asyncHandler(async (req, res) => {
   }
 
   const currentQuestionIndex = session.answers.length;
+  const totalQuestions = session.metadata?.totalQuestions || session.questions.length;
   
-  if (currentQuestionIndex >= session.questions.length) {
+  if (currentQuestionIndex >= totalQuestions) {
     throw new AppError('All questions have been answered', 400);
   }
 
-  const currentQuestion = session.questions[currentQuestionIndex];
+  // Get current question (from AI data or database)
+  let currentQuestion;
+  if (session.metadata && session.metadata.questionData) {
+    currentQuestion = session.metadata.questionData[currentQuestionIndex];
+  } else {
+    currentQuestion = session.questions[currentQuestionIndex];
+  }
 
   res.json({
     success: true,
@@ -177,10 +195,17 @@ const getCurrentQuestion = asyncHandler(async (req, res) => {
       sessionInfo: {
         id: session._id,
         currentQuestion: currentQuestionIndex + 1,
-        totalQuestions: session.questions.length,
+        totalQuestions: totalQuestions,
         timeElapsed: Math.floor((new Date() - session.startedAt) / 1000)
       },
-      question: currentQuestion.getForDisplay()
+      question: currentQuestion.getForDisplay ? currentQuestion.getForDisplay() : {
+        _id: currentQuestion._id,
+        content: currentQuestion.content,
+        type: currentQuestion.type,
+        difficulty: currentQuestion.difficulty,
+        category: currentQuestion.category,
+        hints: currentQuestion.hints || []
+      }
     }
   });
 });
@@ -206,8 +231,9 @@ const submitAnswer = asyncHandler(async (req, res) => {
   }
 
   const currentQuestionIndex = session.answers.length;
+  const totalQuestions = session.metadata?.totalQuestions || session.questions.length;
   
-  if (currentQuestionIndex >= session.questions.length) {
+  if (currentQuestionIndex >= totalQuestions) {
     throw new AppError('All questions have been answered', 400);
   }
 
@@ -291,7 +317,7 @@ const submitAnswer = asyncHandler(async (req, res) => {
   await session.save();
 
   // Check if session is complete
-  const isSessionComplete = session.answers.length >= session.questions.length;
+  const isSessionComplete = session.answers.length >= totalQuestions;
   let nextQuestion = null;
 
   if (isSessionComplete) {
@@ -354,7 +380,7 @@ const submitAnswer = asyncHandler(async (req, res) => {
       aiEvaluation: answerData.aiEvaluation,
       sessionComplete: isSessionComplete,
       sessionSummary: isSessionComplete ? {
-        totalQuestions: session.questions.length,
+        totalQuestions: totalQuestions,
         correctAnswers: session.answers.filter(a => a.isCorrect).length,
         overallScore: session.overallScore,
         confidenceScore: session.confidenceScore,
@@ -390,7 +416,7 @@ const getInterviewSession = asyncHandler(async (req, res) => {
         status: session.status,
         startedAt: session.startedAt,
         completedAt: session.completedAt,
-        totalQuestions: session.questions.length,
+        totalQuestions: session.metadata?.totalQuestions || session.questions.length,
         answeredQuestions: session.answers.length,
         overallScore: session.overallScore,
         confidenceScore: session.confidenceScore,

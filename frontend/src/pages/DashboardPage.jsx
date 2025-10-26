@@ -1,9 +1,9 @@
 import React from 'react';
-import EnhancedDashboard from '../components/dashboard/EnhancedDashboard';
+import ModernDashboard from '../components/dashboard/ModernDashboard';
 
 const DashboardPage = () => {
   return (
-    <EnhancedDashboard />
+    <ModernDashboard />
   );
 };
 

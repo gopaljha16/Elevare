@@ -26,6 +26,7 @@ const dashboardLimiter = rateLimit({
 router.use(authenticate);
 
 // Dashboard data endpoints
+router.get('/data', dashboardLimiter, getDashboardData);
 router.get('/overview', dashboardLimiter, getDashboardData);
 router.get('/weekly-progress', getWeeklyProgress);
 router.get('/achievements', getAchievements);

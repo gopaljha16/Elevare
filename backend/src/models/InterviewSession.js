@@ -47,7 +47,7 @@ const interviewSessionSchema = new mongoose.Schema({
   sessionType: {
     type: String,
     required: [true, 'Session type is required'],
-    enum: ['technical', 'behavioral', 'mixed', 'company-specific'],
+    enum: ['technical', 'behavioral', 'system-design', 'mixed', 'company-specific'],
     index: true
   },
   company: {
@@ -118,6 +118,10 @@ const interviewSessionSchema = new mongoose.Schema({
       type: Boolean,
       default: true
     }
+  },
+  metadata: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
   }
 }, {
   timestamps: true
@@ -228,7 +232,7 @@ interviewSessionSchema.methods.completeSession = function() {
 // Static method to get user statistics
 interviewSessionSchema.statics.getUserStats = function(userId) {
   return this.aggregate([
-    { $match: { userId: mongoose.Types.ObjectId(userId), status: 'completed' } },
+    { $match: { userId: new mongoose.Types.ObjectId(userId), status: 'completed' } },
     {
       $group: {
         _id: null,

@@ -28,7 +28,9 @@
     "mongoose": "^8.19.1",
     "multer": "^2.0.2",
     "pdf-parse": "^2.4.5",
-    "redis": "^5.8.3"
+    "redis": "^5.8.3",
+    "archiver": "^7.0.1",
+    "form-data": "^4.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"

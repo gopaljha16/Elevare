@@ -2,6 +2,7 @@ const Resume = require('../models/Resume');
 const InterviewSession = require('../models/InterviewSession');
 const UserProgress = require('../models/UserProgress');
 const UserAnalytics = require('../models/UserAnalytics');
+const Portfolio = require('../models/Portfolio');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
 
 // get comprehensive dashboard data
@@ -77,6 +78,28 @@ const getDashboardData = asyncHandler(async (req, res) => {
       }))
   };
 
+  // Get portfolio statistics
+  const portfolios = await Portfolio.find({ userId });
+  const portfolioStats = {
+    totalPortfolios: portfolios.length,
+    publishedPortfolios: portfolios.filter(p => p.isPublished).length,
+    draftPortfolios: portfolios.filter(p => !p.isPublished).length,
+    totalViews: portfolios.reduce((sum, p) => sum + (p.analytics?.views || 0), 0),
+    averageSEOScore: portfolios.length > 0 ?
+      Math.round(portfolios.reduce((sum, p) => sum + (p.seoScore || 0), 0) / portfolios.length) : 0,
+    recentPortfolios: portfolios
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+      .slice(0, 3)
+      .map(p => ({
+        id: p._id,
+        title: p.title,
+        template: p.template,
+        isPublished: p.isPublished,
+        views: p.analytics?.views || 0,
+        updatedAt: p.updatedAt
+      }))
+  };
+
   // Calculate career readiness score
   let careerReadinessScore = 0;
 
@@ -129,6 +152,12 @@ const getDashboardData = asyncHandler(async (req, res) => {
       title: `Progress in ${l.pathTitle}`,
       timestamp: l.lastActivity,
       metadata: { progress: l.overallProgress, company: l.company }
+    })),
+    ...portfolioStats.recentPortfolios.map(p => ({
+      type: 'portfolio',
+      title: `${p.isPublished ? 'Published' : 'Updated'} portfolio: ${p.title}`,
+      timestamp: p.updatedAt,
+      metadata: { template: p.template, views: p.views, isPublished: p.isPublished }
     }))
   ]
     .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
@@ -146,11 +175,14 @@ const getDashboardData = asyncHandler(async (req, res) => {
       resumeStats,
       interviewStats,
       learningStats,
+      portfolioStats,
       recentActivity,
       summary: {
         totalResumes: resumeStats.totalResumes,
         completedInterviews: interviewStats.completedSessions,
         activeLearningPaths: learningStats.activePaths,
+        totalPortfolios: portfolioStats.totalPortfolios,
+        publishedPortfolios: portfolioStats.publishedPortfolios,
         currentStreak: learningStats.currentStreak
       }
     }

@@ -29,11 +29,11 @@ const interviewLimiter = rateLimit({
 router.use(authenticate);
 
 // Interview session management
-router.post('/sessions', interviewLimiter, startInterviewSession);
+router.post('/start', interviewLimiter, startInterviewSession);
+router.post('/:sessionId/answer', submitAnswer);
 router.get('/sessions', getUserInterviewSessions);
 router.get('/sessions/:sessionId', getInterviewSession);
 router.get('/sessions/:sessionId/current-question', getCurrentQuestion);
-router.post('/sessions/:sessionId/submit-answer', submitAnswer);
 
 // Interview statistics and metadata
 router.get('/stats', getInterviewStats);

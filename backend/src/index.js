@@ -19,6 +19,7 @@ const dashboardRoutes = require('./routes/dashboard');
 const coverLetterRoutes = require('./routes/coverLetter');
 const atsRoutes = require('./routes/ats');
 const chatRoutes = require('./routes/chat');
+const portfolioRoutes = require('./routes/portfolio');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const logger = require('./utils/logger');
 const {
@@ -106,6 +107,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/cover-letters', coverLetterRoutes);
 app.use('/api/ats', atsRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/portfolio', portfolioRoutes);
 
 // seed route (development only)
 if (process.env.NODE_ENV === 'development') {

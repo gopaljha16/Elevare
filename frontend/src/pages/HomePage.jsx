@@ -182,6 +182,16 @@ const HomePage = () => {
                             My Resumes
                           </Link>
                           <Link
+                            to="/portfolio-dashboard"
+                            className="flex items-center gap-3 px-4 py-2 text-sm text-white/80 hover:bg-white/5 hover:text-white transition-colors"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9-9v18" />
+                            </svg>
+                            My Portfolios
+                          </Link>
+                          <Link
                             to="/profile"
                             className="flex items-center gap-3 px-4 py-2 text-sm text-white/80 hover:bg-white/5 hover:text-white transition-colors"
                             onClick={() => setIsUserMenuOpen(false)}
@@ -310,13 +320,13 @@ const HomePage = () => {
                   AI Resume Builder
                 </div>
                 <h1 className="mt-8 text-5xl font-semibold leading-tight tracking-tight text-white sm:text-6xl">
-                  Build ATS-optimized resumes with
+                  Build ATS-optimized resumes &
                   <span className="block bg-gradient-to-r from-[#EC4899] via-[#F472B6] to-[#8B5CF6] bg-clip-text text-transparent">
-                    AI assistance
+                    stunning portfolios
                   </span>
                 </h1>
                 <p className="mt-6 text-lg leading-relaxed text-white/70">
-                  Create professional resumes that pass ATS systems and impress recruiters. Our AI analyzes your content and provides personalized suggestions to land your dream job.
+                  Create professional resumes and portfolios with AI assistance. Our platform helps you build ATS-optimized resumes and deploy beautiful portfolios to showcase your work.
                 </p>
 
                 <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -324,13 +334,13 @@ const HomePage = () => {
                     to="/resume-builder"
                     className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#EC4899] via-[#F472B6] to-[#8B5CF6] px-8 py-3 text-sm font-semibold text-white shadow-[0_20px_60px_rgba(236,72,153,0.35)] transition-transform duration-150 hover:translate-y-[-1px]"
                   >
-                    Build My Resume
+                    Build Resume
                   </Link>
                   <Link
-                    to="/templates"
+                    to="/portfolio-builder"
                     className="inline-flex items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-8 py-3 text-sm font-semibold text-white/80 transition-all duration-150 hover:border-white/30 hover:text-white"
                   >
-                    View Templates
+                    Create Portfolio
                     <svg
                       className="h-4 w-4"
                       fill="none"

@@ -12,7 +12,7 @@ import ResumeBuilder from './components/resume/ResumeBuilder';
 import OverleafResumeBuilder from './components/resume/OverleafResumeBuilder';
 import WorkingOverleafBuilder from './components/resume/WorkingOverleafBuilder';
 import ResumeManagement from './components/resume/ResumeManagement';
-import InterviewPrep from './components/interview/InterviewPrep';
+import InterviewPrep from './pages/InterviewPrep';
 import InterviewPrepPlanner from './components/interview/InterviewPrepPlanner';
 import InterviewPlannerDemoPage from './pages/InterviewPlannerDemoPage';
 import ComprehensiveDashboard from './components/dashboard/ComprehensiveDashboard';
@@ -21,6 +21,10 @@ import LearningPathsPage from './pages/LearningPathsPage';
 import LearningPathDetailPage from './pages/LearningPathDetailPage';
 import LearningDashboardPage from './pages/LearningDashboardPage';
 import AdminPathCreatorPage from './pages/AdminPathCreatorPage';
+import PortfolioBuilder from './pages/PortfolioBuilder';
+import PortfolioDashboard from './pages/PortfolioDashboard';
+import PortfolioTemplates from './components/PortfolioTemplates';
+import PortfolioPreview from './pages/PortfolioPreview';
 
 
 // Protected Route Component
@@ -179,6 +183,38 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <AdminPathCreatorPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/portfolio-builder"
+            element={
+              <ProtectedRoute>
+                <PortfolioBuilder />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/portfolio-dashboard"
+            element={
+              <ProtectedRoute>
+                <PortfolioDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/portfolio-templates"
+            element={
+              <ProtectedRoute>
+                <PortfolioTemplates />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/portfolio/preview/:id"
+            element={
+              <ProtectedRoute>
+                <PortfolioPreview />
               </ProtectedRoute>
             }
           />
