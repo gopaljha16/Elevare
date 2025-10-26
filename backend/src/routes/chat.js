@@ -1,33 +1,30 @@
 const express = require('express');
-const {
-  sendChatMessage,
-  getChatHistory,
-  clearChatHistory,
-  getPortfolioSuggestions,
-  applyPortfolioSuggestion
-} = require('../controllers/chatController');
-const { authenticate } = require('../middleware/auth');
+const { portfolioAssistant, clearChatHistory } = require('../controllers/chatController');
 const rateLimit = require('express-rate-limit');
 
 const router = express.Router();
 
-// Rate limiting for chat messages
+// Rate limiting for chat requests
 const chatLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute
-  max: process.env.NODE_ENV === 'development' ? 30 : 15, // Development: 30, Production: 15
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: process.env.NODE_ENV === 'development' ? 100 : 30, // Development: 100, Production: 30
   message: {
     success: false,
-    message: 'Too many chat messages. Please slow down.',
+    message: 'Too many chat requests. Please try again later.',
   },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-// Chat routes (public for demo, add authenticate middleware for production)
-router.post('/message', chatLimiter, sendChatMessage);
-router.get('/history/:portfolioId', getChatHistory);
-router.delete('/history/:portfolioId', clearChatHistory);
-router.post('/suggestions', getPortfolioSuggestions);
-router.post('/apply-suggestion', applyPortfolioSuggestion);
+// Portfolio AI Assistant endpoint
+router.post('/portfolio-assistant', chatLimiter, portfolioAssistant);
+
+// Clear chat history
+router.post('/clear-history', clearChatHistory);
+
+// Test endpoint
+router.get('/test', (req, res) => {
+  res.json({ success: true, message: 'Chat routes working!' });
+});
 
 module.exports = router;

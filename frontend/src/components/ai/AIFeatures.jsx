@@ -334,7 +334,7 @@ const ResumeOptimizer = ({ onGenerate, isGenerating }) => {
             Optimize Your Resume
           </h3>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Upload your resume or use your existing JobSphere resume for AI-powered optimization
+            Upload your resume or use your existing Elevare resume for AI-powered optimization
           </p>
           <div className="space-y-3">
             <Button variant="gradient" className="w-full" onClick={() => onGenerate('resume-optimization')} loading={isGenerating}>

@@ -126,8 +126,18 @@ const learningPathSlice = createSlice({
         state.currentPath = action.payload.path;
       })
       // Complete node
+      .addCase(completeNode.pending, (state) => {
+        state.loading = true;
+      })
       .addCase(completeNode.fulfilled, (state, action) => {
+        state.loading = false;
         state.currentProgress = action.payload;
+        console.log('Node completion saved:', action.payload);
+      })
+      .addCase(completeNode.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message;
+        console.error('Failed to complete node:', action.error);
       })
       // Fetch recommendations
       .addCase(fetchRecommendations.fulfilled, (state, action) => {

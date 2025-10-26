@@ -9,11 +9,12 @@ import DashboardPage from './pages/DashboardPage';
 import DemoPage from './pages/DemoPage';
 import HealthCheck from './components/HealthCheck';
 import ResumeBuilder from './components/resume/ResumeBuilder';
+import OverleafResumeBuilder from './components/resume/OverleafResumeBuilder';
+import WorkingOverleafBuilder from './components/resume/WorkingOverleafBuilder';
 import ResumeManagement from './components/resume/ResumeManagement';
 import InterviewPrep from './components/interview/InterviewPrep';
 import InterviewPrepPlanner from './components/interview/InterviewPrepPlanner';
 import InterviewPlannerDemoPage from './pages/InterviewPlannerDemoPage';
-import PortfolioBuilderPage from './pages/PortfolioBuilderPage';
 import ComprehensiveDashboard from './components/dashboard/ComprehensiveDashboard';
 import ATSAnalyzerPage from './pages/ATSAnalyzerPage';
 import LearningPathsPage from './pages/LearningPathsPage';
@@ -102,6 +103,14 @@ const App = () => {
             }
           />
           <Route
+            path="/resume-builder-overleaf"
+            element={
+              <ProtectedRoute>
+                <WorkingOverleafBuilder />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/interview-prep"
             element={
               <ProtectedRoute>
@@ -114,14 +123,6 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <InterviewPrepPlanner />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/portfolio-builder"
-            element={
-              <ProtectedRoute>
-                <PortfolioBuilderPage />
               </ProtectedRoute>
             }
           />

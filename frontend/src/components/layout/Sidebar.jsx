@@ -36,7 +36,7 @@ const Sidebar = ({
               animate={{ opacity: 1 }}
               transition={{ delay: 0.1 }}
             >
-              JobSphere
+              Elevare
             </motion.h1>
           )}
         </div>

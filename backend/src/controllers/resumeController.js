@@ -815,6 +815,318 @@ const analyzeResumeWithAI = asyncHandler(async (req, res) => {
 });
   
 
+// Enhanced AI content generation
+const generateAIContent = asyncHandler(async (req, res) => {
+  const userId = req.userId;
+  const { section, context, action } = req.body;
+  
+  if (!section || !context) {
+    throw new AppError('Section and context are required', 400);
+  }
+  
+  const aiService = require('../services/aiService');
+  
+  try {
+    let result;
+    
+    switch (section) {
+      case 'summary':
+        result = await aiService.generateProfessionalSummary(context);
+        break;
+      case 'experience':
+        result = await aiService.enhanceExperienceDescription(context);
+        break;
+      case 'skills':
+        result = await aiService.suggestRelevantSkills(context);
+        break;
+      case 'projects':
+        result = await aiService.enhanceProjectDescription(context);
+        break;
+      default:
+        result = await aiService.generateGenericContent(section, context);
+    }
+    
+    // Track usage
+    try {
+      let analytics = await UserAnalytics.findOne({ userId });
+      if (analytics) {
+        await analytics.trackAction('ai_content_generated', {
+          section,
+          action,
+          contentLength: result.content?.length || 0
+        });
+      }
+    } catch (analyticsError) {
+      console.error('Analytics update error:', analyticsError);
+    }
+    
+    res.json({
+      success: true,
+      data: result,
+      message: 'Content generated successfully'
+    });
+    
+  } catch (error) {
+    console.error('AI content generation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'AI content generation failed',
+      error: error.message
+    });
+  }
+});
+
+// Enhanced AI content optimization
+const optimizeAIContent = asyncHandler(async (req, res) => {
+  const userId = req.userId;
+  const { section, currentContent, context } = req.body;
+  
+  if (!section || !currentContent) {
+    throw new AppError('Section and current content are required', 400);
+  }
+  
+  const aiService = require('../services/aiService');
+  
+  try {
+    const result = await aiService.optimizeContent(section, currentContent, context);
+    
+    // Track usage
+    try {
+      let analytics = await UserAnalytics.findOne({ userId });
+      if (analytics) {
+        await analytics.trackAction('ai_content_optimized', {
+          section,
+          originalLength: currentContent.length,
+          optimizedLength: result.optimizedContent?.length || 0
+        });
+      }
+    } catch (analyticsError) {
+      console.error('Analytics update error:', analyticsError);
+    }
+    
+    res.json({
+      success: true,
+      data: result,
+      message: 'Content optimized successfully'
+    });
+    
+  } catch (error) {
+    console.error('AI content optimization error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'AI content optimization failed',
+      error: error.message
+    });
+  }
+});
+
+// AI Chat Handler
+const aiChatHandler = asyncHandler(async (req, res) => {
+  const userId = req.userId;
+  const { message, context, conversationId } = req.body;
+  
+  if (!message) {
+    throw new AppError('Message is required', 400);
+  }
+  
+  const aiService = require('../services/aiService');
+  
+  try {
+    const result = await aiService.handleChatMessage(message, context, conversationId);
+    
+    // Track usage
+    try {
+      let analytics = await UserAnalytics.findOne({ userId });
+      if (analytics) {
+        await analytics.trackAction('ai_chat_interaction', {
+          messageLength: message.length,
+          conversationId
+        });
+      }
+    } catch (analyticsError) {
+      console.error('Analytics update error:', analyticsError);
+    }
+    
+    res.json({
+      success: true,
+      data: result,
+      message: 'Chat response generated'
+    });
+    
+  } catch (error) {
+    console.error('AI chat error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'AI chat failed',
+      error: error.message
+    });
+  }
+});
+
+// Get keyword suggestions
+const getKeywordSuggestions = asyncHandler(async (req, res) => {
+  const userId = req.userId;
+  const { jobDescription, resumeData } = req.body;
+  
+  if (!jobDescription) {
+    throw new AppError('Job description is required', 400);
+  }
+  
+  const aiService = require('../services/aiService');
+  
+  try {
+    const result = await aiService.analyzeKeywords(jobDescription, resumeData);
+    
+    res.json({
+      success: true,
+      data: result,
+      message: 'Keyword analysis completed'
+    });
+    
+  } catch (error) {
+    console.error('Keyword analysis error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Keyword analysis failed',
+      error: error.message
+    });
+  }
+});
+
+// Suggest template based on profile
+const suggestTemplate = asyncHandler(async (req, res) => {
+  const userId = req.userId;
+  const userProfile = req.body;
+  
+  const aiService = require('../services/aiService');
+  
+  try {
+    const result = await aiService.suggestOptimalTemplate(userProfile);
+    
+    res.json({
+      success: true,
+      data: result,
+      message: 'Template suggestion generated'
+    });
+    
+  } catch (error) {
+    console.error('Template suggestion error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Template suggestion failed',
+      error: error.message
+    });
+  }
+});
+
+// LaTeX compilation
+const compileLaTeX = asyncHandler(async (req, res) => {
+  const { latex } = req.body;
+  
+  if (!latex) {
+    throw new AppError('LaTeX content is required', 400);
+  }
+  
+  const latexService = require('../services/latexService');
+  
+  try {
+    const pdfBuffer = await latexService.compileToPDF(latex);
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="resume.pdf"');
+    res.send(pdfBuffer);
+    
+  } catch (error) {
+    console.error('LaTeX compilation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'LaTeX compilation failed',
+      error: error.message
+    });
+  }
+});
+
+// Generate LaTeX preview
+const generateLaTeXPreview = asyncHandler(async (req, res) => {
+  const { latex } = req.body;
+  
+  if (!latex) {
+    throw new AppError('LaTeX content is required', 400);
+  }
+  
+  const latexService = require('../services/latexService');
+  
+  try {
+    const previewHTML = await latexService.generateHTMLPreview(latex);
+    
+    res.json({
+      success: true,
+      data: { html: previewHTML },
+      message: 'Preview generated successfully'
+    });
+    
+  } catch (error) {
+    console.error('LaTeX preview error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'LaTeX preview generation failed',
+      error: error.message
+    });
+  }
+});
+
+// Auto-save resume
+const autoSaveResume = asyncHandler(async (req, res) => {
+  const userId = req.userId;
+  const resumeData = req.body;
+  
+  try {
+    let resume;
+    
+    if (resumeData.id) {
+      // Update existing resume
+      resume = await Resume.findOne({ _id: resumeData.id, userId, isActive: true });
+      if (!resume) {
+        throw new AppError('Resume not found', 404);
+      }
+      
+      // Update fields
+      Object.assign(resume, resumeData);
+      resume.atsScore = resume.calculateATSScore();
+      await resume.save();
+    } else {
+      // Create new resume with auto-save flag
+      const sanitizedData = {
+        userId,
+        ...resumeData,
+        isAutoSave: true
+      };
+      
+      resume = new Resume(sanitizedData);
+      resume.atsScore = resume.calculateATSScore();
+      await resume.save();
+    }
+    
+    res.json({
+      success: true,
+      data: { 
+        resume: resume.toObject(),
+        autoSaved: true,
+        timestamp: new Date().toISOString()
+      },
+      message: 'Resume auto-saved successfully'
+    });
+    
+  } catch (error) {
+    console.error('Auto-save error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Auto-save failed',
+      error: error.message
+    });
+  }
+});
+
 module.exports = {
   createResume,
   getResumes,
@@ -826,5 +1138,13 @@ module.exports = {
   calculateATSScore,
   matchJobDescription,
   getResumeAnalytics,
-  analyzeResumeWithAI
+  analyzeResumeWithAI,
+  generateAIContent,
+  optimizeAIContent,
+  aiChatHandler,
+  getKeywordSuggestions,
+  suggestTemplate,
+  compileLaTeX,
+  generateLaTeXPreview,
+  autoSaveResume
 };

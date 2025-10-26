@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchPathById, fetchPathProgress } from '../store/slices/learningPathSlice';
+import { fetchPathById, fetchPathProgress, enrollInPath } from '../store/slices/learningPathSlice';
 import RoadmapViewer from '../components/learning/RoadmapViewer';
 import { ArrowLeft, Clock, BookOpen, TrendingUp } from 'lucide-react';
 import { Button } from '../components/ui/Button';
@@ -11,15 +11,30 @@ const LearningPathDetailPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { currentPath, currentProgress, loading } = useSelector((state) => state.learningPath);
-  
-  const userId = localStorage.getItem('userId'); // Adjust based on your auth
+  const [userId, setUserId] = useState(null);
+
+  // Get or create userId
+  useEffect(() => {
+    let storedUserId = localStorage.getItem('userId');
+    if (!storedUserId) {
+      // Create a demo user ID for testing
+      storedUserId = `demo-user-${Date.now()}`;
+      localStorage.setItem('userId', storedUserId);
+      console.log('Created demo userId:', storedUserId);
+    }
+    setUserId(storedUserId);
+  }, []);
 
   useEffect(() => {
-    if (pathId) {
+    if (pathId && userId) {
       dispatch(fetchPathById(pathId));
-      if (userId) {
-        dispatch(fetchPathProgress({ userId, pathId }));
-      }
+      dispatch(fetchPathProgress({ userId, pathId })).then((result) => {
+        // If no progress found, auto-enroll the user
+        if (result.error || !result.payload) {
+          console.log('No progress found, enrolling user...');
+          dispatch(enrollInPath({ userId, pathId }));
+        }
+      });
     }
   }, [dispatch, pathId, userId]);
 

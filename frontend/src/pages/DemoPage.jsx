@@ -10,10 +10,10 @@ const DemoPage = () => {
             <div className="pt-32 pb-16">
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                     <h1 className="text-4xl md:text-5xl font-light text-gray-900 dark:text-white mb-6">
-                        JobSphere Demo
+                        Elevare Demo
                     </h1>
                     <p className="text-xl text-gray-600 dark:text-gray-300 mb-12 max-w-2xl mx-auto">
-                        Experience the power of AI-driven career development. Watch how JobSphere transforms your job search journey.
+                        Experience the power of AI-driven career development. Watch how Elevare transforms your job search journey.
                     </p>
 
                     <div className="aspect-video bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-8">

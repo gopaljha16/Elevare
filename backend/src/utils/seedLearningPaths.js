@@ -3,19 +3,19 @@ const LearningPath = require('../models/LearningPath');
 const samplePaths = [
   {
     pathId: 'full-stack-developer',
-    pathName: 'Full Stack Developer',
-    description: 'Master both frontend and backend development to become a complete full-stack developer',
+    pathName: 'Full Stack Developer Roadmap',
+    description: 'Complete roadmap to become a professional full-stack developer. Learn frontend, backend, databases, and deployment.',
     category: 'Full Stack',
     difficulty: 'Intermediate',
-    estimatedHours: 300,
+    estimatedHours: 400,
     isPublished: true,
-    tags: ['JavaScript', 'React', 'Node.js', 'MongoDB', 'Full Stack'],
+    tags: ['JavaScript', 'React', 'Node.js', 'MongoDB', 'Full Stack', 'Web Development'],
     nodes: [
       {
         nodeId: 'html-css-basics',
         title: 'HTML & CSS Fundamentals',
-        description: 'Learn the building blocks of web development',
-        skills: ['HTML5', 'CSS3', 'Responsive Design', 'Flexbox', 'Grid'],
+        description: 'Master the foundation of web development with semantic HTML and modern CSS techniques',
+        skills: ['HTML5', 'CSS3', 'Semantic HTML', 'Responsive Design', 'Flexbox', 'CSS Grid', 'CSS Variables'],
         resources: [
           {
             type: 'course',
@@ -47,9 +47,9 @@ const samplePaths = [
       },
       {
         nodeId: 'javascript-fundamentals',
-        title: 'JavaScript Fundamentals',
-        description: 'Master the core concepts of JavaScript programming',
-        skills: ['Variables', 'Functions', 'Arrays', 'Objects', 'ES6+', 'DOM Manipulation'],
+        title: 'JavaScript Programming',
+        description: 'Learn modern JavaScript from basics to advanced concepts including ES6+ features',
+        skills: ['Variables & Data Types', 'Functions & Scope', 'Arrays & Objects', 'ES6+ Features', 'DOM Manipulation', 'Event Handling', 'Async/Await'],
         resources: [
           {
             type: 'course',
@@ -81,9 +81,9 @@ const samplePaths = [
       },
       {
         nodeId: 'react-basics',
-        title: 'React Fundamentals',
-        description: 'Learn modern frontend development with React',
-        skills: ['Components', 'Props', 'State', 'Hooks', 'JSX', 'React Router'],
+        title: 'React Development',
+        description: 'Build dynamic user interfaces with React library and modern development patterns',
+        skills: ['JSX Syntax', 'Components & Props', 'State Management', 'React Hooks', 'Event Handling', 'React Router', 'Context API'],
         resources: [
           {
             type: 'course',

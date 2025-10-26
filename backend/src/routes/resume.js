@@ -10,7 +10,15 @@ const {
   calculateATSScore,
   matchJobDescription,
   getResumeAnalytics,
-  analyzeResumeWithAI
+  analyzeResumeWithAI,
+  generateAIContent,
+  optimizeAIContent,
+  aiChatHandler,
+  getKeywordSuggestions,
+  suggestTemplate,
+  compileLaTeX,
+  generateLaTeXPreview,
+  autoSaveResume
 } = require('../controllers/resumeController');
 const {
   generateResumePDF,
@@ -74,6 +82,20 @@ router.post('/:resumeId/match-job', matchJobDescription);
 
 // ai analysis endpoint
 router.post('/analyze', aiAnalysisLimiter, checkGeminiUsage, analyzeResumeWithAI);
+
+// enhanced ai endpoints for the new resume builder
+router.post('/ai/generate', aiAnalysisLimiter, checkGeminiUsage, generateAIContent);
+router.post('/ai/optimize', aiAnalysisLimiter, checkGeminiUsage, optimizeAIContent);
+router.post('/ai/chat', aiAnalysisLimiter, checkGeminiUsage, aiChatHandler);
+router.post('/ai/keywords', aiAnalysisLimiter, checkGeminiUsage, getKeywordSuggestions);
+router.post('/ai/suggest-template', aiAnalysisLimiter, checkGeminiUsage, suggestTemplate);
+
+// latex compilation endpoints
+router.post('/latex/compile', compileLaTeX);
+router.post('/latex/preview', generateLaTeXPreview);
+
+// auto-save endpoint
+router.post('/auto-save', autoSaveResume);
 
 // pdf operations
 router.post('/:resumeId/generate-pdf', generateResumePDF);

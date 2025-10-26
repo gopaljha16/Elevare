@@ -228,7 +228,7 @@ const defaultSteps = [
     content: (
       <div>
         <p className="mb-3">
-          Welcome to JobSphere's AI-powered Resume Builder! We'll help you create
+          Welcome to Elevare's AI-powered Resume Builder! We'll help you create
           professional resumes that stand out to employers and pass ATS systems.
         </p>
         <p>

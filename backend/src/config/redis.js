@@ -17,7 +17,6 @@ const redisPassword = process.env.REDIS_PASSWORD;
 if (!redisHost || !redisPort || !redisPassword) {
     console.warn('⚠️ Redis configuration incomplete. Redis features will be disabled.');
     console.warn('Missing:', {
-        host: !redisHost,
         port: !redisPort,
         password: !redisPassword
     });
@@ -26,70 +25,107 @@ if (!redisHost || !redisPort || !redisPassword) {
 // Create Redis client - handle missing configuration gracefully
 let redisClient;
 
-// Temporarily disable Redis to get server running
-if (false && redisHost && redisPort && redisPassword) {
-    // Use URL format for cloud Redis with TLS - let Redis handle TLS automatically
-    const redisUrl = `rediss://default:${redisPassword}@${redisHost}:${redisPort}`;
-
-    redisClient = redis.createClient({
-        url: redisUrl
-    });
-
-    // Handle Redis connection events
-    redisClient.on('connect', () => {
-        console.log('🔄 Connecting to Redis...');
-    });
-
-    redisClient.on('error', (err) => {
-        console.error('❌ Redis connection error:', err.message);
-        isRedisConnected = false;
-    });
-
-    redisClient.on('ready', () => {
-        console.log('✅ Redis client ready');
-        isRedisConnected = true;
-    });
-
-    redisClient.on('end', () => {
-        console.log('🔌 Redis connection ended');
-        isRedisConnected = false;
-    });
-
-    redisClient.on('reconnecting', () => {
-        console.log('🔄 Redis reconnecting...');
-    });
-} else {
-    // Create a mock client for development without Redis
-    redisClient = {
+// Create a mock Redis client for development
+const createMockRedisClient = () => {
+    console.warn('⚠️ Using mock Redis client - Redis features will be limited');
+    return {
         connect: async () => {
-            console.log('⚠️ Redis not configured - using mock client');
+            console.log('🔌 Using mock Redis client - no actual connection');
+            isRedisConnected = true;
             return Promise.resolve();
         },
-        on: () => { },
-        setEx: async () => false,
-        get: async () => null,
-        del: async () => false,
-        disconnect: async () => Promise.resolve()
+        on: (event, callback) => {
+            if (event === 'ready') {
+                setTimeout(() => callback(), 100);
+            }
+        },
+        setEx: (key, ttl, value) => {
+            console.log(`[Mock Redis] SETEX ${key} ${ttl} ${value}`);
+            return Promise.resolve('OK');
+        },
+        get: (key) => {
+            console.log(`[Mock Redis] GET ${key}`);
+            return Promise.resolve(null);
+        },
+        del: (key) => {
+            console.log(`[Mock Redis] DEL ${key}`);
+            return Promise.resolve(1);
+        },
+        disconnect: () => {
+            console.log('🔌 Disconnected from mock Redis');
+            isRedisConnected = false;
+            return Promise.resolve();
+        },
+        isReady: true,
+        isOpen: true
     };
+};
+
+// Check if we should use a real Redis connection
+const useRealRedis = process.env.NODE_ENV === 'production' && redisHost && redisPort && redisPassword;
+
+if (useRealRedis) {
+    try {
+        // Use URL format for cloud Redis with TLS - let Redis handle TLS automatically
+        const redisUrl = `rediss://default:${redisPassword}@${redisHost}:${redisPort}`;
+
+        redisClient = redis.createClient({
+            url: redisUrl,
+            socket: {
+                reconnectStrategy: (retries) => {
+                    if (retries > 10) {
+                        console.error('❌ Max Redis reconnection attempts reached. Using mock client.');
+                        redisClient = createMockRedisClient();
+                        return false;
+                    }
+                    // Reconnect after 1 second
+                    return 1000;
+                }
+            }
+        });
+
+        // Handle Redis connection events
+        redisClient.on('connect', () => {
+            console.log('🔄 Connecting to Redis...');
+        });
+
+        redisClient.on('error', (err) => {
+            console.error('❌ Redis connection error:', err.message);
+            isRedisConnected = false;
+            // Fall back to mock client on error
+            if (!redisClient.isMock) {
+                console.log('🔄 Falling back to mock Redis client');
+                redisClient = createMockRedisClient();
+            }
+        });
+
+        redisClient.on('ready', () => {
+            console.log('✅ Redis client ready');
+            isRedisConnected = true;
+        });
+    } catch (error) {
+        console.error('❌ Failed to create Redis client:', error.message);
+        redisClient = createMockRedisClient();
+    }
+} else {
+    redisClient = createMockRedisClient();
 }
 
 // Connect to Redis with timeout and retry logic
 const connectRedis = async () => {
-    // Skip connection if configuration is invalid
-    if (!redisHost || !redisPort || !redisPassword) {
-        console.log('⚠️ Skipping Redis connection due to incomplete configuration');
-        isRedisConnected = false;
-        return;
+    if (!redisClient) {
+        redisClient = createMockRedisClient();
     }
 
     try {
         await redisClient.connect();
-        console.log('✅ Redis connected successfully');
-        isRedisConnected = true;
+        return redisClient;
     } catch (error) {
         console.error('❌ Failed to connect to Redis:', error.message);
-        console.log('🔄 Application will continue without Redis features');
-        isRedisConnected = false;
+        // Fall back to mock client
+        redisClient = createMockRedisClient();
+        await redisClient.connect();
+        return redisClient;
     }
 };
 
@@ -191,4 +227,5 @@ const redisUtils = {
     }
 };
 
+// Export the redisClient, connectRedis function, and redisUtils
 module.exports = { redisClient, connectRedis, redisUtils };

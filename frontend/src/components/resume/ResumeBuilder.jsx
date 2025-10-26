@@ -1,24 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '../ui/Button';
-import { Card, CardContent, CardHeader, CardTitle, BentoCard } from '../ui/Card';
-import { Badge } from '../ui/Badge';
-import { Progress } from '../ui/Progress';
-import { useForm, validationRules } from '../../hooks/useForm';
-import { FormField, EmailField, PhoneField } from '../ui/FormField';
-import { useToast } from '../ui/Toast';
-import { cn } from '../../utils/cn';
-import { ResumeBuilderProvider, useResumeBuilder } from '../../contexts/ResumeBuilderContext';
-import LiveResumePreview from './LiveResumePreview';
-import AIInsightsPanel from './AIInsightsPanel';
-import AutoSaveIndicator, { AutoSaveStatus } from '../ui/AutoSaveIndicator';
-import ErrorBoundary from '../common/ErrorBoundary';
-import { 
-  setCurrentStep, 
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "../ui/Button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  BentoCard,
+} from "../ui/Card";
+import { Badge } from "../ui/Badge";
+import { Progress } from "../ui/Progress";
+import { useForm, validationRules } from "../../hooks/useForm";
+import { FormField, EmailField, PhoneField } from "../ui/FormField";
+import { useToast } from "../ui/Toast";
+import { cn } from "../../utils/cn";
+import { Modal } from "../ui/Modal";
+import ExternalLatexImporter from "./ExternalLatexImporter";
+import {
+  ResumeBuilderProvider,
+  useResumeBuilder,
+} from "../../contexts/ResumeBuilderContext";
+import LiveResumePreview from "./LiveResumePreview";
+import AIInsightsPanel from "./AIInsightsPanel";
+import AutoSaveIndicator, { AutoSaveStatus } from "../ui/AutoSaveIndicator";
+import ErrorBoundary from "../common/ErrorBoundary";
+import {
+  setCurrentStep,
   setActiveSection,
   toggleAIAnalysisVisibility,
-  toggleSidebar
-} from '../../store/slices/resumeBuilderSlice';
+  toggleSidebar,
+} from "../../store/slices/resumeBuilderSlice";
 
 // Main ResumeBuilder wrapper with provider
 const ResumeBuilder = () => {
@@ -31,24 +42,22 @@ const ResumeBuilder = () => {
 
 // Enhanced ResumeBuilder layout component
 const ResumeBuilderLayout = () => {
-  const { 
-    resumeData, 
-    ui, 
-    analysis, 
-    performance, 
-    dispatch 
-  } = useResumeBuilder();
-  
+  const { resumeData, ui, analysis, performance, dispatch } =
+    useResumeBuilder();
+
+  const [showLatexImporter, setShowLatexImporter] = useState(false);
+  const { toast } = useToast();
+
   const { success, error } = useToast();
   const [isMobile, setIsMobile] = useState(false);
 
   const steps = [
-    { id: 'personal', title: 'Personal Info', icon: '👤' },
-    { id: 'experience', title: 'Experience', icon: '💼' },
-    { id: 'education', title: 'Education', icon: '🎓' },
-    { id: 'skills', title: 'Skills', icon: '⚡' },
-    { id: 'projects', title: 'Projects', icon: '🚀' },
-    { id: 'review', title: 'Review', icon: '👁️' }
+    { id: "personal", title: "Personal Info", icon: "👤" },
+    { id: "experience", title: "Experience", icon: "💼" },
+    { id: "education", title: "Education", icon: "🎓" },
+    { id: "skills", title: "Skills", icon: "⚡" },
+    { id: "projects", title: "Projects", icon: "🚀" },
+    { id: "review", title: "Review", icon: "👁️" },
   ];
 
   const progress = ((ui.currentStep + 1) / steps.length) * 100;
@@ -58,10 +67,10 @@ const ResumeBuilderLayout = () => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   const nextStep = () => {
@@ -91,9 +100,8 @@ const ResumeBuilderLayout = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-gray-900 dark:via-blue-900/20 dark:to-purple-900/20">
       <div className="h-screen flex flex-col">
-        
         {/* Header */}
-        <motion.div 
+        <motion.div
           className="p-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-white/20 dark:border-gray-700/20"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -111,11 +119,17 @@ const ResumeBuilderLayout = () => {
               )}
             </div>
             <div className="flex items-center gap-2">
-              <ErrorBoundary fallback={<div className="text-xs text-gray-500">Auto-save unavailable</div>}>
+              <ErrorBoundary
+                fallback={
+                  <div className="text-xs text-gray-500">
+                    Auto-save unavailable
+                  </div>
+                }
+              >
                 <AutoSaveIndicator showDetails={false} />
               </ErrorBoundary>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={toggleAIPanel}
                 className={cn(
@@ -133,7 +147,7 @@ const ResumeBuilderLayout = () => {
         </motion.div>
 
         {/* Progress Bar - Mobile/Desktop Responsive */}
-        <motion.div 
+        <motion.div
           className="p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-white/20 dark:border-gray-700/20"
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -148,12 +162,16 @@ const ResumeBuilderLayout = () => {
             </span>
           </div>
           <Progress value={progress} className="mb-4" />
-          
+
           {/* Step Navigation */}
-          <div className={cn(
-            "flex items-center",
-            isMobile ? "justify-center gap-2 overflow-x-auto" : "justify-between"
-          )}>
+          <div
+            className={cn(
+              "flex items-center",
+              isMobile
+                ? "justify-center gap-2 overflow-x-auto"
+                : "justify-between"
+            )}
+          >
             {steps.map((step, index) => (
               <button
                 key={step.id}
@@ -161,27 +179,27 @@ const ResumeBuilderLayout = () => {
                 className={cn(
                   "flex flex-col items-center space-y-1 p-2 rounded-lg transition-all duration-200 min-w-0",
                   isMobile ? "flex-shrink-0" : "",
-                  index === ui.currentStep 
-                    ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" 
-                    : index < ui.currentStep 
-                      ? "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50" 
-                      : "text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800/50"
+                  index === ui.currentStep
+                    ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                    : index < ui.currentStep
+                    ? "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50"
+                    : "text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800/50"
                 )}
               >
-                <div className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium border-2 transition-all",
-                  index === ui.currentStep 
-                    ? "border-blue-500 bg-blue-500 text-white" 
-                    : index < ui.currentStep 
-                      ? "border-green-500 bg-green-500 text-white" 
+                <div
+                  className={cn(
+                    "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium border-2 transition-all",
+                    index === ui.currentStep
+                      ? "border-blue-500 bg-blue-500 text-white"
+                      : index < ui.currentStep
+                      ? "border-green-500 bg-green-500 text-white"
                       : "border-gray-300 dark:border-gray-600"
-                )}>
-                  {index < ui.currentStep ? '✓' : step.icon}
+                  )}
+                >
+                  {index < ui.currentStep ? "✓" : step.icon}
                 </div>
                 {!isMobile && (
-                  <span className="text-xs font-medium">
-                    {step.title}
-                  </span>
+                  <span className="text-xs font-medium">{step.title}</span>
                 )}
               </button>
             ))}
@@ -191,10 +209,12 @@ const ResumeBuilderLayout = () => {
         {/* Main Content - Responsive Layout */}
         <div className="flex-1 flex overflow-hidden">
           {/* Form Section */}
-          <div className={cn(
-            "flex-1 overflow-auto",
-            isMobile ? "w-full" : ui.isPreviewVisible ? "w-1/2" : "w-full"
-          )}>
+          <div
+            className={cn(
+              "flex-1 overflow-auto",
+              isMobile ? "w-full" : ui.isPreviewVisible ? "w-1/2" : "w-full"
+            )}
+          >
             <div className="p-6">
               <AnimatePresence mode="wait">
                 <motion.div
@@ -226,10 +246,10 @@ const ResumeBuilderLayout = () => {
           <AnimatePresence>
             {ui.isAIAnalysisVisible && (
               <motion.div
-                initial={{ x: '100%' }}
+                initial={{ x: "100%" }}
                 animate={{ x: 0 }}
-                exit={{ x: '100%' }}
-                transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+                exit={{ x: "100%" }}
+                transition={{ type: "spring", damping: 20, stiffness: 300 }}
                 className="w-80 border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
               >
                 <AIInsightsPanel />
@@ -239,7 +259,7 @@ const ResumeBuilderLayout = () => {
         </div>
 
         {/* Navigation Buttons - Fixed Bottom */}
-        <motion.div 
+        <motion.div
           className="p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-t border-white/20 dark:border-gray-700/20"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -255,29 +275,33 @@ const ResumeBuilderLayout = () => {
               >
                 Previous
               </Button>
-              
+
               {/* Auto-save status */}
               <AutoSaveStatus className="hidden sm:block" />
             </div>
-            
+
             {/* Mobile Preview Toggle */}
             {isMobile && (
               <Button
                 variant="outline"
-                onClick={() => {/* TODO: Implement mobile preview modal */}}
+                onClick={() => {
+                  /* TODO: Implement mobile preview modal */
+                }}
                 className="px-4"
               >
                 Preview
               </Button>
             )}
-            
+
             <Button
               variant="gradient"
               onClick={nextStep}
               disabled={ui.currentStep === steps.length - 1}
               className="px-6"
             >
-              {ui.currentStep === steps.length - 1 ? 'Complete Resume' : 'Next Step'}
+              {ui.currentStep === steps.length - 1
+                ? "Complete Resume"
+                : "Next Step"}
             </Button>
           </div>
         </motion.div>
@@ -290,24 +314,24 @@ const ResumeBuilderLayout = () => {
 const PersonalInfoStep = () => {
   const { resumeData, updatePersonalInfo } = useResumeBuilder();
   const { personalInfo } = resumeData;
-  
+
   const { values, errors, touched, handleChange, handleBlur } = useForm(
     personalInfo || {
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      location: '',
-      website: '',
-      linkedin: '',
-      portfolio: ''
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      location: "",
+      website: "",
+      linkedin: "",
+      portfolio: "",
     },
     {
       firstName: [validationRules.required()],
       lastName: [validationRules.required()],
       email: [validationRules.required(), validationRules.email()],
       phone: [validationRules.required()],
-      location: [validationRules.required()]
+      location: [validationRules.required()],
     }
   );
 
@@ -353,7 +377,7 @@ const PersonalInfoStep = () => {
             debounceMs={300}
           />
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <EmailField
             label="Email Address"
@@ -438,13 +462,13 @@ const ExperienceStep = () => {
   const addExperience = () => {
     const newExperience = {
       id: Date.now(),
-      company: '',
-      position: '',
-      startDate: '',
-      endDate: '',
+      company: "",
+      position: "",
+      startDate: "",
+      endDate: "",
       current: false,
-      description: '',
-      achievements: []
+      description: "",
+      achievements: [],
     };
     const updated = [...experiences, newExperience];
     setExperiences(updated);
@@ -452,13 +476,13 @@ const ExperienceStep = () => {
   };
 
   const removeExperience = (id) => {
-    const updated = experiences.filter(exp => exp.id !== id);
+    const updated = experiences.filter((exp) => exp.id !== id);
     setExperiences(updated);
     updateExperience(updated);
   };
 
   const updateExperienceItem = (id, field, value) => {
-    const updated = experiences.map(exp => 
+    const updated = experiences.map((exp) =>
       exp.id === id ? { ...exp, [field]: value } : exp
     );
     setExperiences(updated);
@@ -486,7 +510,8 @@ const ExperienceStep = () => {
               Add Your Work Experience
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Include your professional experience to showcase your career journey
+              Include your professional experience to showcase your career
+              journey
             </p>
             <Button onClick={addExperience} variant="gradient">
               Add First Experience
@@ -494,62 +519,75 @@ const ExperienceStep = () => {
           </div>
         ) : (
           experiences.map((exp, index) => (
-            <div key={exp.id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+            <div
+              key={exp.id}
+              className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+            >
               <div className="flex justify-between items-start mb-4">
                 <h4 className="font-medium text-gray-900 dark:text-white">
                   Experience #{index + 1}
                 </h4>
-                <Button 
+                <Button
                   onClick={() => removeExperience(exp.id)}
-                  variant="ghost" 
+                  variant="ghost"
                   size="sm"
                   className="text-red-500 hover:text-red-700"
                 >
                   Remove
                 </Button>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <FormField
                   label="Company"
                   value={exp.company}
-                  onChange={(e) => updateExperienceItem(exp.id, 'company', e.target.value)}
+                  onChange={(e) =>
+                    updateExperienceItem(exp.id, "company", e.target.value)
+                  }
                   placeholder="Company Name"
                   variant="glass"
                 />
                 <FormField
                   label="Position"
                   value={exp.position}
-                  onChange={(e) => updateExperienceItem(exp.id, 'position', e.target.value)}
+                  onChange={(e) =>
+                    updateExperienceItem(exp.id, "position", e.target.value)
+                  }
                   placeholder="Job Title"
                   variant="glass"
                 />
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <FormField
                   label="Start Date"
                   type="date"
                   value={exp.startDate}
-                  onChange={(e) => updateExperienceItem(exp.id, 'startDate', e.target.value)}
+                  onChange={(e) =>
+                    updateExperienceItem(exp.id, "startDate", e.target.value)
+                  }
                   variant="glass"
                 />
                 <FormField
                   label="End Date"
                   type="date"
                   value={exp.endDate}
-                  onChange={(e) => updateExperienceItem(exp.id, 'endDate', e.target.value)}
+                  onChange={(e) =>
+                    updateExperienceItem(exp.id, "endDate", e.target.value)
+                  }
                   disabled={exp.current}
                   variant="glass"
                 />
               </div>
-              
+
               <div className="mb-4">
                 <label className="flex items-center space-x-2">
                   <input
                     type="checkbox"
                     checked={exp.current}
-                    onChange={(e) => updateExperienceItem(exp.id, 'current', e.target.checked)}
+                    onChange={(e) =>
+                      updateExperienceItem(exp.id, "current", e.target.checked)
+                    }
                     className="rounded border-gray-300"
                   />
                   <span className="text-sm text-gray-700 dark:text-gray-300">
@@ -557,11 +595,13 @@ const ExperienceStep = () => {
                   </span>
                 </label>
               </div>
-              
+
               <FormField
                 label="Description"
                 value={exp.description}
-                onChange={(e) => updateExperienceItem(exp.id, 'description', e.target.value)}
+                onChange={(e) =>
+                  updateExperienceItem(exp.id, "description", e.target.value)
+                }
                 placeholder="Describe your role and responsibilities..."
                 variant="glass"
                 multiline
@@ -582,11 +622,11 @@ const EducationStep = () => {
   const addEducation = () => {
     const newEducation = {
       id: Date.now(),
-      institution: '',
-      degree: '',
-      field: '',
-      graduationDate: '',
-      gpa: ''
+      institution: "",
+      degree: "",
+      field: "",
+      graduationDate: "",
+      gpa: "",
     };
     const updated = [...education, newEducation];
     setEducation(updated);
@@ -594,13 +634,13 @@ const EducationStep = () => {
   };
 
   const removeEducation = (id) => {
-    const updated = education.filter(edu => edu.id !== id);
+    const updated = education.filter((edu) => edu.id !== id);
     setEducation(updated);
     updateEducation(updated);
   };
 
   const updateEducationItem = (id, field, value) => {
-    const updated = education.map(edu => 
+    const updated = education.map((edu) =>
       edu.id === id ? { ...edu, [field]: value } : edu
     );
     setEducation(updated);
@@ -636,43 +676,52 @@ const EducationStep = () => {
           </div>
         ) : (
           education.map((edu, index) => (
-            <div key={edu.id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+            <div
+              key={edu.id}
+              className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+            >
               <div className="flex justify-between items-start mb-4">
                 <h4 className="font-medium text-gray-900 dark:text-white">
                   Education #{index + 1}
                 </h4>
-                <Button 
+                <Button
                   onClick={() => removeEducation(edu.id)}
-                  variant="ghost" 
+                  variant="ghost"
                   size="sm"
                   className="text-red-500 hover:text-red-700"
                 >
                   Remove
                 </Button>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <FormField
                   label="Institution"
                   value={edu.institution}
-                  onChange={(e) => updateEducationItem(edu.id, 'institution', e.target.value)}
+                  onChange={(e) =>
+                    updateEducationItem(edu.id, "institution", e.target.value)
+                  }
                   placeholder="University/School Name"
                   variant="glass"
                 />
                 <FormField
                   label="Degree"
                   value={edu.degree}
-                  onChange={(e) => updateEducationItem(edu.id, 'degree', e.target.value)}
+                  onChange={(e) =>
+                    updateEducationItem(edu.id, "degree", e.target.value)
+                  }
                   placeholder="Bachelor's, Master's, etc."
                   variant="glass"
                 />
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <FormField
                   label="Field of Study"
                   value={edu.field}
-                  onChange={(e) => updateEducationItem(edu.id, 'field', e.target.value)}
+                  onChange={(e) =>
+                    updateEducationItem(edu.id, "field", e.target.value)
+                  }
                   placeholder="Computer Science, Business, etc."
                   variant="glass"
                 />
@@ -680,15 +729,23 @@ const EducationStep = () => {
                   label="Graduation Date"
                   type="date"
                   value={edu.graduationDate}
-                  onChange={(e) => updateEducationItem(edu.id, 'graduationDate', e.target.value)}
+                  onChange={(e) =>
+                    updateEducationItem(
+                      edu.id,
+                      "graduationDate",
+                      e.target.value
+                    )
+                  }
                   variant="glass"
                 />
               </div>
-              
+
               <FormField
                 label="GPA (Optional)"
                 value={edu.gpa}
-                onChange={(e) => updateEducationItem(edu.id, 'gpa', e.target.value)}
+                onChange={(e) =>
+                  updateEducationItem(edu.id, "gpa", e.target.value)
+                }
                 placeholder="3.8/4.0"
                 variant="glass"
               />
@@ -703,34 +760,49 @@ const EducationStep = () => {
 const SkillsStep = () => {
   const { resumeData, updateSkills } = useResumeBuilder();
   const [skills, setSkills] = useState(resumeData.skills || []);
-  const [newSkill, setNewSkill] = useState('');
+  const [newSkill, setNewSkill] = useState("");
 
   const addSkill = () => {
     if (newSkill.trim() && !skills.includes(newSkill.trim())) {
       const updated = [...skills, newSkill.trim()];
       setSkills(updated);
       updateSkills(updated);
-      setNewSkill('');
+      setNewSkill("");
     }
   };
 
   const removeSkill = (skillToRemove) => {
-    const updated = skills.filter(skill => skill !== skillToRemove);
+    const updated = skills.filter((skill) => skill !== skillToRemove);
     setSkills(updated);
     updateSkills(updated);
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       addSkill();
     }
   };
 
   const suggestedSkills = [
-    'JavaScript', 'Python', 'React', 'Node.js', 'SQL', 'Git', 'AWS', 'Docker',
-    'TypeScript', 'MongoDB', 'Express.js', 'HTML/CSS', 'REST APIs', 'GraphQL',
-    'Project Management', 'Team Leadership', 'Communication', 'Problem Solving'
+    "JavaScript",
+    "Python",
+    "React",
+    "Node.js",
+    "SQL",
+    "Git",
+    "AWS",
+    "Docker",
+    "TypeScript",
+    "MongoDB",
+    "Express.js",
+    "HTML/CSS",
+    "REST APIs",
+    "GraphQL",
+    "Project Management",
+    "Team Leadership",
+    "Communication",
+    "Problem Solving",
   ];
 
   return (
@@ -753,7 +825,7 @@ const SkillsStep = () => {
             variant="glass"
             className="flex-1"
           />
-          <Button 
+          <Button
             onClick={addSkill}
             disabled={!newSkill.trim()}
             variant="gradient"
@@ -791,7 +863,7 @@ const SkillsStep = () => {
           </h4>
           <div className="flex flex-wrap gap-2">
             {suggestedSkills
-              .filter(skill => !skills.includes(skill))
+              .filter((skill) => !skills.includes(skill))
               .map((skill, index) => (
                 <Badge
                   key={index}
@@ -832,10 +904,10 @@ const ProjectsStep = () => {
   const addProject = () => {
     const newProject = {
       id: Date.now(),
-      name: '',
-      description: '',
+      name: "",
+      description: "",
       technologies: [],
-      link: ''
+      link: "",
     };
     const updated = [...projects, newProject];
     setProjects(updated);
@@ -843,13 +915,13 @@ const ProjectsStep = () => {
   };
 
   const removeProject = (id) => {
-    const updated = projects.filter(proj => proj.id !== id);
+    const updated = projects.filter((proj) => proj.id !== id);
     setProjects(updated);
     updateProjects(updated);
   };
 
   const updateProjectItem = (id, field, value) => {
-    const updated = projects.map(proj => 
+    const updated = projects.map((proj) =>
       proj.id === id ? { ...proj, [field]: value } : proj
     );
     setProjects(updated);
@@ -858,9 +930,12 @@ const ProjectsStep = () => {
 
   const addTechnology = (projectId, tech) => {
     if (tech.trim()) {
-      const updated = projects.map(proj => 
-        proj.id === projectId 
-          ? { ...proj, technologies: [...(proj.technologies || []), tech.trim()] }
+      const updated = projects.map((proj) =>
+        proj.id === projectId
+          ? {
+              ...proj,
+              technologies: [...(proj.technologies || []), tech.trim()],
+            }
           : proj
       );
       setProjects(updated);
@@ -869,9 +944,14 @@ const ProjectsStep = () => {
   };
 
   const removeTechnology = (projectId, techToRemove) => {
-    const updated = projects.map(proj => 
-      proj.id === projectId 
-        ? { ...proj, technologies: proj.technologies.filter(tech => tech !== techToRemove) }
+    const updated = projects.map((proj) =>
+      proj.id === projectId
+        ? {
+            ...proj,
+            technologies: proj.technologies.filter(
+              (tech) => tech !== techToRemove
+            ),
+          }
         : proj
     );
     setProjects(updated);
@@ -923,20 +1003,20 @@ const ProjectsStep = () => {
   );
 };
 
-const ProjectItem = ({ 
-  project, 
-  index, 
-  onUpdate, 
-  onRemove, 
-  onAddTechnology, 
-  onRemoveTechnology 
+const ProjectItem = ({
+  project,
+  index,
+  onUpdate,
+  onRemove,
+  onAddTechnology,
+  onRemoveTechnology,
 }) => {
-  const [newTech, setNewTech] = useState('');
+  const [newTech, setNewTech] = useState("");
 
   const handleAddTech = () => {
     if (newTech.trim()) {
       onAddTechnology(project.id, newTech);
-      setNewTech('');
+      setNewTech("");
     }
   };
 
@@ -946,50 +1026,50 @@ const ProjectItem = ({
         <h4 className="font-medium text-gray-900 dark:text-white">
           Project #{index + 1}
         </h4>
-        <Button 
+        <Button
           onClick={() => onRemove(project.id)}
-          variant="ghost" 
+          variant="ghost"
           size="sm"
           className="text-red-500 hover:text-red-700"
         >
           Remove
         </Button>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <FormField
           label="Project Name"
           value={project.name}
-          onChange={(e) => onUpdate(project.id, 'name', e.target.value)}
+          onChange={(e) => onUpdate(project.id, "name", e.target.value)}
           placeholder="My Awesome Project"
           variant="glass"
         />
         <FormField
           label="Project Link (Optional)"
           value={project.link}
-          onChange={(e) => onUpdate(project.id, 'link', e.target.value)}
+          onChange={(e) => onUpdate(project.id, "link", e.target.value)}
           placeholder="https://github.com/username/project"
           variant="glass"
         />
       </div>
-      
+
       <FormField
         label="Description"
         value={project.description}
-        onChange={(e) => onUpdate(project.id, 'description', e.target.value)}
+        onChange={(e) => onUpdate(project.id, "description", e.target.value)}
         placeholder="Describe what this project does and your role in it..."
         variant="glass"
         multiline
         rows={3}
         className="mb-4"
       />
-      
+
       {/* Technologies */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Technologies Used
         </label>
-        
+
         {project.technologies && project.technologies.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-2">
             {project.technologies.map((tech, techIndex) => (
@@ -1004,17 +1084,19 @@ const ProjectItem = ({
             ))}
           </div>
         )}
-        
+
         <div className="flex gap-2">
           <FormField
             value={newTech}
             onChange={(e) => setNewTech(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTech())}
+            onKeyPress={(e) =>
+              e.key === "Enter" && (e.preventDefault(), handleAddTech())
+            }
             placeholder="Add technology..."
             variant="glass"
             className="flex-1"
           />
-          <Button 
+          <Button
             onClick={handleAddTech}
             disabled={!newTech.trim()}
             variant="outline"
@@ -1029,15 +1111,17 @@ const ProjectItem = ({
 };
 
 const ReviewStep = () => {
-  const { resumeData, analysis, saveResume, triggerAnalysis } = useResumeBuilder();
-  
+  const { resumeData, analysis, saveResume, triggerAnalysis } =
+    useResumeBuilder();
+
   const completionStats = React.useMemo(() => {
     const sections = {
-      personalInfo: resumeData.personalInfo?.firstName && resumeData.personalInfo?.email,
+      personalInfo:
+        resumeData.personalInfo?.firstName && resumeData.personalInfo?.email,
       experience: resumeData.experience?.length > 0,
       education: resumeData.education?.length > 0,
       skills: resumeData.skills?.length > 0,
-      projects: resumeData.projects?.length > 0
+      projects: resumeData.projects?.length > 0,
     };
 
     const completed = Object.values(sections).filter(Boolean).length;
@@ -1063,31 +1147,38 @@ const ReviewStep = () => {
               {completionStats.percentage}%
             </div>
             <p className="text-gray-600 dark:text-gray-400">
-              Resume Completion ({completionStats.completed}/{completionStats.total} sections)
+              Resume Completion ({completionStats.completed}/
+              {completionStats.total} sections)
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {Object.entries(completionStats.sections).map(([section, completed]) => (
-              <div 
-                key={section}
-                className={cn(
-                  "p-3 rounded-lg border-2 transition-colors",
-                  completed 
-                    ? "border-green-200 bg-green-50 dark:bg-green-900/20" 
-                    : "border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20"
-                )}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-medium capitalize">
-                    {section.replace(/([A-Z])/g, ' $1').trim()}
-                  </span>
-                  <span className={completed ? "text-green-600" : "text-yellow-600"}>
-                    {completed ? "✓" : "⚠️"}
-                  </span>
+            {Object.entries(completionStats.sections).map(
+              ([section, completed]) => (
+                <div
+                  key={section}
+                  className={cn(
+                    "p-3 rounded-lg border-2 transition-colors",
+                    completed
+                      ? "border-green-200 bg-green-50 dark:bg-green-900/20"
+                      : "border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20"
+                  )}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium capitalize">
+                      {section.replace(/([A-Z])/g, " $1").trim()}
+                    </span>
+                    <span
+                      className={
+                        completed ? "text-green-600" : "text-yellow-600"
+                      }
+                    >
+                      {completed ? "✓" : "⚠️"}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            )}
           </div>
         </CardContent>
       </Card>
@@ -1115,21 +1206,27 @@ const ReviewStep = () => {
                 Overall Resume Score
               </p>
             </div>
-            
-            {analysis.data.actionableFeedback && analysis.data.actionableFeedback.length > 0 && (
-              <div>
-                <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                  Top Recommendations:
-                </h4>
-                <ul className="space-y-1">
-                  {analysis.data.actionableFeedback.slice(0, 3).map((feedback, index) => (
-                    <li key={index} className="text-sm text-gray-600 dark:text-gray-400">
-                      • {feedback.suggestion}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+
+            {analysis.data.actionableFeedback &&
+              analysis.data.actionableFeedback.length > 0 && (
+                <div>
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">
+                    Top Recommendations:
+                  </h4>
+                  <ul className="space-y-1">
+                    {analysis.data.actionableFeedback
+                      .slice(0, 3)
+                      .map((feedback, index) => (
+                        <li
+                          key={index}
+                          className="text-sm text-gray-600 dark:text-gray-400"
+                        >
+                          • {feedback.suggestion}
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              )}
           </CardContent>
         </Card>
       )}
@@ -1147,9 +1244,42 @@ const ReviewStep = () => {
             <Button variant="outline" size="lg">
               Share Link
             </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => setShowLatexImporter(true)}
+            >
+              Import LaTeX
+            </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* External LaTeX Importer Modal */}
+      {showLatexImporter && (
+        <Modal
+          isOpen={showLatexImporter}
+          onClose={() => setShowLatexImporter(false)}
+          className="w-full max-w-2xl"
+        >
+          <ExternalLatexImporter
+            onImport={async (latexContent) => {
+              try {
+                const pdfUrl = await handleExternalLatex(latexContent);
+                if (pdfUrl) {
+                  // Store the external template
+                  dispatch(setExternalTemplate(latexContent));
+                  // Update preview
+                  dispatch(setPreviewUrl(pdfUrl));
+                  setShowLatexImporter(false);
+                }
+              } catch (error) {
+                toast.error("Failed to import LaTeX template");
+              }
+            }}
+          />
+        </Modal>
+      )}
     </div>
   );
 };

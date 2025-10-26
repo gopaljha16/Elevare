@@ -1,5 +1,5 @@
 /**
- * Comprehensive theme configuration for JobSphere
+ * Comprehensive theme configuration for Elevare
  * Provides consistent styling across all components
  */
 
