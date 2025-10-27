@@ -11,7 +11,6 @@ const { connectRedis } = require('./config/redis');
 const aiConfig = require('./config/aiConfig');
 const { requestMonitoring, errorMonitoring, healthCheck, metricsEndpoint } = require('./middleware/monitoring');
 const authRoutes = require('./routes/auth');
-const resumeRoutes = require('./routes/resume');
 const interviewRoutes = require('./routes/interview');
 const learningRoutes = require('./routes/learning');
 const learningPathRoutes = require('./routes/learningPath');
@@ -20,6 +19,7 @@ const coverLetterRoutes = require('./routes/coverLetter');
 const atsRoutes = require('./routes/ats');
 const chatRoutes = require('./routes/chat');
 const portfolioRoutes = require('./routes/portfolio');
+const resumeRoutes = require('./routes/resume');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const logger = require('./utils/logger');
 const {
@@ -98,8 +98,6 @@ app.get('/metrics', metricsEndpoint);
 
 // api routes
 app.use('/api/auth', authRoutes);
-app.use('/api/overleaf', require('./routes/overleafRoutes'));
-app.use('/api/resumes', resumeRoutes);
 app.use('/api/interviews', interviewRoutes);
 app.use('/api/learning', learningRoutes);
 app.use('/api/learning-paths', learningPathRoutes);
@@ -108,6 +106,7 @@ app.use('/api/cover-letters', coverLetterRoutes);
 app.use('/api/ats', atsRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/portfolio', portfolioRoutes);
+app.use('/api/resumes', resumeRoutes);
 
 // seed route (development only)
 if (process.env.NODE_ENV === 'development') {

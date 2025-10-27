@@ -331,16 +331,16 @@ const HomePage = () => {
 
                 <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
                   <Link
-                    to="/resume-builder"
+                    to="/portfolio-builder"
                     className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#EC4899] via-[#F472B6] to-[#8B5CF6] px-8 py-3 text-sm font-semibold text-white shadow-[0_20px_60px_rgba(236,72,153,0.35)] transition-transform duration-150 hover:translate-y-[-1px]"
                   >
-                    Build Resume
+                    Create Portfolio
                   </Link>
                   <Link
-                    to="/portfolio-builder"
+                    to="/interview-prep"
                     className="inline-flex items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-8 py-3 text-sm font-semibold text-white/80 transition-all duration-150 hover:border-white/30 hover:text-white"
                   >
-                    Create Portfolio
+                    Interview Prep
                     <svg
                       className="h-4 w-4"
                       fill="none"

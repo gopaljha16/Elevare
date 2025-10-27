@@ -1910,6 +1910,484 @@ Return ONLY valid JSON in this format:
       ]
     };
   }
+
+  // ==================== RESUME BUILDER AI METHODS ====================
+
+  /**
+   * Parse uploaded resume file and extract structured data
+   * @param {Buffer} fileBuffer - Resume file buffer
+   * @param {string} fileType - File type (pdf or docx)
+   * @returns {Promise<Object>} Extracted resume data
+   */
+  async parseResumeFile(fileBuffer, fileType) {
+    try {
+      // Extract text from file
+      let resumeText = '';
+      
+      if (fileType === 'pdf' || fileType === 'application/pdf') {
+        const pdfData = await pdfParse(fileBuffer);
+        resumeText = pdfData.text;
+      } else if (fileType === 'docx' || fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+        const result = await mammoth.extractRawText({ buffer: fileBuffer });
+        resumeText = result.value;
+      } else {
+        throw new Error('Unsupported file type. Please upload PDF or DOCX.');
+      }
+
+      if (!resumeText || resumeText.trim().length < 50) {
+        throw new Error('Could not extract text from resume. Please ensure the file is not corrupted.');
+      }
+
+      // Use AI to structure the data
+      if (this.model && this.genAI) {
+        return await this.extractResumeDataWithAI(resumeText);
+      } else {
+        return this.extractResumeDataFallback(resumeText);
+      }
+    } catch (error) {
+      console.error('Resume parsing error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Extract structured resume data using AI
+   * @param {string} resumeText - Raw resume text
+   * @returns {Promise<Object>} Structured resume data
+   */
+  async extractResumeDataWithAI(resumeText) {
+    const prompt = `Extract structured data from this resume text and return ONLY valid JSON.
+
+Resume Text:
+${resumeText}
+
+Return data in this exact JSON format:
+{
+  "personalInfo": {
+    "fullName": "extracted name",
+    "jobTitle": "extracted job title or desired position",
+    "email": "extracted email",
+    "phone": "extracted phone",
+    "address": "extracted address",
+    "socialLinks": {
+      "linkedin": "url if found",
+      "github": "url if found",
+      "portfolio": "url if found"
+    }
+  },
+  "professionalSummary": "extracted professional summary or objective",
+  "experience": [
+    {
+      "jobTitle": "position title",
+      "company": "company name",
+      "location": "location",
+      "startDate": "start date",
+      "endDate": "end date or Present",
+      "current": false,
+      "description": "role description",
+      "achievements": ["achievement 1", "achievement 2"]
+    }
+  ],
+  "education": [
+    {
+      "degree": "degree name",
+      "institution": "institution name",
+      "location": "location",
+      "startDate": "start date",
+      "endDate": "end date",
+      "gpa": "gpa if mentioned"
+    }
+  ],
+  "skills": {
+    "technical": ["skill1", "skill2"],
+    "soft": ["skill1", "skill2"],
+    "languages": ["language1", "language2"],
+    "tools": ["tool1", "tool2"]
+  },
+  "projects": [
+    {
+      "title": "project name",
+      "description": "project description",
+      "technologies": ["tech1", "tech2"],
+      "link": "project link if available"
+    }
+  ],
+  "certifications": [
+    {
+      "name": "certification name",
+      "issuer": "issuing organization",
+      "date": "date obtained"
+    }
+  ]
+}
+
+Extract all available information. If a field is not found, use empty string or empty array.`;
+
+    try {
+      const response = await this._makeAIRequest(prompt, {
+        temperature: 0.3,
+        maxOutputTokens: 4096
+      });
+
+      return this.parseResumeDataResponse(response);
+    } catch (error) {
+      console.error('AI extraction failed:', error);
+      return this.extractResumeDataFallback(resumeText);
+    }
+  }
+
+  /**
+   * Parse AI response for resume data
+   */
+  parseResumeDataResponse(response) {
+    try {
+      let cleanedText = response.trim();
+      cleanedText = cleanedText.replace(/```json\n?|\n?```/g, '');
+      const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
+      
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return this.validateResumeData(parsed);
+      }
+      
+      throw new Error('Invalid response format');
+    } catch (error) {
+      console.error('Failed to parse resume data:', error);
+      return this.getDefaultResumeStructure();
+    }
+  }
+
+  /**
+   * Validate and sanitize resume data
+   */
+  validateResumeData(data) {
+    return {
+      personalInfo: {
+        fullName: String(data.personalInfo?.fullName || ''),
+        jobTitle: String(data.personalInfo?.jobTitle || ''),
+        email: String(data.personalInfo?.email || ''),
+        phone: String(data.personalInfo?.phone || ''),
+        address: String(data.personalInfo?.address || ''),
+        socialLinks: {
+          linkedin: String(data.personalInfo?.socialLinks?.linkedin || ''),
+          github: String(data.personalInfo?.socialLinks?.github || ''),
+          portfolio: String(data.personalInfo?.socialLinks?.portfolio || ''),
+          dribbble: String(data.personalInfo?.socialLinks?.dribbble || ''),
+          instagram: String(data.personalInfo?.socialLinks?.instagram || ''),
+          twitter: String(data.personalInfo?.socialLinks?.twitter || ''),
+          website: String(data.personalInfo?.socialLinks?.website || '')
+        }
+      },
+      professionalSummary: String(data.professionalSummary || ''),
+      experience: Array.isArray(data.experience) ? data.experience : [],
+      education: Array.isArray(data.education) ? data.education : [],
+      skills: {
+        technical: Array.isArray(data.skills?.technical) ? data.skills.technical : [],
+        soft: Array.isArray(data.skills?.soft) ? data.skills.soft : [],
+        languages: Array.isArray(data.skills?.languages) ? data.skills.languages : [],
+        tools: Array.isArray(data.skills?.tools) ? data.skills.tools : []
+      },
+      projects: Array.isArray(data.projects) ? data.projects : [],
+      certifications: Array.isArray(data.certifications) ? data.certifications : []
+    };
+  }
+
+  /**
+   * Fallback resume data extraction (basic parsing)
+   */
+  extractResumeDataFallback(resumeText) {
+    const lines = resumeText.split('\n').filter(line => line.trim());
+    
+    // Basic extraction logic
+    const emailMatch = resumeText.match(/[\w.-]+@[\w.-]+\.\w+/);
+    const phoneMatch = resumeText.match(/[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}/);
+    
+    return {
+      personalInfo: {
+        fullName: lines[0] || '',
+        jobTitle: lines[1] || '',
+        email: emailMatch ? emailMatch[0] : '',
+        phone: phoneMatch ? phoneMatch[0] : '',
+        address: '',
+        socialLinks: {}
+      },
+      professionalSummary: '',
+      experience: [],
+      education: [],
+      skills: { technical: [], soft: [], languages: [], tools: [] },
+      projects: [],
+      certifications: []
+    };
+  }
+
+  /**
+   * Generate AI-enhanced resume content
+   * @param {Object} resumeData - Current resume data
+   * @param {string} targetRole - Target job role (optional)
+   * @returns {Promise<Object>} Enhanced resume data
+   */
+  async generateResumeContent(resumeData, targetRole = '') {
+    if (!this.model || !this.genAI) {
+      console.warn('⚠️ AI service not available, returning original data');
+      return resumeData;
+    }
+
+    const prompt = `You are an expert resume writer and career coach. Enhance this resume content to make it more professional, ATS-friendly, and impactful.
+
+Current Resume Data:
+${JSON.stringify(resumeData, null, 2)}
+
+${targetRole ? `Target Role: ${targetRole}` : ''}
+
+Provide enhanced content with:
+1. Compelling professional summary (2-3 sentences, achievement-focused)
+2. Improved experience descriptions (use action verbs, quantify achievements)
+3. Optimized skills categorization
+4. Professional tone and ATS-friendly keywords
+
+Return ONLY valid JSON in this format:
+{
+  "professionalSummary": "enhanced summary here",
+  "experienceImprovements": [
+    {
+      "index": 0,
+      "improvedDescription": "enhanced description",
+      "improvedAchievements": ["achievement 1", "achievement 2"]
+    }
+  ],
+  "skillRecommendations": {
+    "technical": ["skill1", "skill2"],
+    "soft": ["skill1", "skill2"]
+  },
+  "generalTips": ["tip 1", "tip 2", "tip 3"]
+}`;
+
+    try {
+      const response = await this._makeAIRequest(prompt, {
+        temperature: 0.5,
+        maxOutputTokens: 3000
+      });
+
+      return this.parseResumeEnhancementResponse(response);
+    } catch (error) {
+      console.error('Resume enhancement failed:', error);
+      return this.getFallbackEnhancement();
+    }
+  }
+
+  /**
+   * Parse resume enhancement response
+   */
+  parseResumeEnhancementResponse(response) {
+    try {
+      let cleanedText = response.trim();
+      cleanedText = cleanedText.replace(/```json\n?|\n?```/g, '');
+      const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
+      
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return {
+          professionalSummary: String(parsed.professionalSummary || ''),
+          experienceImprovements: Array.isArray(parsed.experienceImprovements) ? parsed.experienceImprovements : [],
+          skillRecommendations: parsed.skillRecommendations || { technical: [], soft: [] },
+          generalTips: Array.isArray(parsed.generalTips) ? parsed.generalTips : []
+        };
+      }
+      
+      throw new Error('Invalid response format');
+    } catch (error) {
+      console.error('Failed to parse enhancement:', error);
+      return this.getFallbackEnhancement();
+    }
+  }
+
+  /**
+   * Calculate ATS score for resume
+   * @param {Object} resumeData - Resume data
+   * @param {string} jobDescription - Target job description (optional)
+   * @returns {Promise<Object>} ATS analysis
+   */
+  async calculateATSScore(resumeData, jobDescription = '') {
+    if (!this.model || !this.genAI) {
+      console.warn('⚠️ AI service not available, using fallback ATS analysis');
+      return this.getFallbackATSScore(resumeData);
+    }
+
+    const resumeText = this.convertResumeToText(resumeData);
+    
+    const prompt = `Analyze this resume for ATS (Applicant Tracking System) compatibility and provide a comprehensive score.
+
+Resume Content:
+${resumeText}
+
+${jobDescription ? `Target Job Description:\n${jobDescription}` : ''}
+
+Evaluate based on:
+1. Keyword optimization
+2. Formatting and structure
+3. Content quality and relevance
+4. Quantifiable achievements
+5. Professional language
+
+Return ONLY valid JSON in this format:
+{
+  "score": 85,
+  "strengths": ["strength 1", "strength 2", "strength 3"],
+  "improvements": ["improvement 1", "improvement 2", "improvement 3"],
+  "missingKeywords": ["keyword1", "keyword2"],
+  "recommendations": ["recommendation 1", "recommendation 2"]
+}`;
+
+    try {
+      const response = await this._makeAIRequest(prompt, {
+        temperature: 0.4,
+        maxOutputTokens: 2000
+      });
+
+      return this.parseATSScoreResponse(response);
+    } catch (error) {
+      console.error('ATS scoring failed:', error);
+      return this.getFallbackATSScore(resumeData);
+    }
+  }
+
+  /**
+   * Convert resume data to text format
+   */
+  convertResumeToText(resumeData) {
+    let text = '';
+    
+    if (resumeData.personalInfo) {
+      text += `${resumeData.personalInfo.fullName}\n`;
+      text += `${resumeData.personalInfo.jobTitle}\n`;
+      text += `${resumeData.personalInfo.email} | ${resumeData.personalInfo.phone}\n\n`;
+    }
+    
+    if (resumeData.professionalSummary) {
+      text += `PROFESSIONAL SUMMARY\n${resumeData.professionalSummary}\n\n`;
+    }
+    
+    if (resumeData.experience && resumeData.experience.length > 0) {
+      text += `EXPERIENCE\n`;
+      resumeData.experience.forEach(exp => {
+        text += `${exp.jobTitle} at ${exp.company}\n`;
+        text += `${exp.startDate} - ${exp.endDate || 'Present'}\n`;
+        if (exp.description) text += `${exp.description}\n`;
+        if (exp.achievements) {
+          exp.achievements.forEach(ach => text += `• ${ach}\n`);
+        }
+        text += '\n';
+      });
+    }
+    
+    if (resumeData.skills) {
+      text += `SKILLS\n`;
+      if (resumeData.skills.technical) text += `Technical: ${resumeData.skills.technical.join(', ')}\n`;
+      if (resumeData.skills.soft) text += `Soft Skills: ${resumeData.skills.soft.join(', ')}\n`;
+    }
+    
+    return text;
+  }
+
+  /**
+   * Parse ATS score response
+   */
+  parseATSScoreResponse(response) {
+    try {
+      let cleanedText = response.trim();
+      cleanedText = cleanedText.replace(/```json\n?|\n?```/g, '');
+      const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
+      
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return {
+          score: Math.max(0, Math.min(100, parsed.score || 70)),
+          strengths: Array.isArray(parsed.strengths) ? parsed.strengths.slice(0, 5) : [],
+          improvements: Array.isArray(parsed.improvements) ? parsed.improvements.slice(0, 5) : [],
+          missingKeywords: Array.isArray(parsed.missingKeywords) ? parsed.missingKeywords.slice(0, 10) : [],
+          recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations.slice(0, 5) : []
+        };
+      }
+      
+      throw new Error('Invalid response format');
+    } catch (error) {
+      console.error('Failed to parse ATS score:', error);
+      return this.getFallbackATSScore({});
+    }
+  }
+
+  /**
+   * Fallback ATS score calculation
+   */
+  getFallbackATSScore(resumeData) {
+    let score = 60;
+    
+    if (resumeData.personalInfo?.email) score += 5;
+    if (resumeData.personalInfo?.phone) score += 5;
+    if (resumeData.professionalSummary) score += 10;
+    if (resumeData.experience?.length > 0) score += 10;
+    if (resumeData.education?.length > 0) score += 5;
+    if (resumeData.skills?.technical?.length > 0) score += 5;
+    
+    return {
+      score: Math.min(score, 85),
+      strengths: [
+        "Resume contains essential contact information",
+        "Experience section is present",
+        "Skills are listed"
+      ],
+      improvements: [
+        "Add quantifiable achievements to experience section",
+        "Include relevant keywords for target role",
+        "Enhance professional summary with specific accomplishments"
+      ],
+      missingKeywords: [],
+      recommendations: [
+        "Use action verbs to start bullet points",
+        "Quantify achievements with numbers and percentages",
+        "Tailor resume to specific job descriptions"
+      ]
+    };
+  }
+
+  /**
+   * Fallback enhancement
+   */
+  getFallbackEnhancement() {
+    return {
+      professionalSummary: '',
+      experienceImprovements: [],
+      skillRecommendations: { technical: [], soft: [] },
+      generalTips: [
+        "Use strong action verbs to describe your accomplishments",
+        "Quantify your achievements with specific numbers and metrics",
+        "Tailor your resume to match the job description",
+        "Keep your resume concise and focused on relevant experience"
+      ]
+    };
+  }
+
+  /**
+   * Get default resume structure
+   */
+  getDefaultResumeStructure() {
+    return {
+      personalInfo: {
+        fullName: '',
+        jobTitle: '',
+        email: '',
+        phone: '',
+        address: '',
+        socialLinks: {}
+      },
+      professionalSummary: '',
+      experience: [],
+      education: [],
+      skills: { technical: [], soft: [], languages: [], tools: [] },
+      projects: [],
+      certifications: []
+    };
+  }
 }
 
 module.exports = new AIService();

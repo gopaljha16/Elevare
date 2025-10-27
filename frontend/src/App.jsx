@@ -8,10 +8,6 @@ import SignupPage from './pages/SignupPage';
 import DashboardPage from './pages/DashboardPage';
 import DemoPage from './pages/DemoPage';
 import HealthCheck from './components/HealthCheck';
-import ResumeBuilder from './components/resume/ResumeBuilder';
-import OverleafResumeBuilder from './components/resume/OverleafResumeBuilder';
-import WorkingOverleafBuilder from './components/resume/WorkingOverleafBuilder';
-import ResumeManagement from './components/resume/ResumeManagement';
 import InterviewPrep from './pages/InterviewPrep';
 import InterviewPrepPlanner from './components/interview/InterviewPrepPlanner';
 import InterviewPlannerDemoPage from './pages/InterviewPlannerDemoPage';
@@ -25,6 +21,7 @@ import PortfolioBuilder from './pages/PortfolioBuilder';
 import PortfolioDashboard from './pages/PortfolioDashboard';
 import PortfolioTemplates from './components/PortfolioTemplates';
 import PortfolioPreview from './pages/PortfolioPreview';
+import ResumeBuilder from './pages/ResumeBuilder';
 
 
 // Protected Route Component
@@ -99,22 +96,6 @@ const App = () => {
             }
           />
           <Route
-            path="/resume-builder"
-            element={
-              <ProtectedRoute>
-                <ResumeBuilder />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/resume-builder-overleaf"
-            element={
-              <ProtectedRoute>
-                <WorkingOverleafBuilder />
-              </ProtectedRoute>
-            }
-          />
-          <Route
             path="/interview-prep"
             element={
               <ProtectedRoute>
@@ -127,14 +108,6 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <InterviewPrepPlanner />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/resumes"
-            element={
-              <ProtectedRoute>
-                <ResumeManagement />
               </ProtectedRoute>
             }
           />
@@ -215,6 +188,14 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <PortfolioPreview />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resume-builder"
+            element={
+              <ProtectedRoute>
+                <ResumeBuilder />
               </ProtectedRoute>
             }
           />
