@@ -2,7 +2,7 @@ const axios = require('axios');
 
 class OpenRouterService {
   constructor() {
-    this.apiKey = "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";
+    this.apiKey = "";
     this.model = process.env.OPENROUTER_MODEL || 'deepseek/deepseek-chat';
     this.baseURL = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
     

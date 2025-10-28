@@ -161,13 +161,13 @@ const errorHandler = (err, req, res, next) => {
 
   // Log security-related errors
   if (categorizedError.statusCode === 401 || categorizedError.statusCode === 403) {
-    logger.security('Authentication/Authorization failure', {
+    logger.securityEvent('Authentication/Authorization failure', {
       error: categorizedError.message,
       ip: req.ip,
       userAgent: req.get('User-Agent'),
       url: req.url,
       method: req.method
-    }, req);
+    });
   }
 
   // Generate appropriate response

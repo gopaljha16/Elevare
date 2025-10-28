@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Eye, EyeOff } from 'lucide-react';
 import { loginStart, loginSuccess, loginFailure } from '../../store/slices/authSlice';
+import { useAuthContext } from '../../contexts/AuthContext';
 
 const SignupPage = () => {
   const [formData, setFormData] = useState({
@@ -18,6 +19,7 @@ const SignupPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { loading, error } = useSelector((state) => state.auth);
+  const { register: authRegister } = useAuthContext();
 
   const errorParam = searchParams.get('error');
 
@@ -37,8 +39,8 @@ const SignupPage = () => {
     dispatch(loginStart());
     
     try {
-      // Redirect to backend Google OAuth endpoint
-      window.location.href = 'http://localhost:5000/api/auth/google';
+      // Use relative URL to leverage Vite proxy
+      window.location.href = '/api/auth/google';
     } catch (error) {
       console.error('❌ Error during redirect:', error);
       dispatch(loginFailure('Failed to initiate Google signup'));
@@ -64,35 +66,33 @@ const SignupPage = () => {
       return;
     }
 
+    console.log('🔄 Starting signup process...', { email: formData.email });
     dispatch(loginStart());
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: `${formData.firstName} ${formData.lastName}`,
-          email: formData.email,
-          password: formData.password,
-        }),
+      // Use AuthContext register method
+      const response = await authRegister({
+        name: `${formData.firstName} ${formData.lastName}`,
+        email: formData.email,
+        password: formData.password,
       });
 
-      const data = await response.json();
+      console.log('✅ Signup response:', { success: response.success, hasUser: !!response.data?.user, hasToken: !!response.data?.token });
 
-      if (data.success) {
+      if (response.success && response.data?.user && response.data?.token) {
+        console.log('🎉 Signup successful, redirecting to dashboard...');
         dispatch(loginSuccess({
-          user: data.data.user,
-          token: data.data.token,
+          user: response.data.user,
+          token: response.data.token,
         }));
         navigate('/dashboard');
       } else {
-        dispatch(loginFailure(data.message || 'Signup failed'));
+        console.error('❌ Invalid response structure:', response);
+        dispatch(loginFailure(response.message || 'Signup failed'));
       }
     } catch (error) {
-      console.error('Signup error:', error);
-      dispatch(loginFailure('Network error. Please try again.'));
+      console.error('❌ Signup error:', error);
+      dispatch(loginFailure(error.message || 'Signup failed'));
     }
   };
 
