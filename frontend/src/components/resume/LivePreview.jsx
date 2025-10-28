@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Mail, Phone, MapPin, Linkedin, Github, Globe, Sparkles, TrendingUp } from 'lucide-react';
 
-const LivePreview = ({ resumeData, template, atsScore, aiSuggestions }) => {
+const LivePreview = ({ resumeData, template, atsScore, aiSuggestions, isDemo = false }) => {
   if (!resumeData) return null;
 
   const { personalInfo, professionalSummary, experience, education, skills } = resumeData;
@@ -271,11 +271,13 @@ const LivePreview = ({ resumeData, template, atsScore, aiSuggestions }) => {
         </div>
       </div>
 
-      {/* Saving Indicator */}
-      <div className="text-center text-sm text-gray-500 flex items-center justify-center space-x-2">
-        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-        <span>Saving your resume...</span>
-      </div>
+      {/* Saving Indicator - Hide in demo mode */}
+      {!isDemo && (
+        <div className="text-center text-sm text-gray-500 flex items-center justify-center space-x-2">
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+          <span>Saving your resume...</span>
+        </div>
+      )}
     </div>
   );
 };

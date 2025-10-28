@@ -1,0 +1,81 @@
+🔧 QUICK FIX: Google OAuth Error
+
+ERROR: "OAuth2Strategy requires a clientID option"
+
+SOLUTION: Add Google OAuth credentials to your .env file
+
+═══════════════════════════════════════════════════════════
+
+OPTION 1: Run the PowerShell Script (Easiest)
+──────────────────────────────────────────────
+
+Run this command in the backend folder:
+    .\add-google-oauth.ps1
+
+This will automatically add the required variables to your .env file.
+
+═══════════════════════════════════════════════════════════
+
+OPTION 2: Manually Add to .env File
+────────────────────────────────────
+
+Open backend/.env file and add these lines at the end:
+
+# Google OAuth Configuration
+GOOGLE_CLIENT_ID=your_google_client_id_here
+GOOGLE_CLIENT_SECRET=your_google_client_secret_here
+GOOGLE_CALLBACK_URL=http://localhost:5001/api/auth/google/callback
+
+═══════════════════════════════════════════════════════════
+
+WHERE TO GET GOOGLE CREDENTIALS?
+─────────────────────────────────
+
+1. Go to: https://console.cloud.google.com/
+
+2. Create a new project or select existing one
+
+3. Enable "Google+ API"
+
+4. Go to: Credentials → Create Credentials → OAuth 2.0 Client ID
+
+5. Configure OAuth consent screen (if not done)
+
+6. Application type: Web application
+
+7. Add Authorized redirect URI:
+   http://localhost:5001/api/auth/google/callback
+
+8. Copy the Client ID and Client Secret
+
+9. Paste them into your .env file
+
+═══════════════════════════════════════════════════════════
+
+AFTER ADDING CREDENTIALS:
+──────────────────────────
+
+1. Save the .env file
+
+2. Restart your backend server:
+   npm start
+
+3. The server should now start without errors
+
+4. Google login will be available on the frontend
+
+═══════════════════════════════════════════════════════════
+
+TEMPORARY WORKAROUND (If you don't have credentials yet):
+──────────────────────────────────────────────────────────
+
+The server will now start even without Google credentials, but:
+- You'll see a warning message
+- Google login button won't work
+- Regular email/password login will still work
+
+Just add the credentials later when you get them from Google Cloud Console.
+
+═══════════════════════════════════════════════════════════
+
+For detailed setup instructions, see: GOOGLE_OAUTH_SETUP.txt

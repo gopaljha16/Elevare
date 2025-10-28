@@ -6,7 +6,8 @@ const {
   getPortfolio,
   updatePortfolio,
   portfolioAIChat,
-  publishPortfolio
+  publishPortfolio,
+  generatePortfolioCode
 } = require('../controllers/portfolioController');
 const { authenticate } = require('../middleware/auth');
 const { body, validationResult } = require('express-validator');
@@ -336,6 +337,11 @@ router.get('/:id/analytics', authenticate, async (req, res) => {
   }
 });
 
+
+// @route   POST /api/portfolio/generate-code
+// @desc    Generate portfolio code with AI
+// @access  Private
+router.post('/generate-code', authenticate, generatePortfolioCode);
 
 // @route   POST /api/portfolio/:id/export
 // @desc    Export portfolio as ZIP file

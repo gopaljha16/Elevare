@@ -5,6 +5,7 @@ import { ToastProvider } from './components/ui/Toast';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+
 import DashboardPage from './pages/DashboardPage';
 import DemoPage from './pages/DemoPage';
 import HealthCheck from './components/HealthCheck';
@@ -18,10 +19,13 @@ import LearningPathDetailPage from './pages/LearningPathDetailPage';
 import LearningDashboardPage from './pages/LearningDashboardPage';
 import AdminPathCreatorPage from './pages/AdminPathCreatorPage';
 import PortfolioBuilder from './pages/PortfolioBuilder';
+import AIPortfolioBuilder from './pages/AIPortfolioBuilder';
 import PortfolioDashboard from './pages/PortfolioDashboard';
 import PortfolioTemplates from './components/PortfolioTemplates';
 import PortfolioPreview from './pages/PortfolioPreview';
 import ResumeBuilder from './pages/ResumeBuilder';
+import ResumeDashboard from './pages/ResumeDashboard';
+import GoogleCallback from './components/auth/GoogleCallback';
 
 
 // Protected Route Component
@@ -85,6 +89,8 @@ const App = () => {
               </PublicRoute>
             }
           />
+
+          <Route path="/auth/callback" element={<GoogleCallback />} />
 
           {/* Protected Routes */}
           <Route
@@ -168,6 +174,14 @@ const App = () => {
             }
           />
           <Route
+            path="/ai-portfolio-builder"
+            element={
+              <ProtectedRoute>
+                <AIPortfolioBuilder />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/portfolio-dashboard"
             element={
               <ProtectedRoute>
@@ -196,6 +210,14 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <ResumeBuilder />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resume-dashboard"
+            element={
+              <ProtectedRoute>
+                <ResumeDashboard />
               </ProtectedRoute>
             }
           />

@@ -6,6 +6,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const passport = require('./config/passport');
 const connectDB = require('./config/database');
 const { connectRedis } = require('./config/redis');
 const aiConfig = require('./config/aiConfig');
@@ -88,6 +89,9 @@ app.use(cors({
 // body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// passport middleware
+app.use(passport.initialize());
 
 // monitoring middleware
 app.use(requestMonitoring);

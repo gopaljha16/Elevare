@@ -1,0 +1,352 @@
+/* Cool Resizable Handle Styling - EXACT PROFESSIONAL DESIGN */
+.resizable-handle-custom {
+  position: relative;
+  width: 8px;
+  background: linear-gradient(180deg, 
+    rgba(139, 92, 246, 0.2) 0%, 
+    rgba(236, 72, 153, 0.4) 50%, 
+    rgba(139, 92, 246, 0.2) 100%
+  );
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: col-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.resizable-handle-custom:hover {
+  width: 12px;
+  background: linear-gradient(180deg, 
+    rgba(255, 107, 157, 0.5) 0%, 
+    rgba(139, 92, 246, 0.8) 50%, 
+    rgba(255, 107, 157, 0.5) 100%
+  );
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.6),
+              0 0 40px rgba(236, 72, 153, 0.3);
+}
+
+/* Support for data attribute from react-resizable-panels */
+[data-panel-resize-handle-id].resizable-handle-custom {
+  position: relative;
+  width: 8px;
+}
+
+[data-panel-resize-handle-id].resizable-handle-custom:hover {
+  width: 12px;
+}
+
+.resizable-handle-inner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px;
+  height: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.handle-dots {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dot {
+  width: 3px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.resizable-handle-custom:hover .dot {
+  background: #ffffff;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.9),
+              0 0 20px rgba(139, 92, 246, 0.6);
+  transform: scale(1.3);
+}
+
+/* Active dragging state - ENHANCED GLOW */
+.resizable-handle-custom[data-resize-handle-active] {
+  width: 16px;
+  background: linear-gradient(180deg, 
+    rgba(255, 107, 157, 0.9) 0%, 
+    rgba(139, 92, 246, 1) 50%, 
+    rgba(255, 107, 157, 0.9) 100%
+  );
+  box-shadow: 0 0 30px rgba(139, 92, 246, 1),
+              0 0 60px rgba(236, 72, 153, 0.6),
+              0 0 90px rgba(139, 92, 246, 0.3);
+}
+
+.resizable-handle-custom[data-resize-handle-active] .dot {
+  background: #ffffff;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 1),
+              0 0 30px rgba(139, 92, 246, 0.8);
+  transform: scale(1.5);
+}
+
+/* Monaco Editor Custom Styling */
+.monaco-editor .margin {
+  background: rgba(17, 24, 39, 0.8) !important;
+}
+
+.monaco-editor .line-numbers {
+  color: rgba(156, 163, 175, 0.6) !important;
+}
+
+/* Glassmorphism Effects - PROFESSIONAL DESIGN */
+.glass-panel {
+  background: rgba(17, 24, 39, 0.6);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-right: 1px solid rgba(139, 92, 246, 0.1);
+}
+
+.glass-panel-dark {
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-right: 1px solid rgba(139, 92, 246, 0.1);
+}
+
+.glass-panel-light {
+  background: rgba(30, 41, 59, 0.6);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-left: 1px solid rgba(139, 92, 246, 0.1);
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.5);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.8);
+}
+
+/* Header Gradient - PROFESSIONAL DARK THEME */
+.header-gradient {
+  background: linear-gradient(135deg, 
+    rgba(17, 24, 39, 0.95) 0%, 
+    rgba(30, 41, 59, 0.95) 50%, 
+    rgba(15, 23, 42, 0.95) 100%);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+/* Button Hover Effects - NEON ACCENTS */
+.header-button {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 8px;
+}
+
+.header-button:hover {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: rgba(139, 92, 246, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.deploy-button {
+  background: linear-gradient(135deg, #ff6b9d 0%, #c44569 100%);
+  border: none;
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.deploy-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s;
+}
+
+.deploy-button:hover::before {
+  left: 100%;
+}
+
+.deploy-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(255, 107, 157, 0.5),
+              0 0 40px rgba(255, 107, 157, 0.3);
+}
+
+/* Chat Message Animations */
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.message-ai {
+  animation: slideInLeft 0.3s ease-out;
+}
+
+.message-user {
+  animation: slideInRight 0.3s ease-out;
+}
+
+/* Gradient Text */
+.gradient-text {
+  background: linear-gradient(135deg, #ff6b9d, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Pulse Animation for Active Tab */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.8);
+  }
+}
+
+.active-tab {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Monaco Editor Enhanced Styling */
+.monaco-editor {
+  border-radius: 0 !important;
+}
+
+.monaco-editor .view-lines {
+  padding: 8px 0;
+}
+
+/* Responsive Design - Mobile & Tablet */
+@media (max-width: 1024px) {
+  /* Stack panels vertically on tablets */
+  .resizable-handle-custom {
+    width: 100%;
+    height: 8px;
+    cursor: row-resize;
+  }
+  
+  .resizable-handle-custom:hover {
+    height: 12px;
+    width: 100%;
+  }
+  
+  .resizable-handle-custom[data-resize-handle-active] {
+    height: 16px;
+    width: 100%;
+  }
+  
+  .handle-dots {
+    flex-direction: row;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Mobile optimizations */
+  .header-gradient {
+    padding: 0 1rem;
+  }
+  
+  .header-button {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+  }
+  
+  .glass-panel,
+  .glass-panel-dark,
+  .glass-panel-light {
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+  }
+}
+
+/* Smooth Transitions for All Interactive Elements */
+* {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Loading Spinner Animation */
+@keyframes spin-glow {
+  0% {
+    transform: rotate(0deg);
+    filter: drop-shadow(0 0 5px rgba(139, 92, 246, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 15px rgba(236, 72, 153, 0.8));
+  }
+  100% {
+    transform: rotate(360deg);
+    filter: drop-shadow(0 0 5px rgba(139, 92, 246, 0.5));
+  }
+}
+
+/* Gradient Animation for Backgrounds */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Neon Glow Effect */
+.neon-glow {
+  text-shadow: 0 0 10px rgba(139, 92, 246, 0.8),
+               0 0 20px rgba(236, 72, 153, 0.6),
+               0 0 30px rgba(139, 92, 246, 0.4);
+}
+
+/* Code Syntax Highlighting Enhancement */
+.monaco-editor .mtk1 { color: #d4d4d4 !important; }
+.monaco-editor .mtk4 { color: #569cd6 !important; }
+.monaco-editor .mtk5 { color: #dcdcaa !important; }
+.monaco-editor .mtk6 { color: #4ec9b0 !important; }
+.monaco-editor .mtk8 { color: #ce9178 !important; }
+.monaco-editor .mtk12 { color: #9cdcfe !important; }
+.monaco-editor .mtk15 { color: #c586c0 !important; }

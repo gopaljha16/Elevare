@@ -352,6 +352,40 @@ const getUserStats = asyncHandler(async (req, res) => {
   });
 });
 
+
+// Google OAuth callback handler
+const googleCallback = asyncHandler(async (req, res) => {
+  // User is authenticated via passport
+  const user = req.user;
+
+  if (!user) {
+    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=authentication_failed`);
+  }
+
+  // Generate tokens
+  const token = generateToken({ userId: user._id });
+  const refreshToken = generateRefreshToken({ userId: user._id });
+
+  // Update last login
+  await user.updateOne({ lastLogin: new Date() });
+
+  // Store session and refresh token in Redis
+  const sessionData = {
+    userId: user._id.toString(),
+    email: user.email,
+    loginTime: new Date().toISOString(),
+    lastActivity: new Date().toISOString(),
+    authProvider: 'google'
+  };
+
+  await safeRedisUtils.setUserSession(user._id.toString(), sessionData);
+  await safeRedisUtils.setRefreshToken(user._id.toString(), refreshToken);
+
+  // Redirect to frontend with tokens
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  res.redirect(`${frontendUrl}/auth/callback?token=${token}&refreshToken=${refreshToken}`);
+});
+
 module.exports = {
   register,
   login,
@@ -362,4 +396,6 @@ module.exports = {
   logoutAllDevices,
   refreshToken,
   getUserStats,
+  googleCallback,
+
 };

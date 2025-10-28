@@ -3,6 +3,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const Portfolio = require('../models/Portfolio');
 const User = require('../models/User');
 const aiService = require('../services/aiService');
+const openRouterService = require('../services/openRouterService');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
@@ -913,11 +914,624 @@ function generateTailwindConfig(template) {
 };`;
 }
 
+// @desc    Generate portfolio code with AI (using OpenRouter)
+// @route   POST /api/portfolio/generate-code
+// @access  Private
+const generatePortfolioCode = asyncHandler(async (req, res) => {
+  const { prompt, userName, currentCode, isImprovement } = req.body;
+  
+  if (!prompt || !userName) {
+    return res.status(400).json({
+      success: false,
+      message: 'Prompt and userName are required'
+    });
+  }
+  
+  try {
+    console.log(`🎨 Generating portfolio code for ${userName}...`);
+    console.log(`📝 Prompt: ${prompt}`);
+    console.log(`🔄 Is improvement: ${isImprovement}`);
+    
+    // Use OpenRouter service for portfolio generation
+    if (openRouterService.isAvailable()) {
+      console.log('✨ Using OpenRouter (DeepSeek) for portfolio generation...');
+      
+      const result = await openRouterService.generatePortfolioCode(
+        prompt,
+        userName,
+        currentCode,
+        isImprovement
+      );
+      
+      console.log('✅ Portfolio code generated successfully with OpenRouter!');
+      
+      return res.json({
+        success: true,
+        code: {
+          html: result.html,
+          css: result.css,
+          js: result.js
+        },
+        message: result.message,
+        aiProvider: 'OpenRouter (DeepSeek)'
+      });
+    }
+    
+    // Try Gemini AI as secondary fallback
+    console.warn('⚠️ OpenRouter not available, trying Gemini AI...');
+    
+    try {
+      // Try using Gemini AI service
+      const geminiResult = await aiService.generatePortfolioFromPrompt({
+        prompt: `${prompt}\n\nCreate a complete portfolio website for ${userName}. Return HTML, CSS, and JavaScript code.`,
+        style: 'modern',
+        colorScheme: 'professional'
+      });
+      
+      if (geminiResult && geminiResult.html) {
+        console.log('✅ Portfolio code generated successfully with Gemini AI!');
+        
+        return res.json({
+          success: true,
+          code: {
+            html: geminiResult.html,
+            css: geminiResult.css || generateFallbackCSS(),
+            js: geminiResult.js || generateFallbackJS()
+          },
+          message: 'Portfolio generated with Gemini AI',
+          aiProvider: 'Gemini AI (Fallback)'
+        });
+      }
+    } catch (geminiError) {
+      console.warn('⚠️ Gemini AI also failed:', geminiError.message);
+    }
+    
+    // Final fallback to template-based generation
+    console.warn('⚠️ All AI services unavailable, using template generation');
+    
+    const fallbackCode = {
+      html: generateFallbackHTML(userName, prompt),
+      css: generateFallbackCSS(),
+      js: generateFallbackJS()
+    };
+    
+    res.json({
+      success: true,
+      code: fallbackCode,
+      message: 'Portfolio generated with template (AI services not configured)',
+      aiProvider: 'Template Fallback'
+    });
+    
+  } catch (error) {
+    console.error('❌ Code generation error:', error.message);
+    
+    // Fallback to template-based generation on error
+    const fallbackCode = {
+      html: generateFallbackHTML(userName, prompt),
+      css: generateFallbackCSS(),
+      js: generateFallbackJS()
+    };
+    
+    res.json({
+      success: true,
+      code: fallbackCode,
+      message: `Portfolio generated with template (${error.message})`,
+      aiProvider: 'Template Fallback'
+    });
+  }
+});
+
+// Fallback HTML generator
+function generateFallbackHTML(userName, prompt) {
+  const isProfessional = prompt.toLowerCase().includes('professional') || prompt.toLowerCase().includes('developer');
+  const isCreative = prompt.toLowerCase().includes('creative') || prompt.toLowerCase().includes('designer');
+  
+  return `<!-- Hero Section -->
+<section class="hero">
+  <div class="hero-content">
+    <h1 class="hero-title">${userName}</h1>
+    <p class="hero-subtitle">${isProfessional ? 'Full Stack Developer' : isCreative ? 'Creative Designer' : 'Professional'}</p>
+    <p class="hero-description">Creating amazing digital experiences with passion and precision</p>
+    <div class="hero-buttons">
+      <a href="#projects" class="btn btn-primary">View My Work</a>
+      <a href="#contact" class="btn btn-secondary">Get In Touch</a>
+    </div>
+  </div>
+  <div class="hero-decoration"></div>
+</section>
+
+<!-- About Section -->
+<section id="about" class="section">
+  <div class="container">
+    <h2 class="section-title">About Me</h2>
+    <div class="about-content">
+      <p>I'm a passionate ${isProfessional ? 'developer' : isCreative ? 'designer' : 'professional'} dedicated to creating exceptional digital experiences. With a focus on innovation and quality, I bring ideas to life through clean code and thoughtful design.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Skills Section -->
+<section id="skills" class="section section-alt">
+  <div class="container">
+    <h2 class="section-title">Skills & Expertise</h2>
+    <div class="skills-grid">
+      <div class="skill-card">
+        <div class="skill-icon">💻</div>
+        <h3>Web Development</h3>
+        <p>HTML, CSS, JavaScript, React</p>
+      </div>
+      <div class="skill-card">
+        <div class="skill-icon">🎨</div>
+        <h3>UI/UX Design</h3>
+        <p>Figma, Adobe XD, Responsive Design</p>
+      </div>
+      <div class="skill-card">
+        <div class="skill-icon">⚡</div>
+        <h3>Performance</h3>
+        <p>Optimization, Best Practices</p>
+      </div>
+      <div class="skill-card">
+        <div class="skill-icon">🚀</div>
+        <h3>Deployment</h3>
+        <p>CI/CD, Cloud Platforms</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Projects Section -->
+<section id="projects" class="section">
+  <div class="container">
+    <h2 class="section-title">Featured Projects</h2>
+    <div class="projects-grid">
+      <div class="project-card">
+        <div class="project-image">
+          <div class="project-placeholder">🌟</div>
+        </div>
+        <div class="project-content">
+          <h3>Project One</h3>
+          <p>An innovative solution that showcases modern web development practices and user-centric design.</p>
+          <div class="project-tags">
+            <span class="tag">React</span>
+            <span class="tag">Node.js</span>
+            <span class="tag">MongoDB</span>
+          </div>
+        </div>
+      </div>
+      <div class="project-card">
+        <div class="project-image">
+          <div class="project-placeholder">✨</div>
+        </div>
+        <div class="project-content">
+          <h3>Project Two</h3>
+          <p>A creative platform that demonstrates expertise in full-stack development and modern design principles.</p>
+          <div class="project-tags">
+            <span class="tag">Vue.js</span>
+            <span class="tag">Express</span>
+            <span class="tag">PostgreSQL</span>
+          </div>
+        </div>
+      </div>
+      <div class="project-card">
+        <div class="project-image">
+          <div class="project-placeholder">🎯</div>
+        </div>
+        <div class="project-content">
+          <h3>Project Three</h3>
+          <p>A comprehensive application featuring advanced functionality and seamless user experience.</p>
+          <div class="project-tags">
+            <span class="tag">TypeScript</span>
+            <span class="tag">Next.js</span>
+            <span class="tag">Tailwind</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Contact Section -->
+<section id="contact" class="section section-alt">
+  <div class="container">
+    <h2 class="section-title">Let's Connect</h2>
+    <div class="contact-content">
+      <p class="contact-text">I'm always open to new opportunities and collaborations. Feel free to reach out!</p>
+      <div class="contact-buttons">
+        <a href="mailto:hello@${userName.toLowerCase().replace(/\s+/g, '')}.com" class="btn btn-primary">Send Email</a>
+        <a href="https://linkedin.com" target="_blank" class="btn btn-secondary">LinkedIn</a>
+        <a href="https://github.com" target="_blank" class="btn btn-secondary">GitHub</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <p>&copy; 2024 ${userName}. All rights reserved.</p>
+</footer>`;
+}
+
+// Fallback CSS generator
+function generateFallbackCSS() {
+  return `* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+  color: #ffffff;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  overflow-x: hidden;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+.hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 2rem;
+  overflow: hidden;
+}
+
+.hero-content {
+  text-align: center;
+  z-index: 2;
+  max-width: 800px;
+}
+
+.hero-title {
+  font-size: 4rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: fadeInUp 0.8s ease-out;
+}
+
+.hero-subtitle {
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+  opacity: 0.9;
+  animation: fadeInUp 0.8s ease-out 0.2s both;
+}
+
+.hero-description {
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+  opacity: 0.8;
+  animation: fadeInUp 0.8s ease-out 0.4s both;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  animation: fadeInUp 0.8s ease-out 0.6s both;
+}
+
+.hero-decoration {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+  border-radius: 50%;
+  top: -250px;
+  right: -250px;
+  animation: float 6s ease-in-out infinite;
+}
+
+.section {
+  padding: 5rem 2rem;
+  position: relative;
+}
+
+.section-alt {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.section-title {
+  font-size: 2.5rem;
+  text-align: center;
+  margin-bottom: 3rem;
+  font-weight: 700;
+}
+
+.about-content {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+  font-size: 1.2rem;
+  line-height: 1.8;
+  opacity: 0.9;
+}
+
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.skill-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  padding: 2rem;
+  border-radius: 1rem;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.skill-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.skill-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.skill-card h3 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.skill-card p {
+  opacity: 0.8;
+}
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.project-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 1rem;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.project-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.project-image {
+  height: 200px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.project-placeholder {
+  font-size: 4rem;
+}
+
+.project-content {
+  padding: 1.5rem;
+}
+
+.project-content h3 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.project-content p {
+  opacity: 0.8;
+  margin-bottom: 1rem;
+}
+
+.project-tags {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tag {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.875rem;
+}
+
+.contact-content {
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.contact-text {
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+  opacity: 0.9;
+}
+
+.contact-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 0.875rem 2rem;
+  border-radius: 2rem;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: inline-block;
+}
+
+.btn-primary {
+  background: rgba(255, 255, 255, 0.9);
+  color: #667eea;
+}
+
+.btn-primary:hover {
+  background: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.footer {
+  text-align: center;
+  padding: 2rem;
+  background: rgba(0, 0, 0, 0.2);
+  opacity: 0.8;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: 2.5rem;
+  }
+  
+  .hero-subtitle {
+    font-size: 1.3rem;
+  }
+  
+  .hero-description {
+    font-size: 1rem;
+  }
+  
+  .section {
+    padding: 3rem 1rem;
+  }
+  
+  .section-title {
+    font-size: 2rem;
+  }
+  
+  .skills-grid,
+  .projects-grid {
+    grid-template-columns: 1fr;
+  }
+}`;
+}
+
+// Fallback JavaScript generator
+function generateFallbackJS() {
+  return `// Smooth scroll for navigation links
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+  anchor.addEventListener('click', function (e) {
+    e.preventDefault();
+    const target = document.querySelector(this.getAttribute('href'));
+    if (target) {
+      target.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  });
+});
+
+// Add scroll animations
+const observerOptions = {
+  threshold: 0.1,
+  rootMargin: '0px 0px -50px 0px'
+};
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.style.opacity = '1';
+      entry.target.style.transform = 'translateY(0)';
+    }
+  });
+}, observerOptions);
+
+// Observe all sections
+document.querySelectorAll('.section').forEach(section => {
+  section.style.opacity = '0';
+  section.style.transform = 'translateY(20px)';
+  section.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+  observer.observe(section);
+});
+
+// Add parallax effect to hero decoration
+window.addEventListener('scroll', () => {
+  const decoration = document.querySelector('.hero-decoration');
+  if (decoration) {
+    const scrolled = window.pageYOffset;
+    decoration.style.transform = \`translate(\${scrolled * 0.3}px, \${scrolled * 0.3}px)\`;
+  }
+});
+
+// Add hover effect to cards
+document.querySelectorAll('.skill-card, .project-card').forEach(card => {
+  card.addEventListener('mouseenter', function() {
+    this.style.transform = 'translateY(-10px) scale(1.02)';
+  });
+  
+  card.addEventListener('mouseleave', function() {
+    this.style.transform = 'translateY(0) scale(1)';
+  });
+});
+
+console.log('Portfolio loaded successfully! ✨');`;
+}
+
 module.exports = {
   createPortfolio,
   getUserPortfolios,
   getPortfolio,
   updatePortfolio,
   portfolioAIChat,
-  publishPortfolio
+  publishPortfolio,
+  generatePortfolioCode
 };

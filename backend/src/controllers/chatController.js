@@ -411,7 +411,60 @@ const clearChatHistory = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * General AI Message endpoint for resume generation and other AI tasks
+ */
+const generalMessage = asyncHandler(async (req, res) => {
+  const { message, conversationId = null } = req.body;
+
+  if (!message || !message.trim()) {
+    throw new AppError('Message is required', 400);
+  }
+
+  console.log('💬 General AI Message Request:', {
+    message: message.substring(0, 100) + '...',
+    conversationId
+  });
+
+  try {
+    // Try with gemini-2.0-flash-exp first, fallback to gemini-1.5-flash
+    let model;
+    try {
+      model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+    } catch (error) {
+      console.log('⚠️ Falling back to gemini-1.5-flash');
+      model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    }
+
+    const result = await model.generateContent(message);
+    const response = await result.response;
+    const content = response.text().trim();
+
+    res.json({
+      success: true,
+      data: {
+        response: content,
+        message: content,
+        timestamp: new Date().toISOString()
+      },
+      message: 'AI response generated successfully'
+    });
+
+  } catch (error) {
+    console.error('❌ General AI Message Error:', error);
+    console.error('Error details:', error.message);
+    
+    // Return error response
+    res.status(500).json({
+      success: false,
+      message: 'AI service is currently unavailable. Please try again later.',
+      error: error.message
+    });
+  }
+});
+
 module.exports = {
   portfolioAssistant,
-  clearChatHistory
+  clearChatHistory,
+  generalMessage
 };

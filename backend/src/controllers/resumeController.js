@@ -46,11 +46,19 @@ exports.uploadResume = async (req, res) => {
       }
 
       try {
+        console.log('File received:', {
+          originalname: req.file.originalname,
+          mimetype: req.file.mimetype,
+          size: req.file.size
+        });
+
         // Parse resume using AI service
         const extractedData = await aiService.parseResumeFile(
           req.file.buffer,
           req.file.mimetype
         );
+
+        console.log('Resume parsed successfully');
 
         res.status(200).json({
           success: true,
@@ -59,9 +67,11 @@ exports.uploadResume = async (req, res) => {
         });
       } catch (parseError) {
         console.error('Resume parsing error:', parseError);
+        console.error('Error stack:', parseError.stack);
         res.status(500).json({
           success: false,
-          message: 'Failed to parse resume: ' + parseError.message
+          message: 'Failed to parse resume: ' + parseError.message,
+          error: process.env.NODE_ENV === 'development' ? parseError.stack : undefined
         });
       }
     });

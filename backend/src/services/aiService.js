@@ -1921,31 +1921,61 @@ Return ONLY valid JSON in this format:
    */
   async parseResumeFile(fileBuffer, fileType) {
     try {
+      console.log('📄 Parsing resume file, type:', fileType);
+      
       // Extract text from file
       let resumeText = '';
       
       if (fileType === 'pdf' || fileType === 'application/pdf') {
-        const pdfData = await pdfParse(fileBuffer);
-        resumeText = pdfData.text;
+        console.log('📄 Parsing PDF file...');
+        try {
+          if (!pdfParse) {
+            throw new Error('pdf-parse module not properly loaded');
+          }
+          const pdfData = await pdfParse(fileBuffer);
+          resumeText = pdfData.text;
+          console.log('✅ PDF parsed, text length:', resumeText.length);
+        } catch (pdfError) {
+          console.error('PDF parsing error:', pdfError);
+          throw new Error('Failed to parse PDF file: ' + pdfError.message);
+        }
       } else if (fileType === 'docx' || fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        const result = await mammoth.extractRawText({ buffer: fileBuffer });
-        resumeText = result.value;
+        console.log('📄 Parsing DOCX file...');
+        try {
+          const result = await mammoth.extractRawText({ buffer: fileBuffer });
+          resumeText = result.value;
+          console.log('✅ DOCX parsed, text length:', resumeText.length);
+        } catch (docxError) {
+          console.error('DOCX parsing error:', docxError);
+          throw new Error('Failed to parse DOCX file: ' + docxError.message);
+        }
       } else {
         throw new Error('Unsupported file type. Please upload PDF or DOCX.');
       }
 
       if (!resumeText || resumeText.trim().length < 50) {
-        throw new Error('Could not extract text from resume. Please ensure the file is not corrupted.');
+        console.warn('⚠️ Extracted text is too short:', resumeText.length);
+        throw new Error('Could not extract sufficient text from resume. Please ensure the file is not corrupted or image-based.');
       }
 
+      console.log('🤖 Extracting structured data from resume text...');
+      
       // Use AI to structure the data
       if (this.model && this.genAI) {
-        return await this.extractResumeDataWithAI(resumeText);
+        try {
+          const result = await this.extractResumeDataWithAI(resumeText);
+          console.log('✅ Resume data extracted successfully with AI');
+          return result;
+        } catch (aiError) {
+          console.error('AI extraction failed, using fallback:', aiError);
+          return this.extractResumeDataFallback(resumeText);
+        }
       } else {
+        console.log('⚠️ AI not available, using fallback extraction');
         return this.extractResumeDataFallback(resumeText);
       }
     } catch (error) {
-      console.error('Resume parsing error:', error);
+      console.error('❌ Resume parsing error:', error);
       throw error;
     }
   }
@@ -2387,6 +2417,48 @@ Return ONLY valid JSON in this format:
       projects: [],
       certifications: []
     };
+  }
+
+  /**
+   * Generate text using AI - General purpose method
+   * @param {string} prompt - The prompt to send to AI
+   * @param {Object} config - Optional generation config
+   * @returns {Promise<string>} Generated text
+   */
+  async generateText(prompt, config = {}) {
+    // Check if AI is available
+    if (!this.model || !this.genAI) {
+      console.warn('⚠️ AI service not available for text generation');
+      throw new Error('AI service not available');
+    }
+
+    try {
+      const finalConfig = {
+        temperature: config.temperature || 0.7,
+        topK: config.topK || 40,
+        topP: config.topP || 0.95,
+        maxOutputTokens: config.maxOutputTokens || 4096,
+      };
+
+      console.log('🤖 Generating text with AI...');
+      const startTime = Date.now();
+
+      const result = await this.model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: finalConfig,
+      });
+
+      const response = await result.response;
+      const text = response.text();
+
+      const processingTime = Date.now() - startTime;
+      console.log(`✅ AI text generation completed in ${processingTime}ms`);
+
+      return text;
+    } catch (error) {
+      console.error('❌ AI text generation failed:', error.message);
+      throw error;
+    }
   }
 }
 

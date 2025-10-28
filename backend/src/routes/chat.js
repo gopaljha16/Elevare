@@ -1,5 +1,5 @@
 const express = require('express');
-const { portfolioAssistant, clearChatHistory } = require('../controllers/chatController');
+const { portfolioAssistant, clearChatHistory, generalMessage } = require('../controllers/chatController');
 const rateLimit = require('express-rate-limit');
 
 const router = express.Router();
@@ -18,6 +18,9 @@ const chatLimiter = rateLimit({
 
 // Portfolio AI Assistant endpoint
 router.post('/portfolio-assistant', chatLimiter, portfolioAssistant);
+
+// General AI message endpoint (for resume generation, etc.)
+router.post('/message', chatLimiter, generalMessage);
 
 // Clear chat history
 router.post('/clear-history', clearChatHistory);

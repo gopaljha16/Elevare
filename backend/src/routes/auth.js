@@ -1,4 +1,5 @@
 const express = require('express');
+const passport = require('../config/passport');
 const {
   register,
   login,
@@ -9,6 +10,8 @@ const {
   logoutAllDevices,
   refreshToken,
   getUserStats,
+  googleCallback,
+
 } = require('../controllers/authController');
 const {
   validateRegister,
@@ -50,6 +53,21 @@ const strictAuthLimiter = rateLimit({
 router.post('/register', authLimiter, validateRegister, handleValidationErrors, register);
 router.post('/login', strictAuthLimiter, validateLogin, handleValidationErrors, login);
 router.post('/refresh-token', refreshToken);
+
+
+// Google OAuth routes
+router.get('/google', passport.authenticate('google', { 
+  scope: ['profile', 'email'],
+  session: false 
+}));
+
+router.get('/google/callback', 
+  passport.authenticate('google', { 
+    failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=google_auth_failed`,
+    session: false 
+  }), 
+  googleCallback
+);
 
 // Protected routes
 router.use(authenticate); // All routes below this middleware require authentication

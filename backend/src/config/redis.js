@@ -224,6 +224,41 @@ const redisUtils = {
             console.error('Error deleting refresh token:', error);
             return false;
         }
+    },
+
+    // Store magic link token
+    setMagicLinkToken: async (email, token, expiresIn = 900) => {
+        if (!isRedisConnected) return false;
+        try {
+            await redisClient.setEx(`magic:${email}`, expiresIn, token);
+            return true;
+        } catch (error) {
+            console.error('Error storing magic link token:', error);
+            return false;
+        }
+    },
+
+    // Get magic link token
+    getMagicLinkToken: async (email) => {
+        if (!isRedisConnected) return null;
+        try {
+            return await redisClient.get(`magic:${email}`);
+        } catch (error) {
+            console.error('Error getting magic link token:', error);
+            return null;
+        }
+    },
+
+    // Delete magic link token
+    deleteMagicLinkToken: async (email) => {
+        if (!isRedisConnected) return false;
+        try {
+            await redisClient.del(`magic:${email}`);
+            return true;
+        } catch (error) {
+            console.error('Error deleting magic link token:', error);
+            return false;
+        }
     }
 };
 

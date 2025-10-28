@@ -29,6 +29,9 @@ const safeRedisUtils = {
   setRefreshToken: withRedisErrorHandling(redisUtils.setRefreshToken),
   getRefreshToken: withRedisErrorHandling(redisUtils.getRefreshToken),
   deleteRefreshToken: withRedisErrorHandling(redisUtils.deleteRefreshToken),
+  setMagicLinkToken: withRedisErrorHandling(redisUtils.setMagicLinkToken),
+  getMagicLinkToken: withRedisErrorHandling(redisUtils.getMagicLinkToken),
+  deleteMagicLinkToken: withRedisErrorHandling(redisUtils.deleteMagicLinkToken),
 };
 
 // Middleware to check Redis health
