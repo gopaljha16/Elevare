@@ -5,86 +5,116 @@ import {
   Plus, FileText, Download, Share2, Eye, Edit, Trash2,
   Copy, Star, Clock, TrendingUp, Sparkles, Search
 } from 'lucide-react';
-import axios from 'axios';
+import axiosClient from '../utils/axiosClient';
 import { useAuth } from '../hooks/useAuth';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Demo resume data with complete information
 const DEMO_RESUME = {
   _id: 'demo-resume-001',
   isDemo: true,
   personalInfo: {
-    fullName: 'Sarah Johnson',
-    jobTitle: 'Senior Full Stack Developer',
-    email: 'sarah.johnson@example.com',
-    phone: '+1 (555) 123-4567',
-    address: 'San Francisco, CA',
+    fullName: 'Christina Sebastian',
+    jobTitle: 'UI UX Designer',
+    email: 'christina1992@gmail.com',
+    phone: '+00 9876543210',
+    address: '123 Main Street, Cityville, State 12345, United States',
     photo: '',
     socialLinks: {
-      linkedin: 'linkedin.com/in/sarahjohnson',
-      github: 'github.com/sarahjohnson',
-      portfolio: 'sarahjohnson.dev'
+      linkedin: 'linkedin.com/in/christinasebastian',
+      github: 'github.com/christinasebastian',
+      portfolio: 'christinasebastian.design'
     }
   },
-  professionalSummary: 'Innovative Full Stack Developer with 8+ years of experience building scalable web applications. Expertise in React, Node.js, and cloud technologies. Proven track record of leading development teams and delivering high-impact solutions that drive business growth. Passionate about clean code, best practices, and mentoring junior developers.',
+  professionalSummary: 'Creative and detail-oriented UI/UX Designer with 6+ years of experience crafting intuitive and visually stunning digital experiences. Expertise in user research, wireframing, prototyping, and design systems. Proven track record of increasing user engagement by 50% through data-driven design decisions. Passionate about creating accessible and user-centered designs that solve real problems.',
   experience: [
     {
-      jobTitle: 'Senior Full Stack Developer',
-      company: 'Tech Innovations Inc.',
-      location: 'San Francisco, CA',
-      startDate: '2021-03',
+      jobTitle: 'Senior UI/UX Designer',
+      company: 'Design Studio Pro',
+      location: 'New York, NY',
+      startDate: '2021-06',
       endDate: '',
       current: true,
-      description: '• Led development of microservices architecture serving 2M+ users, improving system reliability by 40%\n• Architected and implemented real-time collaboration features using WebSockets and Redis\n• Mentored team of 5 junior developers, conducting code reviews and technical training sessions\n• Reduced API response time by 60% through optimization and caching strategies',
+      description: '• Led design of mobile app that achieved 4.8★ rating with 500K+ downloads in first 6 months\n• Conducted user research with 200+ participants, resulting in 35% improvement in user satisfaction\n• Created comprehensive design system used across 10+ products, reducing design time by 40%\n• Collaborated with cross-functional teams to deliver 15+ successful product launches',
       achievements: []
     },
     {
-      jobTitle: 'Full Stack Developer',
-      company: 'Digital Solutions LLC',
-      location: 'San Francisco, CA',
-      startDate: '2018-06',
-      endDate: '2021-02',
+      jobTitle: 'UI/UX Designer',
+      company: 'Creative Digital Agency',
+      location: 'New York, NY',
+      startDate: '2019-03',
+      endDate: '2021-05',
       current: false,
-      description: '• Developed and maintained 15+ client-facing web applications using React and Node.js\n• Implemented CI/CD pipelines reducing deployment time by 70%\n• Collaborated with UX team to improve user engagement by 45%\n• Integrated third-party APIs and payment gateways for e-commerce platforms',
+      description: '• Designed responsive websites for 25+ clients across various industries\n• Improved conversion rates by 45% through A/B testing and iterative design improvements\n• Created interactive prototypes using Figma and Adobe XD for client presentations\n• Mentored 3 junior designers and conducted weekly design critique sessions',
       achievements: []
     },
     {
-      jobTitle: 'Junior Web Developer',
-      company: 'StartUp Hub',
+      jobTitle: 'Junior UI Designer',
+      company: 'Tech Startup Inc',
       location: 'San Francisco, CA',
-      startDate: '2016-01',
-      endDate: '2018-05',
+      startDate: '2018-01',
+      endDate: '2019-02',
       current: false,
-      description: '• Built responsive web applications using HTML, CSS, JavaScript, and jQuery\n• Worked with REST APIs and integrated frontend with backend services\n• Participated in agile development process and daily stand-ups\n• Contributed to open-source projects and internal documentation',
+      description: '• Designed user interfaces for web and mobile applications using Sketch and Figma\n• Collaborated with developers to ensure pixel-perfect implementation of designs\n• Conducted usability testing sessions and incorporated feedback into design iterations\n• Created marketing materials and brand assets for social media campaigns',
       achievements: []
     }
   ],
   education: [
     {
-      degree: 'Bachelor of Science in Computer Science',
-      institution: 'University of California, Berkeley',
-      location: 'Berkeley, CA',
-      startDate: '2012-09',
-      endDate: '2016-05',
-      gpa: '3.8'
+      degree: 'Bachelor of Fine Arts in Graphic Design',
+      institution: 'Rhode Island School of Design',
+      location: 'Providence, RI',
+      startDate: '2014-09',
+      endDate: '2018-05',
+      gpa: '3.9'
+    },
+    {
+      degree: 'UX Design Certification',
+      institution: 'Nielsen Norman Group',
+      location: 'Online',
+      startDate: '2020-01',
+      endDate: '2020-06',
+      gpa: ''
     }
   ],
   skills: {
-    technical: ['JavaScript', 'TypeScript', 'React', 'Node.js', 'Express.js', 'MongoDB', 'PostgreSQL', 'AWS', 'Docker', 'Kubernetes', 'GraphQL', 'REST API', 'Git', 'CI/CD'],
-    soft: ['Leadership', 'Team Collaboration', 'Problem Solving', 'Communication', 'Mentoring', 'Agile Methodologies'],
-    languages: ['English', 'Spanish'],
-    tools: ['VS Code', 'GitHub', 'JIRA', 'Figma', 'Postman', 'Slack']
+    technical: ['Figma', 'Adobe XD', 'Sketch', 'Adobe Photoshop', 'Adobe Illustrator', 'InVision', 'Principle', 'Framer', 'HTML/CSS', 'Webflow', 'Miro', 'Maze'],
+    soft: ['User Research', 'Wireframing', 'Prototyping', 'Visual Design', 'Interaction Design', 'Design Thinking', 'Usability Testing', 'Communication', 'Team Collaboration', 'Problem Solving'],
+    languages: ['English', 'French', 'Spanish'],
+    tools: ['Figma', 'Adobe Creative Suite', 'Sketch', 'InVision', 'Zeplin', 'Notion', 'Slack', 'JIRA']
   },
-  projects: [],
-  certifications: [],
+  projects: [
+    {
+      title: 'E-commerce Mobile App Redesign',
+      description: 'Redesigned shopping experience resulting in 60% increase in mobile conversions',
+      technologies: ['Figma', 'User Research', 'A/B Testing'],
+      link: ''
+    },
+    {
+      title: 'Healthcare Dashboard Design',
+      description: 'Created intuitive dashboard for medical professionals managing 1000+ patients',
+      technologies: ['Adobe XD', 'Data Visualization', 'Accessibility'],
+      link: ''
+    }
+  ],
+  certifications: [
+    {
+      name: 'Google UX Design Professional Certificate',
+      issuer: 'Google',
+      date: '2021-03'
+    },
+    {
+      name: 'Interaction Design Specialization',
+      issuer: 'UC San Diego (Coursera)',
+      date: '2020-08'
+    }
+  ],
   status: 'completed',
   template: 'modern',
   atsScore: {
     score: 92,
     feedback: {
-      strengths: ['Strong action verbs', 'Quantified achievements', 'Relevant keywords'],
-      improvements: ['Add more metrics', 'Include certifications']
+      strengths: ['Strong action verbs', 'Quantified achievements', 'Relevant keywords', 'Clear design focus'],
+      improvements: ['Add portfolio links', 'Include design awards']
     }
   },
   lastModified: new Date('2024-01-15'),
@@ -105,9 +135,7 @@ const ResumeDashboard = () => {
 
   const fetchResumes = async () => {
     try {
-      const response = await axios.get(`${API_URL}/resumes`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
+      const response = await axiosClient.get('/resumes');
       // Add demo resume to the list
       setResumes([DEMO_RESUME, ...response.data.data]);
     } catch (error) {
@@ -130,13 +158,12 @@ const ResumeDashboard = () => {
     if (!window.confirm('Are you sure you want to delete this resume?')) return;
 
     try {
-      await axios.delete(`${API_URL}/resumes/${id}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
+      await axiosClient.delete(`/resumes/${id}`);
       setResumes(resumes.filter(r => r._id !== id));
     } catch (error) {
       console.error('Delete error:', error);
-      alert('Failed to delete resume');
+      const errorMessage = error.response?.data?.message || 'Failed to delete resume';
+      alert(errorMessage);
     }
   };
 
@@ -150,13 +177,12 @@ const ResumeDashboard = () => {
     }
 
     try {
-      const response = await axios.post(`${API_URL}/resumes/${id}/duplicate`, {}, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
+      const response = await axiosClient.post(`/resumes/${id}/duplicate`, {});
       setResumes([DEMO_RESUME, response.data.data, ...resumes.filter(r => !r.isDemo)]);
     } catch (error) {
       console.error('Duplicate error:', error);
-      alert('Failed to duplicate resume');
+      const errorMessage = error.response?.data?.message || 'Failed to duplicate resume';
+      alert(errorMessage);
     }
   };
 

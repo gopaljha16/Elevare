@@ -6,11 +6,9 @@ import {
   Code, Link as LinkIcon, Plus, Trash2, Edit2, Check, X
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import axios from 'axios';
+import axiosClient from '../utils/axiosClient';
 import FormSections from '../components/resume/FormSections';
 import LivePreview from '../components/resume/LivePreview';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const ResumeBuilder = () => {
   const { user } = useAuth();
@@ -78,23 +76,66 @@ const ResumeBuilder = () => {
     const file = e.target.files[0];
     if (!file) return;
 
+    // Validate file type
+    const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Please upload a PDF or DOCX file only.');
+      return;
+    }
+
+    // Validate file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File size must be less than 10MB.');
+      return;
+    }
+
+    console.log('📤 Uploading file:', {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      user: user?.email
+    });
+
     setLoading(true);
     const formData = new FormData();
     formData.append('resume', file);
 
     try {
-      const response = await axios.post(`${API_URL}/resumes/upload`, formData, {
+      console.log('🚀 Making upload request...');
+      const response = await axiosClient.post('/resumes/upload', formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Content-Type': 'multipart/form-data'
         }
       });
 
-      setResumeData(response.data.data);
-      setMode('edit');
+      console.log('✅ Upload successful:', response.data);
+      
+      if (response.data.success) {
+        setResumeData(response.data.data);
+        setMode('edit');
+        alert(response.data.message || 'Resume uploaded successfully!');
+      } else {
+        throw new Error(response.data.message || 'Upload failed');
+      }
     } catch (error) {
-      console.error('Upload error:', error);
-      alert('Failed to upload resume. Please try again.');
+      console.error('❌ Upload error:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      console.error('Error stack:', error.stack);
+      
+      let errorMessage = 'Failed to upload resume. Please try again.';
+      
+      if (error.response?.status === 401) {
+        errorMessage = 'Authentication failed. Please log in again.';
+      } else if (error.response?.status === 500) {
+        errorMessage = 'Server error occurred. Check console for details.';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -105,16 +146,14 @@ const ResumeBuilder = () => {
     setSaving(true);
     try {
       const endpoint = currentResumeId 
-        ? `${API_URL}/resumes/${currentResumeId}`
-        : `${API_URL}/resumes`;
+        ? `/resumes/${currentResumeId}`
+        : '/resumes';
       
       const method = currentResumeId ? 'put' : 'post';
       
-      const response = await axios[method](endpoint, {
+      const response = await axiosClient[method](endpoint, {
         ...resumeData,
         template: selectedTemplate
-      }, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
 
       if (!currentResumeId) {
@@ -124,7 +163,8 @@ const ResumeBuilder = () => {
       alert('Resume saved successfully!');
     } catch (error) {
       console.error('Save error:', error);
-      alert('Failed to save resume');
+      const errorMessage = error.response?.data?.message || 'Failed to save resume';
+      alert(errorMessage);
     } finally {
       setSaving(false);
     }
@@ -138,15 +178,16 @@ const ResumeBuilder = () => {
 
     setLoading(true);
     try {
-      const response = await axios.post(
-        `${API_URL}/resumes/${currentResumeId}/suggestions`,
-        { targetRole: resumeData.personalInfo.jobTitle },
-        { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }
+      const response = await axiosClient.post(
+        `/resumes/${currentResumeId}/suggestions`,
+        { targetRole: resumeData.personalInfo.jobTitle }
       );
 
       setAiSuggestions(response.data.data);
     } catch (error) {
       console.error('AI suggestions error:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to get AI suggestions';
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -160,24 +201,81 @@ const ResumeBuilder = () => {
 
     setLoading(true);
     try {
-      const response = await axios.post(
-        `${API_URL}/resumes/${currentResumeId}/ats-score`,
-        {},
-        { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }
+      const response = await axiosClient.post(
+        `/resumes/${currentResumeId}/ats-score`,
+        {}
       );
 
       setAtsScore(response.data.data);
     } catch (error) {
       console.error('ATS score error:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to calculate ATS score';
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
   // Download PDF
-  const downloadPDF = () => {
-    // Use browser's print functionality for now
-    window.print();
+  const downloadPDF = async () => {
+    try {
+      // Check if libraries are available
+      const html2canvas = (await import('html2canvas')).default;
+      const jsPDF = (await import('jspdf')).default;
+      
+      const previewElement = document.getElementById('resume-preview');
+      
+      if (!previewElement) {
+        alert('Preview not found. Please wait for the preview to load.');
+        return;
+      }
+
+      // Show loading state
+      const originalContent = previewElement.innerHTML;
+      const loadingDiv = document.createElement('div');
+      loadingDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+      loadingDiv.innerHTML = '<div class="bg-white p-6 rounded-lg"><div class="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div><p class="text-gray-700">Generating PDF...</p></div>';
+      document.body.appendChild(loadingDiv);
+
+      // Generate canvas from HTML
+      const canvas = await html2canvas(previewElement, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+
+      // Calculate PDF dimensions
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // Create PDF
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgData = canvas.toDataURL('image/png');
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      
+      // Generate filename
+      const fileName = `${resumeData?.personalInfo?.fullName || 'Resume'}_${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      // Save PDF
+      pdf.save(fileName);
+      
+      // Remove loading state
+      document.body.removeChild(loadingDiv);
+      
+      alert('PDF downloaded successfully!');
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      
+      // Fallback to print
+      if (error.message.includes('Cannot find module')) {
+        alert('PDF libraries not installed. Please run: npm install html2canvas jspdf\n\nUsing print dialog as fallback...');
+        window.print();
+      } else {
+        alert('Failed to generate PDF. Error: ' + error.message);
+      }
+    }
   };
 
   // Generate share link
@@ -188,10 +286,9 @@ const ResumeBuilder = () => {
     }
 
     try {
-      const response = await axios.post(
-        `${API_URL}/resumes/${currentResumeId}/share`,
-        {},
-        { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }
+      const response = await axiosClient.post(
+        `/resumes/${currentResumeId}/share`,
+        {}
       );
 
       const shareUrl = response.data.data.url;
@@ -199,7 +296,8 @@ const ResumeBuilder = () => {
       alert('Share link copied to clipboard!');
     } catch (error) {
       console.error('Share link error:', error);
-      alert('Failed to generate share link');
+      const errorMessage = error.response?.data?.message || 'Failed to generate share link';
+      alert(errorMessage);
     }
   };
 
@@ -230,6 +328,54 @@ const ResumeBuilder = () => {
             <div className="flex items-center space-x-3">
               {!isDemo && (
                 <>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const response = await axiosClient.get('/resumes/diagnostics');
+                        console.log('Diagnostics:', response.data);
+                        const diag = response.data.diagnostics;
+                        alert(`Diagnostics:\n- User: ${diag.user?.email}\n- Gemini Key: ${diag.environment.hasGeminiKey ? 'Present' : 'Missing'}\n- AI Service: ${diag.services.aiServiceInitialized ? 'OK' : 'Failed'}\n- PDF Parser: ${diag.dependencies.pdfParse ? 'OK' : 'Missing'}`);
+                      } catch (error) {
+                        console.error('Diagnostics failed:', error);
+                        alert('Diagnostics failed: ' + (error.response?.data?.message || error.message));
+                      }
+                    }}
+                    className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
+                  >
+                    Diagnostics
+                  </button>
+
+                  <button
+                    onClick={async () => {
+                      const input = document.createElement('input');
+                      input.type = 'file';
+                      input.accept = '.pdf,.docx';
+                      input.onchange = async (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        
+                        const formData = new FormData();
+                        formData.append('resume', file);
+                        
+                        try {
+                          // Test public upload first (no auth required)
+                          const response = await axiosClient.post('/resumes/public-test-upload', formData, {
+                            headers: { 'Content-Type': 'multipart/form-data' }
+                          });
+                          console.log('Public upload test:', response.data);
+                          alert('Public upload test successful: ' + response.data.file.originalname);
+                        } catch (error) {
+                          console.error('Public upload test failed:', error);
+                          alert('Public upload test failed: ' + (error.response?.data?.message || error.message));
+                        }
+                      };
+                      input.click();
+                    }}
+                    className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                  >
+                    Test Upload
+                  </button>
+
                   <button
                     onClick={calculateATS}
                     disabled={loading}

@@ -2,11 +2,9 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   User, Briefcase, GraduationCap, Code, Award, 
-  Link as LinkIcon, Plus, Trash2, Upload, ChevronDown, ChevronUp, Sparkles, Wand2, X
+  Link as LinkIcon, Plus, Trash2, Upload, ChevronDown, ChevronUp, Sparkles, Wand2, X, FolderKanban
 } from 'lucide-react';
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import axiosClient from '../../utils/axiosClient';
 
 const FormSections = ({ resumeData, setResumeData, activeSection, setActiveSection, onFileUpload, loading, currentResumeId, isDemo = false }) => {
   const [expandedSections, setExpandedSections] = useState({
@@ -15,7 +13,9 @@ const FormSections = ({ resumeData, setResumeData, activeSection, setActiveSecti
     experience: false,
     education: false,
     skills: false,
-    projects: false
+    projects: false,
+    certifications: false,
+    links: false
   });
   const [aiLoading, setAiLoading] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState(null);
@@ -106,7 +106,7 @@ const FormSections = ({ resumeData, setResumeData, activeSection, setActiveSecti
     setResumeData(prev => ({
       ...prev,
       education: prev.education.map((edu, i) => 
-        i === index ? { ...edu, [field]: value } : exp
+        i === index ? { ...edu, [field]: value } : edu
       )
     }));
   };
@@ -139,6 +139,67 @@ const FormSections = ({ resumeData, setResumeData, activeSection, setActiveSecti
     }));
   };
 
+  const addProject = () => {
+    setResumeData(prev => ({
+      ...prev,
+      projects: [
+        ...prev.projects,
+        {
+          title: '',
+          description: '',
+          technologies: [],
+          link: ''
+        }
+      ]
+    }));
+  };
+
+  const updateProject = (index, field, value) => {
+    setResumeData(prev => ({
+      ...prev,
+      projects: prev.projects.map((proj, i) => 
+        i === index ? { ...proj, [field]: value } : proj
+      )
+    }));
+  };
+
+  const removeProject = (index) => {
+    setResumeData(prev => ({
+      ...prev,
+      projects: prev.projects.filter((_, i) => i !== index)
+    }));
+  };
+
+  const addCertification = () => {
+    setResumeData(prev => ({
+      ...prev,
+      certifications: [
+        ...prev.certifications,
+        {
+          name: '',
+          issuer: '',
+          date: ''
+        }
+      ]
+    }));
+  };
+
+  const updateCertification = (index, field, value) => {
+    setResumeData(prev => ({
+      ...prev,
+      certifications: prev.certifications.map((cert, i) => 
+        i === index ? { ...cert, [field]: value } : cert
+      )
+    }));
+  };
+
+  const removeCertification = (index) => {
+    setResumeData(prev => ({
+      ...prev,
+      certifications: prev.certifications.filter((_, i) => i !== index)
+    }));
+  };
+
   // AI Enhancement Functions
   const enhanceSummaryWithAI = async () => {
     if (!resumeData.personalInfo.jobTitle) {
@@ -149,13 +210,12 @@ const FormSections = ({ resumeData, setResumeData, activeSection, setActiveSecti
     setAiLoading(true);
     try {
       // Use Gemini AI directly without needing saved resume
-      const response = await axios.post(
-        `${API_URL}/chat/message`,
+      const response = await axiosClient.post(
+        '/chat/message',
         { 
           message: `Generate a professional resume summary for a ${resumeData.personalInfo.jobTitle}. Make it ATS-friendly, compelling, and 3-4 sentences. Include key skills and value proposition. Return only the summary text, no extra formatting.`,
           conversationId: null
-        },
-        { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }
+        }
       );
       
       // Handle different response structures
@@ -195,13 +255,12 @@ const FormSections = ({ resumeData, setResumeData, activeSection, setActiveSecti
     }
 
     try {
-      const response = await axios.post(
-        `${API_URL}/chat/message`,
+      const response = await axiosClient.post(
+        '/chat/message',
         { 
           message: `Generate a professional job description for a ${exp.jobTitle} at ${exp.company}. Make it ATS-friendly with action verbs and quantifiable achievements. Include 3-4 bullet points with measurable results. Return only the description text.`,
           conversationId: null
-        },
-        { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }
+        }
       );
       
       // Handle different response structures
@@ -442,6 +501,50 @@ const FormSections = ({ resumeData, setResumeData, activeSection, setActiveSecti
           onRemove={removeSkill}
           isDemo={isDemo}
         />
+      </Section>
+
+      {/* Projects */}
+      <Section
+        title="Projects"
+        icon={FolderKanban}
+        expanded={expandedSections.projects}
+        onToggle={() => toggleSection('projects')}
+        onAdd={!isDemo ? addProject : undefined}
+      >
+        <div className="space-y-4">
+          {resumeData.projects && resumeData.projects.map((project, index) => (
+            <ProjectItem
+              key={index}
+              project={project}
+              index={index}
+              onUpdate={updateProject}
+              onRemove={removeProject}
+              isDemo={isDemo}
+            />
+          ))}
+        </div>
+      </Section>
+
+      {/* Certifications */}
+      <Section
+        title="Certifications"
+        icon={Award}
+        expanded={expandedSections.certifications}
+        onToggle={() => toggleSection('certifications')}
+        onAdd={!isDemo ? addCertification : undefined}
+      >
+        <div className="space-y-4">
+          {resumeData.certifications && resumeData.certifications.map((cert, index) => (
+            <CertificationItem
+              key={index}
+              certification={cert}
+              index={index}
+              onUpdate={updateCertification}
+              onRemove={removeCertification}
+              isDemo={isDemo}
+            />
+          ))}
+        </div>
       </Section>
 
       {/* Profile or Portfolio URL */}
@@ -833,5 +936,131 @@ const SkillsSection = ({ skills, onAdd, onRemove, isDemo = false }) => {
     </div>
   );
 };
+
+const ProjectItem = ({ project, index, onUpdate, onRemove, isDemo = false }) => {
+  const [techInput, setTechInput] = useState('');
+
+  const addTechnology = () => {
+    if (techInput.trim()) {
+      const updatedTechnologies = [...(project.technologies || []), techInput.trim()];
+      onUpdate(index, 'technologies', updatedTechnologies);
+      setTechInput('');
+    }
+  };
+
+  const removeTechnology = (techIndex) => {
+    const updatedTechnologies = project.technologies.filter((_, i) => i !== techIndex);
+    onUpdate(index, 'technologies', updatedTechnologies);
+  };
+
+  return (
+    <div className="p-4 bg-gray-50 rounded-lg space-y-3 relative">
+      {!isDemo && (
+        <button
+          onClick={() => onRemove(index)}
+          className="absolute top-2 right-2 p-1 hover:bg-red-100 rounded transition-colors"
+        >
+          <Trash2 className="w-4 h-4 text-red-600" />
+        </button>
+      )}
+      <Input
+        label="Project Title"
+        value={project.title}
+        onChange={(e) => onUpdate(index, 'title', e.target.value)}
+        placeholder="E-commerce Mobile App Redesign"
+        isDemo={isDemo}
+      />
+      <TextArea
+        label="Description"
+        value={project.description}
+        onChange={(e) => onUpdate(index, 'description', e.target.value)}
+        placeholder="Describe your project and its impact..."
+        rows={3}
+        isDemo={isDemo}
+      />
+      <Input
+        label="Project Link (Optional)"
+        value={project.link}
+        onChange={(e) => onUpdate(index, 'link', e.target.value)}
+        placeholder="https://github.com/username/project"
+        isDemo={isDemo}
+      />
+      
+      {/* Technologies */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Technologies Used</label>
+        <div className="flex flex-wrap gap-2 mb-2">
+          {project.technologies && project.technologies.map((tech, techIndex) => (
+            <span
+              key={techIndex}
+              className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-gray-200 text-gray-800"
+            >
+              {tech}
+              {!isDemo && (
+                <button
+                  onClick={() => removeTechnology(techIndex)}
+                  className="ml-2 hover:text-red-600"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </span>
+          ))}
+        </div>
+        {!isDemo && (
+          <div className="flex gap-2">
+            <input
+              value={techInput}
+              onChange={(e) => setTechInput(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && addTechnology()}
+              placeholder="Add technology"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            />
+            <button
+              onClick={addTechnology}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const CertificationItem = ({ certification, index, onUpdate, onRemove, isDemo = false }) => (
+  <div className="p-4 bg-gray-50 rounded-lg space-y-3 relative">
+    {!isDemo && (
+      <button
+        onClick={() => onRemove(index)}
+        className="absolute top-2 right-2 p-1 hover:bg-red-100 rounded transition-colors"
+      >
+        <Trash2 className="w-4 h-4 text-red-600" />
+      </button>
+    )}
+    <Input
+      label="Certification Name"
+      value={certification.name}
+      onChange={(e) => onUpdate(index, 'name', e.target.value)}
+      placeholder="Google UX Design Professional Certificate"
+      isDemo={isDemo}
+    />
+    <Input
+      label="Issuing Organization"
+      value={certification.issuer}
+      onChange={(e) => onUpdate(index, 'issuer', e.target.value)}
+      placeholder="Google"
+      isDemo={isDemo}
+    />
+    <Input
+      label="Date Obtained"
+      type="month"
+      value={certification.date}
+      onChange={(e) => onUpdate(index, 'date', e.target.value)}
+      isDemo={isDemo}
+    />
+  </div>
+);
 
 export default FormSections;

@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthContext } from './contexts/AuthContext';
 import { ToastProvider } from './components/ui/Toast';
+import ErrorBoundary from './components/ErrorBoundary';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
@@ -25,6 +26,7 @@ import PortfolioTemplates from './components/PortfolioTemplates';
 import PortfolioPreview from './pages/PortfolioPreview';
 import ResumeBuilder from './pages/ResumeBuilder';
 import ResumeDashboard from './pages/ResumeDashboard';
+import ProfilePage from './pages/ProfilePage';
 import GoogleCallback from './components/auth/GoogleCallback';
 
 
@@ -66,9 +68,10 @@ const PublicRoute = ({ children }) => {
 
 const App = () => {
   return (
-    <ToastProvider>
-      <div className="App">
-        <Routes>
+    <ErrorBoundary>
+      <ToastProvider>
+        <div className="App">
+          <Routes>
           {/* Public Routes */}
           <Route path="/" element={<HomePage />} />
           <Route path="/demo" element={<DemoPage />} />
@@ -221,6 +224,14 @@ const App = () => {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Health Check Route (for development) */}
           <Route
@@ -239,6 +250,7 @@ const App = () => {
         </Routes>
       </div>
     </ToastProvider>
+    </ErrorBoundary>
   );
 };
 

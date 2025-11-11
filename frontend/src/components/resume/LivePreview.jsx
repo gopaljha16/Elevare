@@ -5,7 +5,7 @@ import { Mail, Phone, MapPin, Linkedin, Github, Globe, Sparkles, TrendingUp } fr
 const LivePreview = ({ resumeData, template, atsScore, aiSuggestions, isDemo = false }) => {
   if (!resumeData) return null;
 
-  const { personalInfo, professionalSummary, experience, education, skills } = resumeData;
+  const { personalInfo, professionalSummary, experience, education, skills, projects, certifications } = resumeData;
 
   return (
     <div className="space-y-6">
@@ -70,7 +70,7 @@ const LivePreview = ({ resumeData, template, atsScore, aiSuggestions, isDemo = f
       )}
 
       {/* Resume Preview */}
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+      <div id="resume-preview" className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
         <div className="p-8 md:p-12">
           {/* Header Section */}
           <div className="border-b border-gray-200 pb-6 mb-6">
@@ -265,6 +265,61 @@ const LivePreview = ({ resumeData, template, atsScore, aiSuggestions, isDemo = f
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Projects */}
+          {projects && projects.length > 0 && (
+            <div className="mb-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                <span className="w-1 h-6 bg-blue-600 mr-3"></span>
+                Projects
+              </h2>
+              <div className="space-y-4">
+                {projects.map((project, index) => (
+                  <div key={index} className="relative pl-4 border-l-2 border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900">{project.title}</h3>
+                    {project.description && (
+                      <p className="text-gray-700 mb-2">{project.description}</p>
+                    )}
+                    {project.technologies && project.technologies.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {project.technologies.map((tech, i) => (
+                          <span key={i} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium">
+                            {tech}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {project.link && (
+                      <a href={project.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm mt-2 inline-block">
+                        View Project →
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Certifications */}
+          {certifications && certifications.length > 0 && (
+            <div className="mb-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                <span className="w-1 h-6 bg-blue-600 mr-3"></span>
+                Certifications
+              </h2>
+              <div className="space-y-3">
+                {certifications.map((cert, index) => (
+                  <div key={index} className="relative pl-4 border-l-2 border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900">{cert.name}</h3>
+                    <p className="text-blue-600 font-medium">{cert.issuer}</p>
+                    {cert.date && (
+                      <p className="text-sm text-gray-500">{cert.date}</p>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           )}

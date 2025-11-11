@@ -111,7 +111,15 @@ const AIPortfolioBuilder = () => {
       setChatMessages([{
         id: 1,
         type: 'ai',
-        content: `Hi ${userName}! 👋 I'm your AI Portfolio Builder assistant. I can create a stunning, professional portfolio website for you. Just tell me what you'd like - describe your profession, style preferences, or any specific features you want!`,
+        content: `Hi ${userName}! 👋 I'm your AI Portfolio Builder powered by advanced AI models. I can create stunning, professional portfolio websites tailored to your profession and style. 
+
+Just describe what you'd like:
+• Your profession (developer, designer, marketer, etc.)
+• Your style preferences (modern, minimal, creative, etc.)
+• Any specific features or sections you want
+• Colors or themes you prefer
+
+I'll remember our conversation and can make improvements as we go. Let's build something amazing! ✨`,
         timestamp: new Date()
       }]);
       setIsLoading(false);
@@ -211,7 +219,14 @@ const AIPortfolioBuilder = () => {
       
       // Auto-refresh preview after generation
       await new Promise(resolve => setTimeout(resolve, 500));
+      console.log('🎯 Generation complete, refreshing preview...');
       refreshPreview();
+      
+      // Force another refresh to ensure it loads
+      setTimeout(() => {
+        refreshPreview();
+        console.log('🔄 Second preview refresh for reliability');
+      }, 1000);
       
       // Clear generation state with fade out
       setTimeout(() => {
@@ -376,20 +391,81 @@ const AIPortfolioBuilder = () => {
     try {
       const iframe = iframeRef.current;
       
-      // Create blob URL for iframe content
+      // Create complete HTML document
       const fullCode = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Portfolio Preview</title>
-  <style>${cssCode || '/* No CSS yet */'}</style>
+  <style>
+    /* Reset and base styles */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    
+    ${cssCode || `
+    /* Default preview styles */
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+    }
+    .preview-placeholder {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      padding: 3rem;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      max-width: 500px;
+    }
+    .preview-placeholder h2 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      background: linear-gradient(45deg, #fff, #f0f0f0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .preview-placeholder p {
+      opacity: 0.8;
+      line-height: 1.6;
+    }
+    `}
+  </style>
 </head>
 <body>
-  ${htmlCode || '<div style="padding: 2rem; text-align: center; color: #666;">Your portfolio will appear here...</div>'}
+  ${htmlCode || `
+    <div class="preview-placeholder">
+      <h2>✨ Portfolio Preview</h2>
+      <p>Your stunning portfolio will appear here once generated. Describe what you'd like to create in the chat!</p>
+    </div>
+  `}
+  
   <script>
     try {
-      ${jsCode || '// No JavaScript yet'}
+      // Prevent any errors from breaking the preview
+      ${jsCode || `
+        console.log('Portfolio preview ready!');
+        
+        // Add some basic interactivity if no JS is provided
+        document.addEventListener('DOMContentLoaded', function() {
+          // Smooth scroll for any anchor links
+          document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+              e.preventDefault();
+              const target = document.querySelector(this.getAttribute('href'));
+              if (target) {
+                target.scrollIntoView({ behavior: 'smooth' });
+              }
+            });
+          });
+        });
+      `}
     } catch (error) {
       console.error('Preview JS Error:', error);
     }
@@ -397,8 +473,11 @@ const AIPortfolioBuilder = () => {
 </body>
 </html>`;
       
-      // Use srcdoc for better compatibility
-      iframe.srcdoc = fullCode;
+      // Force refresh by changing srcdoc
+      iframe.srcdoc = '';
+      setTimeout(() => {
+        iframe.srcdoc = fullCode;
+      }, 50);
       
     } catch (error) {
       console.error('Preview update error:', error);
@@ -406,8 +485,14 @@ const AIPortfolioBuilder = () => {
   };
 
   const refreshPreview = () => {
+    console.log('🔄 Refreshing preview...');
     setPreviewKey(prev => prev + 1);
-    setTimeout(updatePreview, 100);
+    
+    // Force immediate update
+    setTimeout(() => {
+      updatePreview();
+      console.log('✅ Preview refreshed');
+    }, 100);
   };
 
   const copyCode = async () => {
@@ -613,11 +698,36 @@ ${htmlCode}
           </div>
           <div>
             <h1 className="text-lg font-bold text-white">AI Portfolio Builder</h1>
-            <p className="text-xs text-gray-400">Building for {userName}</p>
+            <p className="text-xs text-gray-400">Powered by Advanced AI • Building for {userName}</p>
           </div>
         </div>
         
         <div className="flex items-center gap-2">
+          {chatMessages.length > 1 && (
+            <button
+              onClick={async () => {
+                try {
+                  await axios.delete('/api/portfolio/context', {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                  });
+                  setChatMessages([{
+                    id: Date.now(),
+                    type: 'ai',
+                    content: `Context cleared! I'm ready to help you create a fresh portfolio, ${userName}. What would you like to build?`,
+                    timestamp: new Date()
+                  }]);
+                } catch (error) {
+                  console.error('Failed to clear context:', error);
+                }
+              }}
+              className="header-button px-3 py-2 rounded-lg text-sm font-medium text-white flex items-center gap-2"
+              title="Clear conversation context"
+            >
+              <RefreshCw className="h-4 w-4" />
+              New Chat
+            </button>
+          )}
+          
           <button
             onClick={copyCode}
             className="header-button px-4 py-2 rounded-lg text-sm font-medium text-white flex items-center gap-2"
@@ -722,13 +832,21 @@ ${htmlCode}
               <div className="p-4 border-t border-white/10" style={{
                 background: 'rgba(17, 24, 39, 0.5)'
               }}>
+                {/* Context Indicator */}
+                {chatMessages.length > 1 && (
+                  <div className="mb-3 flex items-center gap-2 text-xs text-purple-300">
+                    <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+                    <span>AI remembers our conversation context</span>
+                  </div>
+                )}
+                
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendChatMessage()}
-                    placeholder="Describe your portfolio..."
+                    placeholder={chatMessages.length > 1 ? "Ask for improvements or changes..." : "Describe your portfolio..."}
                     className="flex-1 px-4 py-2 rounded-lg text-white placeholder-gray-400 focus:outline-none text-sm border focus:border-purple-500"
                     style={{
                       background: 'rgba(31, 41, 55, 0.6)',

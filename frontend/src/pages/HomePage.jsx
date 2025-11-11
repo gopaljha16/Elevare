@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthContext } from '../contexts/AuthContext';
 
-const trustLogos = ['Google', 'Microsoft', 'Amazon', 'Meta', 'Apple', 'Netflix'];
+const trustLogos = ['Codexa', 'Nexonnect', 'Lynkr'];
 
 const navLinks = [
   { label: 'Features', href: '#features', hasDropdown: true },
