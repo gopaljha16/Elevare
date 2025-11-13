@@ -12,6 +12,7 @@ const { connectRedis } = require('./config/redis');
 const aiConfig = require('./config/aiConfig');
 const { requestMonitoring, errorMonitoring, healthCheck, metricsEndpoint } = require('./middleware/monitoring');
 const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/user');
 const interviewRoutes = require('./routes/interview');
 const learningRoutes = require('./routes/learning');
 const learningPathRoutes = require('./routes/learningPath');
@@ -102,6 +103,7 @@ app.get('/metrics', metricsEndpoint);
 
 // api routes
 app.use('/api/auth', authRoutes);
+app.use('/api/user', userRoutes);
 app.use('/api/interviews', interviewRoutes);
 app.use('/api/learning', learningRoutes);
 app.use('/api/learning-paths', learningPathRoutes);

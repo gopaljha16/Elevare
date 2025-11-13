@@ -2,7 +2,7 @@ const axios = require('axios');
 
 class OpenRouterService {
   constructor() {
-    this.apiKey = "";
+    this.apiKey = process.env.OPENROUTER_API_KEY || "";
     this.model = process.env.OPENROUTER_MODEL || 'deepseek/deepseek-chat';
     this.baseURL = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
     
@@ -30,11 +30,13 @@ class OpenRouterService {
       let systemPrompt, userPrompt;
 
       if (isImprovement && currentCode) {
-        systemPrompt = `You are Elevare Portfolio Generator, the world's most elite web design AI that creates MIND-BLOWING, AWARD-WINNING websites. You excel at improving existing code to make it absolutely REVOLUTIONARY.`;
+        systemPrompt = `You are Elevare Portfolio Generator, an expert web design AI that makes TARGETED, PRECISE improvements to existing portfolios. You NEVER rebuild from scratch - you only modify what the user specifically requests while preserving everything else.`;
         
-        userPrompt = `Improve this portfolio website for ${userName} based on their request.
+        userPrompt = `CRITICAL INSTRUCTIONS - READ CAREFULLY:
 
-Current Code:
+You are improving an EXISTING portfolio for ${userName}. The user wants SPECIFIC changes, NOT a complete rebuild.
+
+CURRENT WORKING CODE (DO NOT DISCARD THIS):
 HTML:
 ${currentCode.html}
 
@@ -44,31 +46,54 @@ ${currentCode.css}
 JavaScript:
 ${currentCode.js}
 
-Improvement Request: ${prompt}
+USER'S SPECIFIC REQUEST: "${prompt}"
 
-Create an IMPROVED version that's even more stunning and responsive. Return ONLY a valid JSON object with this exact structure (no markdown, no code blocks):
+🎯 YOUR TASK:
+1. ANALYZE the user's request carefully - what EXACTLY do they want changed?
+2. KEEP 95% of the existing code unchanged
+3. ONLY modify the specific elements mentioned in the request
+4. PRESERVE all existing content, structure, and styling not mentioned
+5. Make SURGICAL, TARGETED changes - not wholesale replacements
+
+EXAMPLES OF TARGETED CHANGES:
+- "Change colors to blue" → ONLY update color values in CSS, keep everything else
+- "Add a contact form" → ONLY add form HTML/CSS/JS, keep all other sections
+- "Make hero bigger" → ONLY adjust hero section height/padding, keep rest unchanged
+- "Add animations" → ONLY add animation CSS/JS, keep existing structure
+- "Fix mobile layout" → ONLY adjust responsive CSS, keep desktop styles
+
+⚠️ CRITICAL RULES:
+- If user says "change colors", ONLY change colors - don't rebuild sections
+- If user says "add X", ONLY add X - don't remove or rebuild existing content
+- If user says "improve Y", ONLY enhance Y - don't touch other sections
+- MAINTAIN the same HTML structure unless specifically asked to change it
+- PRESERVE all existing content (text, images, links) unless asked to change it
+- Keep the same overall design aesthetic unless asked to change it
+
+Return ONLY a valid JSON object (no markdown, no code blocks):
 {
-  "html": "improved HTML body content with extensive content (no DOCTYPE, html, head, or body tags)",
-  "css": "improved CSS with perfect mobile responsiveness and award-winning styling",
-  "js": "improved JavaScript with cutting-edge interactivity",
-  "message": "Brief description of revolutionary improvements made"
+  "html": "the SAME HTML with ONLY the requested changes applied",
+  "css": "the SAME CSS with ONLY the requested changes applied",
+  "js": "the SAME JavaScript with ONLY the requested changes applied",
+  "message": "Brief description of the SPECIFIC changes made (not a rebuild)"
 }
 
-Requirements:
-- Make it SUPER RESPONSIVE (mobile-first, perfect on all devices)
-- Add advanced animations and interactions
-- Use glassmorphism, gradients, and modern effects
-- Ensure perfect mobile optimization
-- Include rich, detailed content`;
+Remember: You're making TARGETED IMPROVEMENTS, not creating a new portfolio!`;
 
       } else {
-        systemPrompt = `You are Elevare Portfolio Generator, the world's most elite web design AI that creates MIND-BLOWING, AWARD-WINNING websites that look like they cost $100,000+. You ONLY create websites that would win design awards and make people say "HOLY SH*T, THIS IS INCREDIBLE!"`;
+        systemPrompt = `You are Elevare Portfolio Generator, an expert web design AI that creates stunning, professional portfolio websites. You understand user intent deeply and create portfolios that perfectly match their vision and profession.`;
         
-        userPrompt = `Create a REVOLUTIONARY, BREATHTAKING portfolio website for ${userName}.
+        userPrompt = `Create a professional, modern portfolio website for ${userName}.
 
-User's Vision: ${prompt}
+User's Request: "${prompt}"
 
-🔥 CREATE AN AWARD-WINNING MASTERPIECE WITH:
+🎯 UNDERSTAND THE USER'S INTENT:
+- Analyze their profession/role from the request
+- Understand their style preferences (modern, minimal, creative, etc.)
+- Identify what sections they need based on their field
+- Match the tone and aesthetic to their profession
+
+🔥 CREATE A STUNNING PORTFOLIO WITH:
 
 EXTENSIVE CONTENT & STRUCTURE:
 - Stunning hero section with animated backgrounds and ${userName}'s name

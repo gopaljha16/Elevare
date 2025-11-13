@@ -2,10 +2,23 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { AppError } = require('../middleware/errorHandler');
 const { cacheService } = require('./cacheService');
 const aiConfig = require('../config/aiConfig');
-const pdfParseModule = require('pdf-parse');
-const mammoth = require('mammoth');
+// Import dependencies with error handling
+let pdfParse = null;
+let mammoth = null;
 
-const pdfParse = typeof pdfParseModule === 'function' ? pdfParseModule : pdfParseModule?.default;
+try {
+  pdfParse = require('pdf-parse');
+  console.log('✅ pdf-parse loaded successfully');
+} catch (error) {
+  console.error('❌ Failed to load pdf-parse:', error.message);
+}
+
+try {
+  mammoth = require('mammoth');
+  console.log('✅ mammoth loaded successfully');
+} catch (error) {
+  console.error('❌ Failed to load mammoth:', error.message);
+}
 
 class AIService {
   constructor() {
@@ -1279,8 +1292,8 @@ IMPORTANT: Scan the text thoroughly and extract as much information as possible.
     return cleanData;
   }
 
-  // Enhanced text parsing with better extraction
-  async enhancedTextParsing(text) {
+  /**
+   * Generate portfolio code using Gemin
     console.log('🔧 Starting enhanced text parsing...');
     
     if (!text || typeof text !== 'string') {
@@ -1928,10 +1941,11 @@ Return ONLY valid JSON in this format:
       
       if (fileType === 'pdf' || fileType === 'application/pdf') {
         console.log('📄 Parsing PDF file...');
+        if (!pdfParse) {
+          console.error('❌ pdf-parse module not available');
+          throw new Error('PDF parsing is not available. Please install pdf-parse dependency or upload a DOCX file instead.');
+        }
         try {
-          if (!pdfParse) {
-            throw new Error('pdf-parse module not properly loaded');
-          }
           const pdfData = await pdfParse(fileBuffer);
           resumeText = pdfData.text;
           console.log('✅ PDF parsed, text length:', resumeText.length);
@@ -1941,6 +1955,10 @@ Return ONLY valid JSON in this format:
         }
       } else if (fileType === 'docx' || fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
         console.log('📄 Parsing DOCX file...');
+        if (!mammoth) {
+          console.error('❌ mammoth module not available');
+          throw new Error('DOCX parsing is not available. Please install mammoth dependency or upload a PDF file instead.');
+        }
         try {
           const result = await mammoth.extractRawText({ buffer: fileBuffer });
           resumeText = result.value;

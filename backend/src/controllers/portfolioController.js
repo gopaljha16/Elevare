@@ -4,6 +4,9 @@ const Portfolio = require('../models/Portfolio');
 const User = require('../models/User');
 const aiService = require('../services/aiService');
 const openRouterService = require('../services/openRouterService');
+const replicateService = require('../services/replicateService');
+const geminiPortfolioService = require('../services/geminiPortfolioService');
+const contextService = require('../services/contextService');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
@@ -914,11 +917,12 @@ function generateTailwindConfig(template) {
 };`;
 }
 
-// @desc    Generate portfolio code with AI (using OpenRouter)
+// @desc    Generate portfolio code with AI (using Replicate AI)
 // @route   POST /api/portfolio/generate-code
 // @access  Private
 const generatePortfolioCode = asyncHandler(async (req, res) => {
   const { prompt, userName, currentCode, isImprovement } = req.body;
+  const userId = req.user._id.toString();
   
   if (!prompt || !userName) {
     return res.status(400).json({
@@ -932,74 +936,113 @@ const generatePortfolioCode = asyncHandler(async (req, res) => {
     console.log(`📝 Prompt: ${prompt}`);
     console.log(`🔄 Is improvement: ${isImprovement}`);
     
-    // Use OpenRouter service for portfolio generation
+    const startTime = Date.now();
+    
+    // Get user context for better prompts
+    const userContext = await contextService.getContext(userId);
+    console.log(`📚 User context: ${userContext ? 'Found' : 'New user'}`);
+    
+    // Build contextual prompt if we have history
+    const enhancedPrompt = userContext ? 
+      contextService.buildContextualPrompt(prompt, userContext) : 
+      prompt;
+    
+    let result;
+    let aiProvider;
+    
+    // Primary: Use OpenRouter service for portfolio generation (more reliable)
     if (openRouterService.isAvailable()) {
-      console.log('✨ Using OpenRouter (DeepSeek) for portfolio generation...');
+      console.log('✨ Using OpenRouter AI for portfolio generation...');
       
-      const result = await openRouterService.generatePortfolioCode(
-        prompt,
+      result = await openRouterService.generatePortfolioCode(
+        enhancedPrompt,
         userName,
         currentCode,
         isImprovement
       );
       
-      console.log('✅ Portfolio code generated successfully with OpenRouter!');
-      
-      return res.json({
-        success: true,
-        code: {
-          html: result.html,
-          css: result.css,
-          js: result.js
-        },
-        message: result.message,
-        aiProvider: 'OpenRouter (DeepSeek)'
-      });
+      aiProvider = 'OpenRouter AI';
+      console.log('✅ Portfolio code generated successfully with OpenRouter AI!');
     }
-    
-    // Try Gemini AI as secondary fallback
-    console.warn('⚠️ OpenRouter not available, trying Gemini AI...');
-    
-    try {
-      // Try using Gemini AI service
-      const geminiResult = await aiService.generatePortfolioFromPrompt({
-        prompt: `${prompt}\n\nCreate a complete portfolio website for ${userName}. Return HTML, CSS, and JavaScript code.`,
-        style: 'modern',
-        colorScheme: 'professional'
-      });
+    // Secondary: Try Gemini as fallback
+    else if (geminiPortfolioService.isAvailable()) {
+      console.log('⚠️ OpenRouter not available, trying Gemini AI...');
       
-      if (geminiResult && geminiResult.html) {
-        console.log('✅ Portfolio code generated successfully with Gemini AI!');
+      // Test connection first
+      const connectionTest = await geminiPortfolioService.testConnection();
+      if (connectionTest) {
+        result = await geminiPortfolioService.generatePortfolioCode(
+          enhancedPrompt,
+          userName,
+          currentCode,
+          isImprovement
+        );
         
-        return res.json({
-          success: true,
-          code: {
-            html: geminiResult.html,
-            css: geminiResult.css || generateFallbackCSS(),
-            js: geminiResult.js || generateFallbackJS()
-          },
-          message: 'Portfolio generated with Gemini AI',
-          aiProvider: 'Gemini AI (Fallback)'
-        });
+        aiProvider = 'Gemini AI (Fallback)';
+        console.log('✅ Portfolio code generated successfully with Gemini AI!');
+      } else {
+        console.warn('⚠️ Gemini connection test failed, skipping to next fallback');
       }
-    } catch (geminiError) {
-      console.warn('⚠️ Gemini AI also failed:', geminiError.message);
+    }
+    // Tertiary: Try Replicate as additional fallback
+    if (!result && replicateService.isAvailable()) {
+      console.log('⚠️ Primary services not available, trying Replicate...');
+      
+      result = await replicateService.generatePortfolioCode(
+        enhancedPrompt,
+        userName,
+        currentCode,
+        isImprovement
+      );
+      
+      aiProvider = 'Replicate AI (Fallback)';
+      console.log('✅ Portfolio code generated successfully with Replicate AI!');
+    }
+    // Final fallback to template-based generation
+    if (!result) {
+      console.warn('⚠️ All AI services unavailable, using template generation');
+      
+      result = {
+        html: generateFallbackHTML(userName, prompt),
+        css: generateFallbackCSS(),
+        js: generateFallbackJS(),
+        message: 'Portfolio generated with template (AI services not configured)'
+      };
+      aiProvider = 'Template Fallback';
     }
     
-    // Final fallback to template-based generation
-    console.warn('⚠️ All AI services unavailable, using template generation');
+    const responseTime = Date.now() - startTime;
     
-    const fallbackCode = {
-      html: generateFallbackHTML(userName, prompt),
-      css: generateFallbackCSS(),
-      js: generateFallbackJS()
-    };
+    // Store generation info in context for future improvements
+    const portfolioInfo = contextService.extractPortfolioInfo(result, prompt);
+    portfolioInfo.responseTime = responseTime;
+    portfolioInfo.aiProvider = aiProvider;
+    portfolioInfo.isImprovement = isImprovement;
+    
+    await contextService.updateContext(userId, {
+      previousGenerations: [
+        ...(userContext?.previousGenerations || []),
+        portfolioInfo
+      ].slice(-10), // Keep last 10 generations
+      lastPrompt: prompt,
+      lastGeneration: Date.now(),
+      userName: userName,
+      totalGenerations: (userContext?.totalGenerations || 0) + 1
+    });
+    
+    console.log(`⏱️ Generation completed in ${responseTime}ms`);
     
     res.json({
       success: true,
-      code: fallbackCode,
-      message: 'Portfolio generated with template (AI services not configured)',
-      aiProvider: 'Template Fallback'
+      code: {
+        html: result.html,
+        css: result.css,
+        js: result.js
+      },
+      message: result.message,
+      aiProvider: aiProvider,
+      responseTime: responseTime,
+      contextUsed: !!userContext
     });
     
   } catch (error) {
@@ -1526,6 +1569,48 @@ document.querySelectorAll('.skill-card, .project-card').forEach(card => {
 console.log('Portfolio loaded successfully! ✨');`;
 }
 
+// @desc    Clear user's portfolio generation context
+// @route   DELETE /api/portfolio/context
+// @access  Private
+const clearPortfolioContext = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user._id.toString();
+    await contextService.clearContext(userId);
+    
+    res.json({
+      success: true,
+      message: 'Portfolio generation context cleared successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to clear context',
+      error: error.message
+    });
+  }
+});
+
+// @desc    Get user's portfolio generation context stats
+// @route   GET /api/portfolio/context/stats
+// @access  Private
+const getPortfolioContextStats = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user._id.toString();
+    const stats = await contextService.getContextStats(userId);
+    
+    res.json({
+      success: true,
+      stats
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get context stats',
+      error: error.message
+    });
+  }
+});
+
 module.exports = {
   createPortfolio,
   getUserPortfolios,
@@ -1533,5 +1618,7 @@ module.exports = {
   updatePortfolio,
   portfolioAIChat,
   publishPortfolio,
-  generatePortfolioCode
+  generatePortfolioCode,
+  clearPortfolioContext,
+  getPortfolioContextStats
 };

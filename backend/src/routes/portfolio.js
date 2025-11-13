@@ -7,7 +7,9 @@ const {
   updatePortfolio,
   portfolioAIChat,
   publishPortfolio,
-  generatePortfolioCode
+  generatePortfolioCode,
+  clearPortfolioContext,
+  getPortfolioContextStats
 } = require('../controllers/portfolioController');
 const { authenticate } = require('../middleware/auth');
 const { body, validationResult } = require('express-validator');
@@ -342,6 +344,60 @@ router.get('/:id/analytics', authenticate, async (req, res) => {
 // @desc    Generate portfolio code with AI
 // @access  Private
 router.post('/generate-code', authenticate, generatePortfolioCode);
+
+// @route   DELETE /api/portfolio/context
+// @desc    Clear user's portfolio generation context
+// @access  Private
+router.delete('/context', authenticate, clearPortfolioContext);
+
+// @route   GET /api/portfolio/context/stats
+// @desc    Get user's portfolio generation context stats
+// @access  Private
+router.get('/context/stats', authenticate, getPortfolioContextStats);
+
+// @route   GET /api/portfolio/test-ai
+// @desc    Test AI services availability
+// @access  Private
+router.get('/test-ai', authenticate, async (req, res) => {
+  try {
+    const geminiPortfolioService = require('../services/geminiPortfolioService');
+    const openRouterService = require('../services/openRouterService');
+    const replicateService = require('../services/replicateService');
+
+    const results = {
+      gemini: {
+        available: geminiPortfolioService.isAvailable(),
+        connectionTest: false
+      },
+      openRouter: {
+        available: openRouterService.isAvailable()
+      },
+      replicate: {
+        available: replicateService.isAvailable()
+      }
+    };
+
+    // Test Gemini connection
+    if (results.gemini.available) {
+      try {
+        results.gemini.connectionTest = await geminiPortfolioService.testConnection();
+      } catch (error) {
+        results.gemini.error = error.message;
+      }
+    }
+
+    res.json({
+      success: true,
+      services: results
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to test AI services',
+      error: error.message
+    });
+  }
+});
 
 // @route   POST /api/portfolio/:id/export
 // @desc    Export portfolio as ZIP file
