@@ -13,15 +13,21 @@ echo ""
 # Navigate to frontend directory
 cd frontend
 
-# Clean previous builds
+# Clean previous builds and caches
 echo "🧹 Cleaning previous builds..."
-rm -rf node_modules package-lock.json dist .vite
+rm -rf node_modules package-lock.json dist .vite npm-cache
 echo "   ✅ Cleaned"
 echo ""
 
-# Install dependencies with force to rebuild native modules
+# Clear npm cache
+echo "🗑️  Clearing npm cache..."
+npm cache clean --force
+echo "   ✅ Cache cleared"
+echo ""
+
+# Install exact versions (no upgrades)
 echo "📦 Installing dependencies..."
-npm install --legacy-peer-deps --force
+npm install --legacy-peer-deps
 if [ $? -ne 0 ]; then
     echo "❌ Installation failed"
     exit 1
