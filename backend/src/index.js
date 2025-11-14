@@ -63,7 +63,9 @@ try {
 
 // connect to mongodb and redis
 connectDB();
-connectRedis();
+connectRedis().catch(err => {
+  console.error('Redis connection failed, continuing with mock client:', err.message);
+});
 
 // security middleware
 app.use(helmet());

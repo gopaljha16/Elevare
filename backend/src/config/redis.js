@@ -29,6 +29,7 @@ let redisClient;
 const createMockRedisClient = () => {
     console.warn('⚠️ Using mock Redis client - Redis features will be limited');
     return {
+        isMock: true,
         connect: async () => {
             console.log('🔌 Using mock Redis client - no actual connection');
             isRedisConnected = true;
@@ -117,13 +118,36 @@ const connectRedis = async () => {
         redisClient = createMockRedisClient();
     }
 
-    try {
+    // If already using mock client, just connect
+    if (redisClient.isMock || !useRealRedis) {
         await redisClient.connect();
+        return redisClient;
+    }
+
+    try {
+        // Set a timeout for connection
+        const connectPromise = redisClient.connect();
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Redis connection timeout')), 10000)
+        );
+
+        await Promise.race([connectPromise, timeoutPromise]);
+        console.log('✅ Successfully connected to Redis');
         return redisClient;
     } catch (error) {
         console.error('❌ Failed to connect to Redis:', error.message);
+        console.log('🔄 Falling back to mock Redis client');
+        
+        // Disconnect failed client
+        try {
+            await redisClient.disconnect();
+        } catch (e) {
+            // Ignore disconnect errors
+        }
+        
         // Fall back to mock client
         redisClient = createMockRedisClient();
+        redisClient.isMock = true;
         await redisClient.connect();
         return redisClient;
     }

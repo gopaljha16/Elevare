@@ -60,7 +60,11 @@ const trackAPIUsage = (req, res, next) => {
  */
 class GeminiAPIKeyManager {
   constructor() {
-    this.currentKey = process.env.GEMINI_API_KEY;
+    // Support both GEMINI_API_KEY (singular) and GEMINI_API_KEYS (plural)
+    const apiKeys = process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || '';
+    this.keys = apiKeys.split(',').map(key => key.trim()).filter(Boolean);
+    this.currentKeyIndex = 0;
+    this.currentKey = this.keys[0] || '';
     this.keyRotationInterval = 24 * 60 * 60 * 1000; // 24 hours
     this.lastRotation = Date.now();
     this.usageCount = 0;
