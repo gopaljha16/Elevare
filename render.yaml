@@ -1,51 +1,89 @@
 services:
+  # Backend Service
   - type: web
     name: elevare-backend
     env: node
-    region: oregon
+    region: singapore
     plan: free
-    buildCommand: cd backend && chmod +x render-build.sh && ./render-build.sh
-    startCommand: cd backend && npm start
+    buildCommand: bash backend/render-build.sh
+    startCommand: cd backend && node src/index.js
     envVars:
+      - key: NODE_VERSION
+        value: 20.19.0
       - key: NODE_ENV
         value: production
       - key: PORT_NO
-        value: 10000
+        value: 5000
       - key: DATABASE_URL
+        sync: false
+      - key: REDIS_PASSWORD
+        sync: false
+      - key: REDIS_HOST
+        sync: false
+      - key: REDIS_PORT
         sync: false
       - key: JWT_SECRET
         sync: false
-      - key: GOOGLE_CLIENT_ID
-        sync: false
-      - key: GOOGLE_CLIENT_SECRET
+      - key: FRONTEND_URL
         sync: false
       - key: GEMINI_API_KEYS
         sync: false
       - key: GEMINI_MODEL
         value: gemini-1.5-pro
-      - key: REDIS_HOST
+      - key: GOOGLE_CLIENT_ID
         sync: false
-      - key: REDIS_PORT
+      - key: GOOGLE_CLIENT_SECRET
         sync: false
-      - key: REDIS_PASSWORD
+      - key: CLOUDINARY_CLOUD_NAME
         sync: false
-      - key: FRONTEND_URL
-        value: https://elevare-seven.vercel.app
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: RAZORPAY_KEY
+        sync: false
+      - key: RAZORPAY_SECRET
+        sync: false
+      - key: HUG_API_KEY
+        sync: false
+      - key: SKIP_ATS_AUTH
+        value: true
       - key: AI_REQUEST_TIMEOUT
         value: 30000
       - key: AI_RETRY_ATTEMPTS
         value: 3
-      - key: AI_RETRY_DELAY
-        value: 1000
-      - key: AI_RATE_LIMIT_PER_DAY
-        value: 1000
-      - key: AI_RATE_LIMIT_PER_HOUR
-        value: 100
-      - key: AI_RATE_LIMIT_PER_MINUTE
-        value: 10
       - key: AI_CACHE_ENABLED
         value: true
-      - key: AI_LOGGING_ENABLED
-        value: true
-      - key: AI_LOG_LEVEL
-        value: info
+    healthCheckPath: /health
+
+  # Frontend Service (Static Site)
+  - type: web
+    name: elevare-frontend
+    env: static
+    region: singapore
+    plan: free
+    buildCommand: bash frontend/render-build.sh
+    staticPublishPath: frontend/dist
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: SAMEORIGIN
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: 20.19.0
+      - key: VITE_API_URL
+        sync: false
+      - key: VITE_BACKEND_URL
+        sync: false
+      - key: VITE_FRONTEND_URL
+        sync: false
