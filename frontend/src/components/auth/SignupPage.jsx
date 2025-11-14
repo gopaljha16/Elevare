@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Eye, EyeOff } from 'lucide-react';
 import { loginStart, loginSuccess, loginFailure } from '../../store/slices/authSlice';
 import { useAuthContext } from '../../contexts/AuthContext';
+import { config } from '../../config/environment';
 
 const SignupPage = () => {
   const [formData, setFormData] = useState({
@@ -39,8 +40,10 @@ const SignupPage = () => {
     dispatch(loginStart());
     
     try {
-      // Use relative URL to leverage Vite proxy
-      window.location.href = '/api/auth/google';
+      // Use environment-aware URL configuration
+      const googleAuthUrl = config.getApiEndpoint('/auth/google');
+      console.log('🔗 Redirecting to Google OAuth:', googleAuthUrl);
+      window.location.href = googleAuthUrl;
     } catch (error) {
       console.error('❌ Error during redirect:', error);
       dispatch(loginFailure('Failed to initiate Google signup'));

@@ -38,12 +38,15 @@ axiosClient.interceptors.response.use(
       const refreshToken = localStorage.getItem('refreshToken');
       if (refreshToken) {
         try {
+          console.log('🔄 Attempting to refresh token...');
           const response = await axios.post(
-            '/api/auth/refresh-token',
+            `${config.apiUrl}/auth/refresh-token`,
             { refreshToken }
           );
 
           const { token: newToken, refreshToken: newRefreshToken } = response.data.data;
+          
+          console.log('✅ Token refreshed successfully');
           
           // Update stored tokens
           localStorage.setItem('token', newToken);
@@ -54,13 +57,14 @@ axiosClient.interceptors.response.use(
           return axiosClient(originalRequest);
         } catch (refreshError) {
           // Refresh failed, redirect to login
+          console.error('❌ Token refresh failed:', refreshError.message);
           localStorage.removeItem('token');
           localStorage.removeItem('refreshToken');
           localStorage.removeItem('user');
           
           // Redirect to login page
           if (typeof window !== 'undefined') {
-            window.location.href = '/login';
+            window.location.href = '/login?error=session_expired';
           }
           
           return Promise.reject(refreshError);
@@ -75,6 +79,16 @@ axiosClient.interceptors.response.use(
           window.location.href = '/login';
         }
       }
+    }
+
+    // Handle network errors
+    if (!error.response) {
+      console.error('❌ Network error:', error.message);
+      // Network error - no response from server
+      error.message = 'Unable to connect to server. Please check your internet connection.';
+    } else if (error.response.status >= 500) {
+      console.error('❌ Server error:', error.response.status);
+      error.message = 'Server error. Please try again later.';
     }
 
     return Promise.reject(error);

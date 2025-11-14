@@ -89,14 +89,24 @@ const allowedOrigins = [
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
+console.log('🔒 CORS Configuration:');
+console.log('   Allowed Origins:', allowedOrigins);
+console.log('   Credentials:', true);
+console.log('   Methods:', ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH']);
+
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      console.log('✅ CORS: Allowing request with no origin');
+      return callback(null, true);
+    }
     
     if (allowedOrigins.includes(origin)) {
+      console.log(`✅ CORS: Allowing origin: ${origin}`);
       callback(null, true);
     } else {
+      console.log(`❌ CORS: Blocking origin: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },

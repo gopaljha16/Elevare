@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { loginSuccess } from '../../store/slices/authSlice';
+import { config } from '../../config/environment';
 
 const GoogleCallback = () => {
   const [searchParams] = useSearchParams();
@@ -21,8 +22,8 @@ const GoogleCallback = () => {
 
     if (token && refreshToken) {
       // Fetch user profile with the token
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
-      fetch(`${backendUrl}/api/auth/profile`, {
+      console.log('🔐 Fetching user profile after Google OAuth');
+      fetch(`${config.apiUrl}/auth/profile`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
