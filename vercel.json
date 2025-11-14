@@ -1,19 +1,13 @@
 {
   "version": 2,
-  "buildCommand": "bash vercel-build.sh",
+  "buildCommand": "cd frontend && npm install --legacy-peer-deps && npm run build",
   "outputDirectory": "frontend/dist",
-  "installCommand": "echo 'Skipping root install'",
+  "installCommand": "echo 'Skip root install'",
   "framework": null,
-  "devCommand": null,
   "rewrites": [
     {
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ],
-  "build": {
-    "env": {
-      "NODE_VERSION": "20.19.0"
-    }
-  }
+  ]
 }

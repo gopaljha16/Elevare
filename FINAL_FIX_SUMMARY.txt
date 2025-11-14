@@ -1,0 +1,24 @@
+VERCEL BUILD FIX - FINAL SOLUTION
+==================================
+
+PROBLEM: Rollup native module error with Vite 7.x on Vercel
+
+SOLUTION: Downgraded to Vite 5.4.11 (stable version)
+
+CHANGES MADE:
+1. frontend/package.json - Changed vite from ^7.1.7 to ^5.4.11
+2. vercel.json - Simplified build command (no bash scripts)
+3. .nvmrc - Set to Node 20
+4. frontend/vite.config.js - Simplified build config
+
+DEPLOY NOW:
+-----------
+git add .
+git commit -m "Fix: Downgrade Vite to 5.4.11 for Vercel"
+git push
+
+THEN:
+1. Vercel Dashboard → Settings → Clear Build Cache
+2. Redeploy
+
+This will work. Vite 5.4.11 is proven stable on Vercel.
