@@ -1,0 +1,103 @@
+{
+  "total": 11,
+  "passed": 3,
+  "failed": 7,
+  "warnings": 1,
+  "tests": [
+    {
+      "name": "AI Service Initialization",
+      "status": "WARNING",
+      "details": {
+        "hasModel": false,
+        "hasGenAI": false
+      },
+      "timestamp": "2025-11-14T09:55:13.652Z"
+    },
+    {
+      "name": "API Key Configuration",
+      "status": "FAIL",
+      "details": {},
+      "timestamp": "2025-11-14T09:55:13.652Z"
+    },
+    {
+      "name": "Resume Analysis",
+      "status": "FAIL",
+      "details": {
+        "error": "AI service temporarily unavailable"
+      },
+      "timestamp": "2025-11-14T09:55:13.658Z"
+    },
+    {
+      "name": "ATS Scoring",
+      "status": "PASS",
+      "details": {
+        "score": 65,
+        "duration": 0,
+        "sections": 5
+      },
+      "timestamp": "2025-11-14T09:55:13.659Z"
+    },
+    {
+      "name": "Resume Optimization",
+      "status": "FAIL",
+      "details": {
+        "error": "AI service temporarily unavailable"
+      },
+      "timestamp": "2025-11-14T09:55:13.661Z"
+    },
+    {
+      "name": "Interview Question Generation",
+      "status": "PASS",
+      "details": {
+        "count": 3,
+        "duration": 1
+      },
+      "timestamp": "2025-11-14T09:55:13.663Z"
+    },
+    {
+      "name": "Answer Evaluation",
+      "status": "PASS",
+      "details": {
+        "score": 80,
+        "duration": 2
+      },
+      "timestamp": "2025-11-14T09:55:13.666Z"
+    },
+    {
+      "name": "Cover Letter Generation",
+      "status": "FAIL",
+      "details": {
+        "error": "AI service temporarily unavailable"
+      },
+      "timestamp": "2025-11-14T09:55:13.668Z"
+    },
+    {
+      "name": "Skill Gap Analysis",
+      "status": "FAIL",
+      "details": {
+        "error": "AI service temporarily unavailable"
+      },
+      "timestamp": "2025-11-14T09:55:13.671Z"
+    },
+    {
+      "name": "Caching Performance",
+      "status": "FAIL",
+      "details": {
+        "error": "AI service temporarily unavailable"
+      },
+      "timestamp": "2025-11-14T09:55:13.675Z"
+    },
+    {
+      "name": "Error Handling - Invalid Data",
+      "status": "FAIL",
+      "details": {
+        "error": "AI service temporarily unavailable"
+      },
+      "timestamp": "2025-11-14T09:55:13.678Z"
+    }
+  ],
+  "startTime": 1763114113645,
+  "duration": 43,
+  "passRate": "27.3",
+  "timestamp": "2025-11-14T09:55:13.688Z"
+}

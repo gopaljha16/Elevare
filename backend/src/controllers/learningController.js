@@ -388,8 +388,6 @@ const analyzeSkillGaps = asyncHandler(async (req, res) => {
     }
 
     try {
-        const aiService = require('../services/aiService');
-
         // Get user's current skills from resumes and learning progress if not provided
         let userSkills = currentSkills || [];
 
@@ -413,8 +411,9 @@ const analyzeSkillGaps = asyncHandler(async (req, res) => {
             userSkills = [...new Set([...resumeSkills, ...learningSkills])];
         }
 
-        // Use AI to analyze skill gaps
-        const skillGapAnalysis = await aiService.analyzeSkillGaps(
+        // Use Gemini AI to analyze skill gaps
+        const geminiAIService = require('../services/geminiAIService');
+        const skillGapAnalysis = await geminiAIService.analyzeSkillGaps(
             userSkills,
             sanitizeInput(targetRole),
             sanitizeInput(targetCompany)

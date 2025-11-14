@@ -27,8 +27,8 @@ const startInterviewSession = asyncHandler(async (req, res) => {
   // Try to use AI for question generation if enabled
   if (useAI && company && role) {
     try {
-      const aiService = require('../services/aiService');
-      const aiQuestions = await aiService.generateInterviewQuestions({
+      const geminiAIService = require('../services/geminiAIService');
+      const aiQuestions = await geminiAIService.generateInterviewQuestions({
         company: sanitizeInput(company),
         role: sanitizeInput(role),
         difficulty,
@@ -257,8 +257,8 @@ const submitAnswer = asyncHandler(async (req, res) => {
   // Use AI evaluation for open-ended questions
   if (useAI && (currentQuestion.type === 'behavioral' || currentQuestion.type === 'technical' || currentQuestion.type === 'coding')) {
     try {
-      const aiService = require('../services/aiService');
-      aiEvaluation = await aiService.evaluateInterviewAnswer(
+      const geminiAIService = require('../services/geminiAIService');
+      aiEvaluation = await geminiAIService.evaluateInterviewAnswer(
         currentQuestion.content,
         sanitizeInput(answer),
         currentQuestion.type

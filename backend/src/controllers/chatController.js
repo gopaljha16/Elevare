@@ -1,8 +1,5 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
-
-// Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const geminiAIService = require('../services/geminiAIService');
 
 // Store chat sessions in memory (in production, use Redis or database)
 const chatSessions = new Map();
@@ -78,48 +75,24 @@ const portfolioAssistant = asyncHandler(async (req, res) => {
  */
 const generateAIResponse = async (message, portfolioData, chatHistory, context) => {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
     // Build context for AI
     const portfolioContext = buildPortfolioContext(portfolioData);
-    const conversationHistory = chatHistory.slice(-10).map(h => `${h.role}: ${h.content}`).join('\n');
+    const conversationHistory = chatHistory.slice(-10);
 
-    const systemPrompt = `You are an expert AI Portfolio Assistant. Your role is to help users create, improve, and optimize their professional portfolios.
+    // Use Gemini AI Service for chat response
+    const chatContext = {
+      portfolio: portfolioData,
+      currentSection: context.currentSection || 'portfolio-builder',
+      userIntent: context.userIntent || 'portfolio-improvement',
+      timestamp: context.timestamp || new Date().toISOString()
+    };
 
-CURRENT PORTFOLIO DATA:
-${portfolioContext}
-
-CONVERSATION HISTORY:
-${conversationHistory}
-
-USER CONTEXT:
-- Current section: ${context.currentSection || 'portfolio-builder'}
-- User intent: ${context.userIntent || 'portfolio-improvement'}
-- Timestamp: ${context.timestamp || new Date().toISOString()}
-
-INSTRUCTIONS:
-1. Provide helpful, actionable advice for portfolio improvement
-2. Be specific and personalized based on the user's actual data
-3. Suggest concrete improvements, not generic advice
-4. When appropriate, provide actionable suggestions the user can apply
-5. Keep responses concise but informative (max 200 words)
-6. Always be encouraging and professional
-7. Focus on practical improvements that will make a real difference
-
-RESPONSE FORMAT:
-Your response should be helpful advice. If you have specific actionable suggestions, mention them naturally in your response.
-
-CURRENT USER MESSAGE: "${message}"
-
-Provide a helpful, personalized response based on their portfolio data and question.`;
-
-    const result = await model.generateContent(systemPrompt);
-    const response = await result.response;
-    const content = response.text().trim();
+    const result = await geminiAIService.chatResponse(message, chatContext, conversationHistory);
 
     // Analyze the message to determine if we should provide suggestions or actions
-    const suggestions = generateSuggestions(message, portfolioData);
+    const suggestions = result.suggestions || generateSuggestions(message, portfolioData);
     const actions = generateActions(message, portfolioData);
+    const content = result.response;
 
     return {
       content,
@@ -427,18 +400,9 @@ const generalMessage = asyncHandler(async (req, res) => {
   });
 
   try {
-    // Try with gemini-2.0-flash-exp first, fallback to gemini-1.5-flash
-    let model;
-    try {
-      model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
-    } catch (error) {
-      console.log('⚠️ Falling back to gemini-1.5-flash');
-      model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    }
-
-    const result = await model.generateContent(message);
-    const response = await result.response;
-    const content = response.text().trim();
+    // Use Gemini AI Service (gemini-2.5-pro)
+    const result = await geminiAIService.chatResponse(message, {}, []);
+    const content = result.response;
 
     res.json({
       success: true,

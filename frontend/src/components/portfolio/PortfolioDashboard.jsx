@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../contexts/AuthContext';
 import {
     Plus,
@@ -9,15 +9,12 @@ import {
     Trash2,
     Globe,
     Copy,
-    BarChart3,
     Calendar,
-    ExternalLink,
-    Download,
-    Settings
+    ExternalLink
 } from 'lucide-react';
 
 const PortfolioDashboard = () => {
-    const { user } = useAuthContext();
+    const { } = useAuthContext();
     const navigate = useNavigate();
     const [portfolios, setPortfolios] = useState([]);
     const [loading, setLoading] = useState(true);

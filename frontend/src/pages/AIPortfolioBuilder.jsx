@@ -181,7 +181,7 @@ I'll remember our conversation and can make improvements as we go. Let's build s
       generationAbortRef.current = false;
       
       // Step 1: Generate HTML
-      setCurrentGenerationStep('Generating HTML structure...');
+      setCurrentGenerationStep('🎨 Generating HTML structure...');
       setGenerationProgress(10);
       setActiveTab('html');
       setIsGeneratingHtml(true);
@@ -194,7 +194,7 @@ I'll remember our conversation and can make improvements as we go. Let's build s
       
       // Step 2: Generate CSS
       await new Promise(resolve => setTimeout(resolve, 800));
-      setCurrentGenerationStep('Styling your portfolio...');
+      setCurrentGenerationStep('🎨 Styling your portfolio...');
       setActiveTab('css');
       setIsGeneratingCss(true);
       
@@ -206,7 +206,7 @@ I'll remember our conversation and can make improvements as we go. Let's build s
       
       // Step 3: Generate JavaScript
       await new Promise(resolve => setTimeout(resolve, 800));
-      setCurrentGenerationStep('Adding interactivity...');
+      setCurrentGenerationStep('⚡ Adding interactivity...');
       setActiveTab('js');
       setIsGeneratingJs(true);
       
@@ -262,7 +262,8 @@ I'll remember our conversation and can make improvements as we go. Let's build s
       console.log('✅ Received response:', {
         aiProvider: response.data.aiProvider,
         message: response.data.message,
-        hasCode: !!response.data.code
+        hasCode: !!response.data.code,
+        responseTime: response.data.responseTime
       });
       
       const { html, css, js } = response.data.code;
@@ -270,12 +271,18 @@ I'll remember our conversation and can make improvements as we go. Let's build s
       // Use sequential generation for smooth effect
       await generateCodeSequentially({ html, css, js });
       
-      // Return message with AI provider info
+      // Return message with AI provider info and response time
       const aiProvider = response.data.aiProvider || 'AI';
-      return `${response.data.message || 'Portfolio generated successfully!'} (${aiProvider})`;
+      const responseTime = response.data.responseTime ? ` (${(response.data.responseTime / 1000).toFixed(1)}s)` : '';
+      const contextInfo = response.data.contextUsed ? ' • Using conversation context' : '';
+      
+      return `✨ ${response.data.message || 'Portfolio generated successfully!'}\n\n🤖 Powered by: ${aiProvider}${responseTime}${contextInfo}`;
     } catch (error) {
       console.error('❌ Code generation failed:', error);
-      throw error;
+      
+      // Provide user-friendly error message
+      const errorMessage = error.response?.data?.message || error.message || 'Unknown error occurred';
+      throw new Error(`Failed to generate portfolio: ${errorMessage}`);
     } finally {
       setIsSending(false);
     }
@@ -326,7 +333,7 @@ I'll remember our conversation and can make improvements as we go. Let's build s
       const errorMessage = {
         id: Date.now() + 3,
         type: 'ai',
-        content: 'I apologize, but I encountered an error generating your portfolio. Please try again with a different description.',
+        content: `I apologize, but I encountered an error: ${error.message}\n\nPlease try again, or try a different description. If the problem persists, the AI services might be temporarily unavailable.`,
         timestamp: new Date()
       };
       
@@ -377,7 +384,7 @@ I'll remember our conversation and can make improvements as we go. Let's build s
       const errorMessage = {
         id: Date.now() + 3,
         type: 'ai',
-        content: 'Failed to improve the portfolio. Please try again.',
+        content: `Failed to improve the portfolio: ${error.message}\n\nPlease try again with a different improvement request.`,
         timestamp: new Date()
       };
       
@@ -930,6 +937,27 @@ ${htmlCode}
                   </button>
                 </div>
               </div>
+              
+              {/* Generation Progress Bar */}
+              {currentGenerationStep && generationProgress > 0 && (
+                <div className="px-4 py-2 border-b border-white/10" style={{
+                  background: 'rgba(139, 92, 246, 0.1)'
+                }}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-purple-300">{currentGenerationStep}</span>
+                    <span className="text-xs text-purple-300">{generationProgress}%</span>
+                  </div>
+                  <div className="w-full h-1 bg-gray-700 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full transition-all duration-300 ease-out"
+                      style={{
+                        width: `${generationProgress}%`,
+                        background: 'linear-gradient(90deg, #8b5cf6, #ec4899)'
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
               
               {/* Monaco Code Editor */}
               <div className="flex-1 overflow-hidden">

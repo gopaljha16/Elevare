@@ -1,6 +1,7 @@
 // load environment variables first
 const dotenv = require('dotenv');
-dotenv.config();
+const path = require('path');
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const express = require('express');
 const cors = require('cors');
@@ -22,6 +23,7 @@ const atsRoutes = require('./routes/ats');
 const chatRoutes = require('./routes/chat');
 const portfolioRoutes = require('./routes/portfolio');
 const resumeRoutes = require('./routes/resume');
+const analyticsRoutes = require('./routes/analytics');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const logger = require('./utils/logger');
 const {
@@ -113,6 +115,7 @@ app.use('/api/ats', atsRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/portfolio', portfolioRoutes);
 app.use('/api/resumes', resumeRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // seed route (development only)
 if (process.env.NODE_ENV === 'development') {

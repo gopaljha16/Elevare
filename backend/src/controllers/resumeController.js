@@ -1,6 +1,6 @@
 const Resume = require('../models/Resume');
 const ResumeTemplate = require('../models/ResumeTemplate');
-const aiService = require('../services/aiService');
+const geminiAIService = require('../services/geminiAIService');
 const multer = require('multer');
 const path = require('path');
 
@@ -349,8 +349,8 @@ exports.generateAISuggestions = async (req, res) => {
       });
     }
 
-    // Generate AI suggestions
-    const suggestions = await aiService.generateResumeContent(
+    // Generate AI suggestions using Gemini
+    const suggestions = await geminiAIService.generateResumeContent(
       {
         personalInfo: resume.personalInfo,
         professionalSummary: resume.professionalSummary,
@@ -402,25 +402,25 @@ exports.calculateATSScore = async (req, res) => {
       });
     }
 
-    // Calculate ATS score
-    const atsAnalysis = await aiService.calculateATSScore(
-      {
-        personalInfo: resume.personalInfo,
-        professionalSummary: resume.professionalSummary,
-        experience: resume.experience,
-        education: resume.education,
-        skills: resume.skills,
-        projects: resume.projects
-      },
-      jobDescription
-    );
+    // Calculate ATS score using Gemini
+    const resumeText = `
+      ${resume.personalInfo?.firstName} ${resume.personalInfo?.lastName}
+      ${resume.professionalSummary || ''}
+      Experience: ${JSON.stringify(resume.experience)}
+      Education: ${JSON.stringify(resume.education)}
+      Skills: ${resume.skills?.join(', ')}
+      Projects: ${JSON.stringify(resume.projects)}
+      ${jobDescription ? `Job Description: ${jobDescription}` : ''}
+    `;
+    
+    const atsAnalysis = await geminiAIService.analyzeATSScore(resumeText);
 
     // Update resume with ATS score
     resume.atsScore = {
-      score: atsAnalysis.score,
+      score: atsAnalysis.overallScore,
       strengths: atsAnalysis.strengths,
-      improvements: atsAnalysis.improvements,
-      missingKeywords: atsAnalysis.missingKeywords,
+      improvements: atsAnalysis.criticalIssues,
+      missingKeywords: atsAnalysis.keywordAnalysis?.missingKeywords || [],
       lastAnalyzed: new Date()
     };
 

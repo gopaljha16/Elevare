@@ -6,10 +6,17 @@ const { AppError } = require('../middleware/errorHandler');
  */
 class AIConfig {
   constructor() {
+    // Parse API keys - support both GEMINI_API_KEYS (comma-separated) and GEMINI_API_KEY (single)
+    const apiKeysString = process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY;
+    const apiKeys = apiKeysString && apiKeysString.includes(',')
+      ? apiKeysString.split(',').map(k => k.trim()).filter(k => k)
+      : apiKeysString ? [apiKeysString.trim()] : [];
+    
     this.config = {
       gemini: {
-        apiKey: process.env.GEMINI_API_KEY,
-        model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
+        apiKeys: apiKeys,
+        apiKey: apiKeys[0] || null, // For backward compatibility
+        model: process.env.GEMINI_MODEL || 'gemini-1.5-pro', // Use env var or default to gemini-1.5-pro
         rateLimits: {
           perDay: parseInt(process.env.AI_RATE_LIMIT_PER_DAY) || 100,
           perHour: parseInt(process.env.AI_RATE_LIMIT_PER_HOUR) || 20,
@@ -81,36 +88,39 @@ class AIConfig {
   _validateGeminiConfig() {
     const { gemini } = this.config;
     
-    // Validate API key
-    if (!gemini.apiKey) {
-      this.validationErrors.push('GEMINI_API_KEY is required');
-      throw new Error('Gemini API key is missing');
+    // Validate API keys array
+    if (!gemini.apiKeys || gemini.apiKeys.length === 0) {
+      this.validationErrors.push('GEMINI_API_KEYS or GEMINI_API_KEY is required');
+      throw new Error('Gemini API key(s) missing');
     }
     
-    if (typeof gemini.apiKey !== 'string' || gemini.apiKey.length < 20) {
-      this.validationErrors.push('GEMINI_API_KEY appears to be invalid (too short)');
-      throw new Error('Gemini API key appears to be invalid');
-    }
-    
-    // Validate API key format (basic check)
-    if (!gemini.apiKey.startsWith('AIza')) {
-      this.validationErrors.push('GEMINI_API_KEY does not match expected format');
-      if (this.config.environment === 'production') {
-        throw new Error('Gemini API key does not match expected format');
-      } else {
-        console.warn('⚠️ Gemini API key does not match expected format, continuing in development mode');
+    // Validate each API key
+    for (let i = 0; i < gemini.apiKeys.length; i++) {
+      const key = gemini.apiKeys[i];
+      
+      if (typeof key !== 'string' || key.length < 20) {
+        this.validationErrors.push(`API key ${i + 1} appears to be invalid (too short)`);
+        throw new Error(`Gemini API key ${i + 1} appears to be invalid`);
+      }
+      
+      // Validate API key format (basic check)
+      if (!key.startsWith('AIza')) {
+        this.validationErrors.push(`API key ${i + 1} does not match expected format`);
+        if (this.config.environment === 'production') {
+          throw new Error(`Gemini API key ${i + 1} does not match expected format`);
+        } else {
+          console.warn(`⚠️ API key ${i + 1} does not match expected format, continuing in development mode`);
+        }
       }
     }
     
-    // Validate model name
-    const validModels = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro'];
+    console.log(`✅ Validated ${gemini.apiKeys.length} Gemini API key(s)`);
+    
+    // Validate model name - must be a valid Gemini model
+    const validModels = ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-2.0-flash-exp'];
     if (!validModels.includes(gemini.model)) {
-      if (this.config.environment === 'production') {
-        this.validationErrors.push(`Invalid GEMINI_MODEL: ${gemini.model}`);
-        throw new Error(`Invalid Gemini model: ${gemini.model}`);
-      } else {
-        console.warn(`⚠️ Unknown Gemini model: ${gemini.model}, continuing in development mode`);
-      }
+      console.warn(`⚠️ Invalid model ${gemini.model}, defaulting to gemini-1.5-pro`);
+      gemini.model = 'gemini-1.5-pro'; // Force valid model
     }
     
     // Validate timeout

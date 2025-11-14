@@ -14,7 +14,7 @@ const DEMO_RESUME = {
   isDemo: true,
   personalInfo: {
     fullName: 'Christina Sebastian',
-    jobTitle: 'UI UX Designer',
+    jobTitle: 'Full stack developer',
     email: 'christina1992@gmail.com',
     phone: '+00 9876543210',
     address: '123 Main Street, Cityville, State 12345, United States',

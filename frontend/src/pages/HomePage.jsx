@@ -18,7 +18,7 @@ const HomePage = () => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef(null);
   const navigate = useNavigate();
-  
+
   // Get authentication state from context
   const { user, isAuthenticated, isLoading, logout } = useAuthContext();
 
@@ -29,7 +29,7 @@ const HomePage = () => {
   const scrollToSection = (href) => {
     const element = document.querySelector(href);
     if (element) {
-      element.scrollIntoView({ 
+      element.scrollIntoView({
         behavior: 'smooth',
         block: 'start'
       });
@@ -251,9 +251,8 @@ const HomePage = () => {
           </header>
 
           <div
-            className={`lg:hidden border-b border-white/10 bg-[#121625]/90 backdrop-blur transition-[max-height] duration-300 ease-in-out ${
-              isMenuOpen ? 'max-h-96' : 'max-h-0'
-            } overflow-hidden`}
+            className={`lg:hidden border-b border-white/10 bg-[#121625]/90 backdrop-blur transition-[max-height] duration-300 ease-in-out ${isMenuOpen ? 'max-h-96' : 'max-h-0'
+              } overflow-hidden`}
           >
             <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-6 text-sm font-medium text-white/70">
               {navLinks.map(({ label, href }) => (
@@ -265,7 +264,7 @@ const HomePage = () => {
                   {label}
                 </button>
               ))}
-              
+
               {isAuthenticated && user ? (
                 <>
                   <Link
@@ -331,8 +330,18 @@ const HomePage = () => {
 
                 <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
                   <Link
-                    to="/portfolio-builder"
+                    to="/resume-builder?demo=true"
                     className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#EC4899] via-[#F472B6] to-[#8B5CF6] px-8 py-3 text-sm font-semibold text-white shadow-[0_20px_60px_rgba(236,72,153,0.35)] transition-transform duration-150 hover:translate-y-[-1px]"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    View Demo Resume
+                  </Link>
+                  <Link
+                    to="/portfolio-builder"
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-8 py-3 text-sm font-semibold text-white/80 transition-all duration-150 hover:border-white/30 hover:text-white"
                   >
                     Create Portfolio
                   </Link>
@@ -407,7 +416,7 @@ const HomePage = () => {
       {/* Features Section */}
       <section id="features" className="py-24 bg-[#0A0C14]">
         <div className="max-w-7xl mx-auto px-6">
-          <motion.div 
+          <motion.div
             className="text-center mb-16"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -421,7 +430,7 @@ const HomePage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* ATS Optimization */}
-            <motion.div 
+            <motion.div
               className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 p-8 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -441,7 +450,7 @@ const HomePage = () => {
             </motion.div>
 
             {/* AI Content Generation */}
-            <motion.div 
+            <motion.div
               className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 p-8 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -461,7 +470,7 @@ const HomePage = () => {
             </motion.div>
 
             {/* Professional Templates */}
-            <motion.div 
+            <motion.div
               className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 p-8 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -481,7 +490,7 @@ const HomePage = () => {
             </motion.div>
 
             {/* Real-time Analysis */}
-            <motion.div 
+            <motion.div
               className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 p-8 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -501,7 +510,7 @@ const HomePage = () => {
             </motion.div>
 
             {/* Export & Share */}
-            <motion.div 
+            <motion.div
               className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 p-8 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -521,7 +530,7 @@ const HomePage = () => {
             </motion.div>
 
             {/* Career Guidance */}
-            <motion.div 
+            <motion.div
               className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 p-8 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -547,14 +556,14 @@ const HomePage = () => {
       <section id="integrations" className="py-24 bg-[#0E101A] relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-purple-900/20 via-transparent to-blue-900/20"></div>
         <div className="max-w-7xl mx-auto px-6 relative">
-          <motion.div 
+          <motion.div
             className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <motion.div 
+            <motion.div
               className="space-y-8"
               initial={{ opacity: 0, x: -50 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -562,7 +571,7 @@ const HomePage = () => {
               viewport={{ once: true }}
             >
               <div className="text-sm text-blue-400 font-semibold tracking-wider uppercase">Integrations</div>
-              
+
               <h2 className="text-3xl md:text-4xl font-bold text-white">
                 Connect with your favorite job platforms
               </h2>
@@ -571,7 +580,7 @@ const HomePage = () => {
                 Elevare integrates seamlessly with major job boards and professional platforms. Import your profile data or export directly to streamline your job search process.
               </p>
 
-              <motion.button 
+              <motion.button
                 className="inline-flex items-center px-6 py-3 border border-white/20 rounded-full text-white hover:bg-white/5 transition-all duration-200"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -580,7 +589,7 @@ const HomePage = () => {
               </motion.button>
             </motion.div>
 
-            <motion.div 
+            <motion.div
               className="relative"
               initial={{ opacity: 0, x: 50 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -589,13 +598,13 @@ const HomePage = () => {
             >
               {/* Central Elevare Logo */}
               <div className="absolute inset-0 flex items-center justify-center">
-                <motion.div 
+                <motion.div
                   className="w-24 h-24 rounded-3xl bg-gradient-to-br from-[#EC4899] to-[#8B5CF6] flex items-center justify-center text-3xl font-bold text-white shadow-2xl"
-                  animate={{ 
+                  animate={{
                     rotate: [0, 5, -5, 0],
                     scale: [1, 1.05, 1]
                   }}
-                  transition={{ 
+                  transition={{
                     duration: 4,
                     repeat: Infinity,
                     ease: "easeInOut"
@@ -626,13 +635,13 @@ const HomePage = () => {
                     className={`aspect-square rounded-2xl ${platform.color} flex items-center justify-center text-white font-bold text-xs shadow-lg border border-white/10`}
                     initial={{ opacity: 0, scale: 0 }}
                     whileInView={{ opacity: 1, scale: 1 }}
-                    transition={{ 
-                      duration: 0.5, 
+                    transition={{
+                      duration: 0.5,
                       delay: index * 0.1,
                       type: "spring",
                       stiffness: 100
                     }}
-                    whileHover={{ 
+                    whileHover={{
                       scale: 1.1,
                       rotate: 5,
                       transition: { duration: 0.2 }
@@ -687,14 +696,14 @@ const HomePage = () => {
       <section id="security" className="py-24 bg-[#0A0C14] relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-purple-900/10 via-transparent to-pink-900/10"></div>
         <div className="max-w-7xl mx-auto px-6 relative">
-          <motion.div 
+          <motion.div
             className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <motion.div 
+            <motion.div
               className="relative"
               initial={{ opacity: 0, x: -50 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -703,16 +712,16 @@ const HomePage = () => {
             >
               {/* Central Security Hub */}
               <div className="relative flex items-center justify-center">
-                <motion.div 
+                <motion.div
                   className="w-32 h-32 rounded-3xl bg-gradient-to-br from-[#EC4899] to-[#8B5CF6] flex items-center justify-center shadow-2xl"
-                  animate={{ 
+                  animate={{
                     boxShadow: [
                       "0 0 20px rgba(236, 72, 153, 0.3)",
                       "0 0 40px rgba(139, 92, 246, 0.5)",
                       "0 0 20px rgba(236, 72, 153, 0.3)"
                     ]
                   }}
-                  transition={{ 
+                  transition={{
                     duration: 3,
                     repeat: Infinity,
                     ease: "easeInOut"
@@ -735,8 +744,8 @@ const HomePage = () => {
                     style={badge.position}
                     initial={{ opacity: 0, scale: 0 }}
                     whileInView={{ opacity: 1, scale: 1 }}
-                    transition={{ 
-                      duration: 0.6, 
+                    transition={{
+                      duration: 0.6,
                       delay: 0.5 + index * 0.2,
                       type: "spring",
                       stiffness: 150
@@ -780,7 +789,7 @@ const HomePage = () => {
               </div>
             </motion.div>
 
-            <motion.div 
+            <motion.div
               className="space-y-8"
               initial={{ opacity: 0, x: 50 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -788,7 +797,7 @@ const HomePage = () => {
               viewport={{ once: true }}
             >
               <div className="text-sm text-purple-400 font-semibold tracking-wider uppercase">Security</div>
-              
+
               <h2 className="text-3xl md:text-4xl font-bold text-white">
                 Built for scale and enterprise level security
               </h2>
@@ -821,7 +830,7 @@ const HomePage = () => {
                 ))}
               </div>
 
-              <motion.button 
+              <motion.button
                 className="inline-flex items-center px-6 py-3 border border-purple-500/20 rounded-full text-white hover:bg-purple-500/10 transition-all duration-200"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -847,7 +856,7 @@ const HomePage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div className="space-y-8">
               <div className="text-sm text-blue-400 font-semibold tracking-wider uppercase">Optimize</div>
-              
+
               <h3 className="text-3xl md:text-4xl font-bold text-white">
                 Build and optimize your resume in minutes, not hours
               </h3>
@@ -894,7 +903,7 @@ const HomePage = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Chart Visualization */}
                   <div className="relative h-64">
                     <div className="absolute inset-0 flex items-center justify-center">
@@ -955,17 +964,17 @@ const HomePage = () => {
               <div className="flex space-x-4">
                 <a href="#" className="text-gray-400 hover:text-white transition-colors">
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
                   </svg>
                 </a>
                 <a href="#" className="text-gray-400 hover:text-white transition-colors">
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/>
+                    <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z" />
                   </svg>
                 </a>
               </div>
             </div>
-            
+
             <div>
               <h4 className="font-semibold mb-6 text-lg">Product</h4>
               <ul className="space-y-3 text-gray-400">
@@ -975,7 +984,7 @@ const HomePage = () => {
                 <li><a href="#integrations" className="hover:text-white transition-colors">Integrations</a></li>
               </ul>
             </div>
-            
+
             <div>
               <h4 className="font-semibold mb-6 text-lg">Resources</h4>
               <ul className="space-y-3 text-gray-400">
@@ -985,7 +994,7 @@ const HomePage = () => {
                 <li><a href="#tips" className="hover:text-white transition-colors">Interview Tips</a></li>
               </ul>
             </div>
-            
+
             <div>
               <h4 className="font-semibold mb-6 text-lg">Company</h4>
               <ul className="space-y-3 text-gray-400">
@@ -996,7 +1005,7 @@ const HomePage = () => {
               </ul>
             </div>
           </div>
-          
+
           <div className="border-t border-white/10 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-400">&copy; 2025 Elevare. All rights reserved.</p>
             <div className="flex items-center space-x-4 mt-4 md:mt-0">

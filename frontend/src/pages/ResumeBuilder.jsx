@@ -10,7 +10,8 @@ import axiosClient from '../utils/axiosClient';
 import FormSections from '../components/resume/FormSections';
 import LivePreview from '../components/resume/LivePreview';
 import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
+import { getDemoResumeData } from '../data/demoResumeData';
 
 const ResumeBuilder = () => {
   const { user } = useAuth();
@@ -25,10 +26,24 @@ const ResumeBuilder = () => {
   const [activeSection, setActiveSection] = useState('personal');
   const [isDemo, setIsDemo] = useState(false);
   const [autoSaveTimer, setAutoSaveTimer] = useState(null);
+  const [autoSaving, setAutoSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState(null);
 
-  // Auto-save functionality
+  // Auto-save functionality - saves whenever data changes
   useEffect(() => {
-    if (!resumeData || isDemo || !resumeData.personalInfo?.fullName) return;
+    // Don't auto-save if no data, in demo mode, or data is empty
+    if (!resumeData || isDemo) return;
+
+    // Check if there's any meaningful data to save
+    const hasData = resumeData.personalInfo?.fullName || 
+                    resumeData.personalInfo?.email || 
+                    resumeData.personalInfo?.phone ||
+                    resumeData.professionalSummary ||
+                    resumeData.experience?.length > 0 ||
+                    resumeData.education?.length > 0 ||
+                    resumeData.skills?.technical?.length > 0;
+
+    if (!hasData) return;
 
     // Clear existing timer
     if (autoSaveTimer) {
@@ -37,9 +52,7 @@ const ResumeBuilder = () => {
 
     // Set new timer for auto-save after 2 seconds of inactivity
     const timer = setTimeout(() => {
-      if (currentResumeId) {
-        saveResumeQuietly();
-      }
+      saveResumeQuietly();
     }, 2000);
 
     setAutoSaveTimer(timer);
@@ -49,67 +62,135 @@ const ResumeBuilder = () => {
     };
   }, [resumeData]);
 
-  // Quiet save without alerts
+  // Quiet save without alerts - creates or updates resume
   const saveResumeQuietly = async () => {
-    if (!currentResumeId) return;
-    
+    setAutoSaving(true);
     try {
-      await axiosClient.put(`/resumes/${currentResumeId}`, {
-        ...resumeData,
-        template: selectedTemplate
-      });
-      console.log('✅ Auto-saved successfully');
+      if (currentResumeId) {
+        // Update existing resume
+        await axiosClient.put(`/resumes/${currentResumeId}`, {
+          ...resumeData,
+          template: selectedTemplate
+        });
+        console.log('✅ Auto-saved successfully');
+      } else {
+        // Create new resume
+        const response = await axiosClient.post('/resumes', {
+          ...resumeData,
+          template: selectedTemplate
+        });
+        setCurrentResumeId(response.data.data._id);
+        console.log('✅ Resume created and saved:', response.data.data._id);
+      }
+      setLastSaved(new Date());
     } catch (error) {
       console.error('Auto-save error:', error);
+      // Don't show alert for auto-save errors, just log them
+    } finally {
+      setAutoSaving(false);
     }
   };
 
-  // Initialize resume data (check for demo or create empty)
+  // Initialize resume data (check for demo, load existing, or create empty)
   useEffect(() => {
-    // Check if viewing demo resume
-    const urlParams = new URLSearchParams(window.location.search);
-    const isDemoMode = urlParams.get('demo') === 'true';
-    
-    if (isDemoMode) {
-      const demoData = sessionStorage.getItem('demoResume');
-      if (demoData) {
+    const initializeResume = async () => {
+      // Check if viewing demo resume
+      const urlParams = new URLSearchParams(window.location.search);
+      const isDemoMode = urlParams.get('demo') === 'true';
+      const resumeId = urlParams.get('id');
+      
+      if (isDemoMode) {
+        // Load professional demo resume
+        console.log('📋 Loading demo resume...');
+        const demoData = getDemoResumeData();
+        setResumeData(demoData);
+        setIsDemo(true);
+        setMode('view');
+        setSelectedTemplate(demoData.template || 'modern');
+        
+        // Set ATS score and AI suggestions from demo data
+        if (demoData.atsScore) {
+          setAtsScore(demoData.atsScore);
+        }
+        if (demoData.aiSuggestions) {
+          setAiSuggestions(demoData.aiSuggestions);
+        }
+        
+        console.log('✅ Demo resume loaded successfully');
+        console.log('📊 ATS Score:', demoData.atsScore?.score);
+        return;
+      }
+
+      // Load existing resume if ID provided
+      if (resumeId) {
         try {
-          const parsedDemo = JSON.parse(demoData);
-          setResumeData(parsedDemo);
-          setIsDemo(true);
-          setMode('view');
-          if (parsedDemo.atsScore) {
-            setAtsScore(parsedDemo.atsScore);
+          setLoading(true);
+          const response = await axiosClient.get(`/resumes/${resumeId}`);
+          if (response.data.success) {
+            setResumeData(response.data.data);
+            setCurrentResumeId(resumeId);
+            setSelectedTemplate(response.data.data.template || 'modern');
+            if (response.data.data.atsScore) {
+              setAtsScore(response.data.data.atsScore);
+            }
+            if (response.data.data.aiSuggestions) {
+              setAiSuggestions(response.data.data.aiSuggestions);
+            }
+            console.log('✅ Loaded existing resume:', resumeId);
+            return;
           }
-          // Clear demo data after loading
-          sessionStorage.removeItem('demoResume');
-          return;
         } catch (error) {
-          console.error('Error parsing demo resume:', error);
+          console.error('Error loading resume:', error);
+          alert('Failed to load resume. Starting with a new one.');
+        } finally {
+          setLoading(false);
         }
       }
-    }
 
-    // Initialize empty resume data if not demo
-    if (!resumeData) {
-      setResumeData({
-        personalInfo: {
-          fullName: '',
-          jobTitle: '',
-          email: '',
-          phone: '',
-          address: '',
-          photo: '',
-          socialLinks: {}
-        },
-        professionalSummary: '',
-        experience: [],
-        education: [],
-        skills: { technical: [], soft: [], languages: [], tools: [] },
-        projects: [],
-        certifications: []
-      });
-    }
+      // Try to load the most recent resume for this user
+      try {
+        const response = await axiosClient.get('/resumes');
+        if (response.data.success && response.data.data.length > 0) {
+          const latestResume = response.data.data[0]; // Assuming sorted by date
+          setResumeData(latestResume);
+          setCurrentResumeId(latestResume._id);
+          setSelectedTemplate(latestResume.template || 'modern');
+          if (latestResume.atsScore) {
+            setAtsScore(latestResume.atsScore);
+          }
+          if (latestResume.aiSuggestions) {
+            setAiSuggestions(latestResume.aiSuggestions);
+          }
+          console.log('✅ Loaded latest resume:', latestResume._id);
+          return;
+        }
+      } catch (error) {
+        console.log('No existing resumes found, starting fresh');
+      }
+
+      // Initialize empty resume data if nothing else worked
+      if (!resumeData) {
+        setResumeData({
+          personalInfo: {
+            fullName: '',
+            jobTitle: '',
+            email: '',
+            phone: '',
+            address: '',
+            photo: '',
+            socialLinks: {}
+          },
+          professionalSummary: '',
+          experience: [],
+          education: [],
+          skills: { technical: [], soft: [], languages: [], tools: [] },
+          projects: [],
+          certifications: []
+        });
+      }
+    };
+
+    initializeResume();
   }, []);
 
   // Handle file upload
@@ -278,17 +359,23 @@ const ResumeBuilder = () => {
   // Download PDF
   const downloadPDF = async () => {
     try {
+      console.log('🔄 Starting PDF generation...');
+      
       const previewElement = document.getElementById('resume-preview');
       
       if (!previewElement) {
+        console.error('❌ Preview element not found');
         alert('Preview not found. Please wait for the preview to load.');
         return;
       }
 
       if (!resumeData || !resumeData.personalInfo) {
+        console.error('❌ No resume data');
         alert('Please fill in your resume information before downloading.');
         return;
       }
+
+      console.log('✅ Preview element found, creating loading indicator...');
 
       // Show loading state
       const loadingDiv = document.createElement('div');
@@ -297,32 +384,136 @@ const ResumeBuilder = () => {
       loadingDiv.innerHTML = '<div class="bg-white p-6 rounded-lg shadow-xl"><div class="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div><p class="text-gray-700 font-medium">Generating PDF...</p></div>';
       document.body.appendChild(loadingDiv);
 
-      // Wait a bit for the loading UI to render
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Wait for loading UI to render
+      await new Promise(resolve => setTimeout(resolve, 200));
 
-      // Generate canvas from HTML
+      console.log('📸 Capturing resume as image...');
+
+      // Helper function to convert oklch/color-mix to rgb
+      const convertColorToRgb = (colorString) => {
+        if (!colorString || (!colorString.includes('oklch') && !colorString.includes('color-mix'))) {
+          return colorString;
+        }
+        
+        // Create temporary element to get computed RGB
+        const temp = document.createElement('div');
+        temp.style.color = colorString;
+        temp.style.display = 'none';
+        document.body.appendChild(temp);
+        const computed = window.getComputedStyle(temp).color;
+        document.body.removeChild(temp);
+        return computed || 'rgb(0, 0, 0)';
+      };
+
+      // Generate canvas from HTML with better options
       const canvas = await html2canvas(previewElement, {
         scale: 2,
         useCORS: true,
+        allowTaint: true,
         logging: false,
         backgroundColor: '#ffffff',
         windowWidth: previewElement.scrollWidth,
-        windowHeight: previewElement.scrollHeight
+        windowHeight: previewElement.scrollHeight,
+        ignoreElements: (element) => {
+          // Ignore elements that might cause issues
+          return element.classList && element.classList.contains('no-pdf');
+        },
+        onclone: (clonedDoc, clonedElement) => {
+          const resumePreview = clonedDoc.getElementById('resume-preview');
+          if (resumePreview) {
+            // Get all elements in the cloned document
+            const allElements = resumePreview.querySelectorAll('*');
+            
+            // Convert all oklch colors to rgb by reading computed styles from original
+            const originalElements = previewElement.querySelectorAll('*');
+            
+            allElements.forEach((clonedEl, index) => {
+              if (originalElements[index]) {
+                const originalEl = originalElements[index];
+                const computedStyle = window.getComputedStyle(originalEl);
+                
+                // Convert and apply background color
+                const bgColor = computedStyle.backgroundColor;
+                if (bgColor && (bgColor.includes('oklch') || bgColor.includes('color-mix'))) {
+                  clonedEl.style.backgroundColor = convertColorToRgb(bgColor);
+                } else if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)') {
+                  clonedEl.style.backgroundColor = bgColor;
+                }
+                
+                // Convert and apply text color
+                const textColor = computedStyle.color;
+                if (textColor && (textColor.includes('oklch') || textColor.includes('color-mix'))) {
+                  clonedEl.style.color = convertColorToRgb(textColor);
+                } else if (textColor) {
+                  clonedEl.style.color = textColor;
+                }
+                
+                // Convert and apply border color
+                const borderColor = computedStyle.borderColor;
+                if (borderColor && (borderColor.includes('oklch') || borderColor.includes('color-mix'))) {
+                  clonedEl.style.borderColor = convertColorToRgb(borderColor);
+                } else if (borderColor && borderColor !== 'rgb(0, 0, 0)') {
+                  clonedEl.style.borderColor = borderColor;
+                }
+              }
+            });
+            
+            // Ensure dimensions
+            resumePreview.style.width = previewElement.scrollWidth + 'px';
+            resumePreview.style.height = 'auto';
+          }
+        }
       });
 
-      // Calculate PDF dimensions
-      const imgWidth = 210; // A4 width in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      console.log('✅ Canvas created:', canvas.width, 'x', canvas.height);
+
+      // A4 dimensions in mm
+      const pdfWidth = 210;
+      const pdfHeight = 297;
       
-      // Create PDF
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgData = canvas.toDataURL('image/png', 1.0);
+      // Calculate image dimensions to fit A4
+      const imgWidth = pdfWidth;
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
       
-      // Add image to PDF
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      console.log('📄 Creating PDF document...');
+      
+      // Create PDF with jsPDF 3.x API
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+      });
+
+      // Convert canvas to image data
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      
+      console.log('🖼️ Adding image to PDF...');
+
+      // Handle multiple pages if content is longer than one page
+      let heightLeft = imgHeight;
+      let position = 0;
+      let page = 1;
+
+      // Add first page
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pdfHeight;
+
+      // Add additional pages if needed
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight;
+        page++;
+      }
+
+      console.log(`✅ PDF created with ${page} page(s)`);
       
       // Generate filename
       const fileName = `${resumeData?.personalInfo?.fullName?.replace(/\s+/g, '_') || 'Resume'}_${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      console.log('💾 Saving PDF:', fileName);
       
       // Save PDF
       pdf.save(fileName);
@@ -333,9 +524,16 @@ const ResumeBuilder = () => {
         document.body.removeChild(loadingElement);
       }
       
-      console.log('✅ PDF downloaded successfully:', fileName);
+      console.log('✅ PDF downloaded successfully!');
+      
+      // Show success message
+      setTimeout(() => {
+        alert(`✅ Resume downloaded successfully as ${fileName}`);
+      }, 100);
+      
     } catch (error) {
       console.error('❌ PDF generation error:', error);
+      console.error('Error stack:', error.stack);
       
       // Remove loading state if it exists
       const loadingElement = document.getElementById('pdf-loading');
@@ -343,11 +541,15 @@ const ResumeBuilder = () => {
         document.body.removeChild(loadingElement);
       }
       
-      // Show error message
-      alert('Failed to generate PDF. Using print dialog as fallback.\n\nError: ' + error.message);
+      // Show detailed error message
+      const errorMsg = `Failed to generate PDF.\n\nError: ${error.message}\n\nTrying print dialog as fallback...`;
+      alert(errorMsg);
       
       // Fallback to print
-      window.print();
+      console.log('🖨️ Falling back to print dialog...');
+      setTimeout(() => {
+        window.print();
+      }, 100);
     }
   };
 
@@ -393,7 +595,10 @@ const ResumeBuilder = () => {
                   )}
                 </div>
                 <p className="text-sm text-gray-500">
-                  {isDemo ? 'Viewing demo resume - Create your own to edit' : `Create / ${mode === 'upload' ? 'Upload' : 'Create new'}`}
+                  {isDemo ? 'Viewing demo resume - Create your own to edit' : 
+                   autoSaving ? '💾 Saving...' :
+                   lastSaved ? `✅ Saved ${new Date(lastSaved).toLocaleTimeString()}` :
+                   `Create / ${mode === 'upload' ? 'Upload' : 'Create new'}`}
                 </p>
               </div>
             </div>
@@ -500,11 +705,15 @@ const ResumeBuilder = () => {
                   
                   <button
                     onClick={saveResume}
-                    disabled={saving}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                    disabled={saving || autoSaving}
+                    className={`px-4 py-2 ${autoSaving ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded-lg transition-colors flex items-center space-x-2`}
                   >
                     <Save className="w-4 h-4" />
-                    <span>{saving ? 'Saving...' : currentResumeId ? 'Saved ✓' : 'Save'}</span>
+                    <span>
+                      {saving ? 'Saving...' : 
+                       autoSaving ? 'Auto-saving...' :
+                       currentResumeId ? 'Save' : 'Save'}
+                    </span>
                   </button>
                 </>
               )}

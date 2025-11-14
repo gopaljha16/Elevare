@@ -1,6 +1,5 @@
 const asyncHandler = require('express-async-handler');
 const { AppError } = require('../middleware/errorHandler');
-const aiService = require('../services/aiService');
 const { cacheService } = require('../services/cacheService');
 const { extractTextFromFile } = require('../utils/fileProcessor');
 const { sanitizeInput } = require('../utils/sanitization');

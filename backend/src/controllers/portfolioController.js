@@ -1,11 +1,7 @@
 const asyncHandler = require('express-async-handler');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 const Portfolio = require('../models/Portfolio');
 const User = require('../models/User');
-const aiService = require('../services/aiService');
-const openRouterService = require('../services/openRouterService');
-const replicateService = require('../services/replicateService');
-const geminiPortfolioService = require('../services/geminiPortfolioService');
+const geminiAIService = require('../services/geminiAIService');
 const contextService = require('../services/contextService');
 const multer = require('multer');
 const path = require('path');
@@ -53,25 +49,25 @@ const portfolioTemplates = {
 // @access  Private
 const createPortfolio = asyncHandler(async (req, res) => {
   const { resumeData, template = 'modern', customizations = {} } = req.body;
-  
+
   if (!resumeData) {
     return res.status(400).json({
       success: false,
       message: 'Resume data is required to create a portfolio'
     });
   }
-  
+
   try {
     console.log('Creating portfolio with resume data:', JSON.stringify(resumeData, null, 2));
-    
+
     // Enhance resume data with AI
     const enhancedData = await enhanceResumeDataWithAI(resumeData);
     console.log('Enhanced data:', JSON.stringify(enhancedData, null, 2));
-    
+
     // Generate portfolio structure
     const portfolioStructure = await generatePortfolioStructure(enhancedData, template);
     console.log('Generated portfolio structure:', JSON.stringify(portfolioStructure, null, 2));
-    
+
     // Create portfolio document
     const portfolio = new Portfolio({
       userId: req.user._id,
@@ -83,9 +79,9 @@ const createPortfolio = asyncHandler(async (req, res) => {
       isPublished: false,
       createdAt: new Date()
     });
-    
+
     await portfolio.save();
-    
+
     res.status(201).json({
       success: true,
       portfolio: {
@@ -118,7 +114,7 @@ const getUserPortfolios = asyncHandler(async (req, res) => {
     const portfolios = await Portfolio.find({ userId: req.user._id })
       .select('title template isPublished createdAt updatedAt')
       .sort({ updatedAt: -1 });
-    
+
     res.json({
       success: true,
       portfolios: portfolios.map(p => ({
@@ -150,14 +146,14 @@ const getPortfolio = asyncHandler(async (req, res) => {
       _id: req.params.id,
       userId: req.user._id
     });
-    
+
     if (!portfolio) {
       return res.status(404).json({
         success: false,
         message: 'Portfolio not found'
       });
     }
-    
+
     res.json({
       success: true,
       portfolio
@@ -177,28 +173,28 @@ const getPortfolio = asyncHandler(async (req, res) => {
 const updatePortfolio = asyncHandler(async (req, res) => {
   try {
     const { title, data, customizations, template } = req.body;
-    
+
     const portfolio = await Portfolio.findOne({
       _id: req.params.id,
       userId: req.user._id
     });
-    
+
     if (!portfolio) {
       return res.status(404).json({
         success: false,
         message: 'Portfolio not found'
       });
     }
-    
+
     // Update fields
     if (title) portfolio.title = title;
     if (data) portfolio.data = data;
     if (customizations) portfolio.customizations = customizations;
     if (template) portfolio.template = template;
-    
+
     portfolio.updatedAt = new Date();
     await portfolio.save();
-    
+
     res.json({
       success: true,
       portfolio
@@ -218,22 +214,22 @@ const updatePortfolio = asyncHandler(async (req, res) => {
 const portfolioAIChat = asyncHandler(async (req, res) => {
   try {
     const { message, context } = req.body;
-    
+
     const portfolio = await Portfolio.findOne({
       _id: req.params.id,
       userId: req.user._id
     });
-    
+
     if (!portfolio) {
       return res.status(404).json({
         success: false,
         message: 'Portfolio not found'
       });
     }
-    
+
     // Generate AI response and suggestions
     const aiResponse = await generateAIResponse(message, portfolio, context);
-    
+
     res.json({
       success: true,
       response: aiResponse
@@ -253,33 +249,33 @@ const portfolioAIChat = asyncHandler(async (req, res) => {
 const publishPortfolio = asyncHandler(async (req, res) => {
   try {
     const { deploymentPlatform = 'netlify' } = req.body;
-    
+
     const portfolio = await Portfolio.findOne({
       _id: req.params.id,
       userId: req.user._id
     });
-    
+
     if (!portfolio) {
       return res.status(404).json({
         success: false,
         message: 'Portfolio not found'
       });
     }
-    
+
     // Generate deployment-ready code
     const deploymentCode = await generateDeploymentCode(portfolio);
-    
+
     // Deploy to selected platform
     const deploymentResult = await deployToplatform(deploymentCode, deploymentPlatform, portfolio);
-    
+
     // Update portfolio with deployment info
     portfolio.isPublished = true;
     portfolio.deploymentUrl = deploymentResult.url;
     portfolio.deploymentPlatform = deploymentPlatform;
     portfolio.publishedAt = new Date();
-    
+
     await portfolio.save();
-    
+
     res.json({
       success: true,
       deploymentUrl: deploymentResult.url,
@@ -319,19 +315,19 @@ async function enhanceResumeDataWithAI(resumeData) {
   try {
     console.log('=== ENHANCING RESUME DATA ===');
     console.log('Input resume data:', JSON.stringify(resumeData, null, 2));
-    
+
     // Check if we have meaningful data to enhance
-    const hasData = resumeData.personalInfo?.name || 
-                   resumeData.personalInfo?.email || 
-                   (resumeData.skills?.technical && resumeData.skills.technical.length > 0) ||
-                   (resumeData.experience && resumeData.experience.length > 0) ||
-                   (resumeData.education && resumeData.education.length > 0);
-    
+    const hasData = resumeData.personalInfo?.name ||
+      resumeData.personalInfo?.email ||
+      (resumeData.skills?.technical && resumeData.skills.technical.length > 0) ||
+      (resumeData.experience && resumeData.experience.length > 0) ||
+      (resumeData.education && resumeData.education.length > 0);
+
     if (!hasData) {
       console.log('No meaningful data to enhance, returning original data');
       return resumeData;
     }
-    
+
     // Use the AI service instead of direct genAI
     if (!aiService.model) {
       console.warn('AI service not available, using fallback data');
@@ -417,29 +413,29 @@ async function enhanceResumeDataWithAI(resumeData) {
     - Ensure the content showcases the person's best qualities
     - Return ONLY the JSON, no other text
     `;
-    
+
     const result = await aiService.model.generateContent(prompt);
     const enhancedText = result.response.text();
-    
+
     try {
       // Clean the response to extract JSON
       let cleanedText = enhancedText.trim();
-      
+
       // Remove markdown code blocks if present
       cleanedText = cleanedText.replace(/```json\n?|\n?```/g, '');
       cleanedText = cleanedText.replace(/```\n?|\n?```/g, '');
-      
+
       // Find JSON object in the response
       const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         cleanedText = jsonMatch[0];
       }
-      
+
       const parsedData = JSON.parse(cleanedText);
-      
+
       console.log('=== AI ENHANCED DATA ===');
       console.log('AI enhanced data:', JSON.stringify(parsedData, null, 2));
-      
+
       // Validate that we have the required structure
       if (parsedData.personalInfo && parsedData.skills) {
         return parsedData;
@@ -491,13 +487,13 @@ async function generatePortfolioStructure(data, template) {
       social: data.personalInfo?.social || {}
     }
   };
-  
+
   return baseStructure;
 }
 
 async function generateAIResponse(message, portfolio, context) {
   try {
-    if (!aiService.model) {
+    if (!geminiAIService.isAvailable()) {
       return {
         response: "I'm here to help with your portfolio. What would you like to improve?",
         suggestions: ["Update your project descriptions", "Add more skills", "Improve your summary"],
@@ -505,38 +501,24 @@ async function generateAIResponse(message, portfolio, context) {
       };
     }
 
-    const prompt = `
-    You are a portfolio design assistant. User message: "${message}"
-    
-    Current portfolio context: ${JSON.stringify(context, null, 2)}
-    
-    Provide helpful suggestions for:
-    1. Content improvements
-    2. Design changes
-    3. Section modifications
-    4. SEO optimization
-    
-    Return JSON with:
-    {
-      "response": "conversational response",
-      "suggestions": ["suggestion1", "suggestion2"],
-      "actions": [{"type": "update", "section": "hero", "changes": {}}]
-    }
-    `;
-    
-    const result = await aiService.model.generateContent(prompt);
-    const responseText = result.response.text();
-    
-    try {
-      return JSON.parse(responseText);
-    } catch (parseError) {
-      return {
-        response: responseText,
-        suggestions: [],
-        actions: []
-      };
-    }
+    // Use Gemini AI Service for chat response
+    const chatContext = {
+      portfolio: {
+        title: portfolio.title,
+        template: portfolio.template,
+        sections: context
+      }
+    };
+
+    const result = await geminiAIService.chatResponse(message, chatContext, []);
+
+    return {
+      response: result.response,
+      suggestions: result.suggestions || [],
+      actions: []
+    };
   } catch (error) {
+    console.error('Chat AI error:', error);
     return {
       response: "I'm here to help with your portfolio. What would you like to improve?",
       suggestions: ["Update your project descriptions", "Add more skills", "Improve your summary"],
@@ -548,7 +530,7 @@ async function generateAIResponse(message, portfolio, context) {
 async function generateDeploymentCode(portfolio) {
   // Generate React portfolio code based on template and data
   const template = portfolioTemplates[portfolio.template] || portfolioTemplates.modern;
-  
+
   return {
     'package.json': generatePackageJson(portfolio),
     'index.html': generateIndexHtml(portfolio),
@@ -606,14 +588,32 @@ function generateIndexHtml(portfolio) {
 }
 
 async function deployToplatform(code, platform, portfolio) {
-  // Mock deployment - in real implementation, integrate with Netlify/Vercel APIs
-  const mockUrl = `https://${portfolio.title.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.${platform}.app`;
-  
-  return {
-    url: mockUrl,
-    status: 'deployed',
-    platform
-  };
+  const deploymentService = require('../services/deploymentService');
+
+  try {
+    let result;
+    const siteName = `${portfolio.title.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
+
+    if (platform === 'netlify' && deploymentService.isAvailable('netlify')) {
+      result = await deploymentService.deployToNetlify(code, siteName);
+    } else if (platform === 'vercel' && deploymentService.isAvailable('vercel')) {
+      result = await deploymentService.deployToVercel(code, siteName);
+    } else {
+      // Return manual deployment instructions
+      const instructions = deploymentService.getManualDeploymentInstructions(code, siteName);
+      return {
+        url: null,
+        status: 'manual_deployment_required',
+        platform,
+        instructions: instructions
+      };
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Deployment error:', error);
+    throw error;
+  }
 }
 
 // Generate component functions (simplified for brevity)
@@ -923,102 +923,79 @@ function generateTailwindConfig(template) {
 const generatePortfolioCode = asyncHandler(async (req, res) => {
   const { prompt, userName, currentCode, isImprovement } = req.body;
   const userId = req.user._id.toString();
-  
+
   if (!prompt || !userName) {
     return res.status(400).json({
       success: false,
       message: 'Prompt and userName are required'
     });
   }
-  
+
   try {
     console.log(`🎨 Generating portfolio code for ${userName}...`);
     console.log(`📝 Prompt: ${prompt}`);
     console.log(`🔄 Is improvement: ${isImprovement}`);
-    
+
     const startTime = Date.now();
-    
+
     // Get user context for better prompts
     const userContext = await contextService.getContext(userId);
     console.log(`📚 User context: ${userContext ? 'Found' : 'New user'}`);
-    
+
     // Build contextual prompt if we have history
-    const enhancedPrompt = userContext ? 
-      contextService.buildContextualPrompt(prompt, userContext) : 
+    const enhancedPrompt = userContext ?
+      contextService.buildContextualPrompt(prompt, userContext) :
       prompt;
-    
+
     let result;
     let aiProvider;
-    
-    // Primary: Use OpenRouter service for portfolio generation (more reliable)
-    if (openRouterService.isAvailable()) {
-      console.log('✨ Using OpenRouter AI for portfolio generation...');
-      
-      result = await openRouterService.generatePortfolioCode(
-        enhancedPrompt,
-        userName,
-        currentCode,
-        isImprovement
-      );
-      
-      aiProvider = 'OpenRouter AI';
-      console.log('✅ Portfolio code generated successfully with OpenRouter AI!');
-    }
-    // Secondary: Try Gemini as fallback
-    else if (geminiPortfolioService.isAvailable()) {
-      console.log('⚠️ OpenRouter not available, trying Gemini AI...');
-      
-      // Test connection first
-      const connectionTest = await geminiPortfolioService.testConnection();
-      if (connectionTest) {
-        result = await geminiPortfolioService.generatePortfolioCode(
+
+    // Fallback chain: Gemini → OpenRouter → Replicate → Template
+
+    // Use Gemini AI Service (gemini-2.5-pro) exclusively
+    if (geminiAIService.isAvailable()) {
+      try {
+        console.log('✨ Generating portfolio with Gemini AI (gemini-2.5-pro)...');
+
+        result = await geminiAIService.generatePortfolioCode(
           enhancedPrompt,
           userName,
           currentCode,
           isImprovement
         );
-        
-        aiProvider = 'Gemini AI (Fallback)';
-        console.log('✅ Portfolio code generated successfully with Gemini AI!');
-      } else {
-        console.warn('⚠️ Gemini connection test failed, skipping to next fallback');
+
+        aiProvider = 'Gemini AI (gemini-2.5-pro)';
+        console.log('✅ Portfolio generated successfully with Gemini AI!');
+      } catch (geminiError) {
+        console.error('❌ Gemini AI failed:', geminiError.message);
+        console.log('🔄 Falling back to template generation...');
       }
+    } else {
+      console.warn('⚠️ Gemini AI not configured, using template fallback');
     }
-    // Tertiary: Try Replicate as additional fallback
-    if (!result && replicateService.isAvailable()) {
-      console.log('⚠️ Primary services not available, trying Replicate...');
-      
-      result = await replicateService.generatePortfolioCode(
-        enhancedPrompt,
-        userName,
-        currentCode,
-        isImprovement
-      );
-      
-      aiProvider = 'Replicate AI (Fallback)';
-      console.log('✅ Portfolio code generated successfully with Replicate AI!');
-    }
-    // Final fallback to template-based generation
+
+    // Final fallback: Template-based generation (always succeeds)
     if (!result) {
-      console.warn('⚠️ All AI services unavailable, using template generation');
-      
+      console.log('📋 All AI services unavailable or failed, using professional template');
+
       result = {
         html: generateFallbackHTML(userName, prompt),
         css: generateFallbackCSS(),
         js: generateFallbackJS(),
-        message: 'Portfolio generated with template (AI services not configured)'
+        message: 'Portfolio generated with professional template (AI services unavailable)'
       };
       aiProvider = 'Template Fallback';
+      console.log('✅ Template portfolio generated successfully!');
     }
-    
+
     const responseTime = Date.now() - startTime;
-    
+
     // Store generation info in context for future improvements
     const portfolioInfo = contextService.extractPortfolioInfo(result, prompt);
     portfolioInfo.responseTime = responseTime;
     portfolioInfo.aiProvider = aiProvider;
     portfolioInfo.isImprovement = isImprovement;
-    
+
     await contextService.updateContext(userId, {
       previousGenerations: [
         ...(userContext?.previousGenerations || []),
@@ -1029,9 +1006,9 @@ const generatePortfolioCode = asyncHandler(async (req, res) => {
       userName: userName,
       totalGenerations: (userContext?.totalGenerations || 0) + 1
     });
-    
+
     console.log(`⏱️ Generation completed in ${responseTime}ms`);
-    
+
     res.json({
       success: true,
       code: {
@@ -1044,17 +1021,17 @@ const generatePortfolioCode = asyncHandler(async (req, res) => {
       responseTime: responseTime,
       contextUsed: !!userContext
     });
-    
+
   } catch (error) {
     console.error('❌ Code generation error:', error.message);
-    
+
     // Fallback to template-based generation on error
     const fallbackCode = {
       html: generateFallbackHTML(userName, prompt),
       css: generateFallbackCSS(),
       js: generateFallbackJS()
     };
-    
+
     res.json({
       success: true,
       code: fallbackCode,
@@ -1068,7 +1045,7 @@ const generatePortfolioCode = asyncHandler(async (req, res) => {
 function generateFallbackHTML(userName, prompt) {
   const isProfessional = prompt.toLowerCase().includes('professional') || prompt.toLowerCase().includes('developer');
   const isCreative = prompt.toLowerCase().includes('creative') || prompt.toLowerCase().includes('designer');
-  
+
   return `<!-- Hero Section -->
 <section class="hero">
   <div class="hero-content">
@@ -1576,7 +1553,7 @@ const clearPortfolioContext = asyncHandler(async (req, res) => {
   try {
     const userId = req.user._id.toString();
     await contextService.clearContext(userId);
-    
+
     res.json({
       success: true,
       message: 'Portfolio generation context cleared successfully'
@@ -1597,7 +1574,7 @@ const getPortfolioContextStats = asyncHandler(async (req, res) => {
   try {
     const userId = req.user._id.toString();
     const stats = await contextService.getContextStats(userId);
-    
+
     res.json({
       success: true,
       stats

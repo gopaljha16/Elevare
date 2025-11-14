@@ -360,40 +360,25 @@ router.get('/context/stats', authenticate, getPortfolioContextStats);
 // @access  Private
 router.get('/test-ai', authenticate, async (req, res) => {
   try {
-    const geminiPortfolioService = require('../services/geminiPortfolioService');
-    const openRouterService = require('../services/openRouterService');
-    const replicateService = require('../services/replicateService');
+    const geminiAIService = require('../services/geminiAIService');
 
-    const results = {
-      gemini: {
-        available: geminiPortfolioService.isAvailable(),
-        connectionTest: false
-      },
-      openRouter: {
-        available: openRouterService.isAvailable()
-      },
-      replicate: {
-        available: replicateService.isAvailable()
-      }
-    };
-
-    // Test Gemini connection
-    if (results.gemini.available) {
-      try {
-        results.gemini.connectionTest = await geminiPortfolioService.testConnection();
-      } catch (error) {
-        results.gemini.error = error.message;
-      }
-    }
+    const healthStatus = geminiAIService.getHealthStatus();
 
     res.json({
       success: true,
-      services: results
+      message: 'AI service health check',
+      service: 'Gemini AI (gemini-2.5-pro)',
+      status: healthStatus.status,
+      model: healthStatus.model,
+      totalKeys: healthStatus.totalKeys,
+      currentKeyIndex: healthStatus.currentKeyIndex,
+      keyStats: healthStatus.keyStats,
+      available: geminiAIService.isAvailable()
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Failed to test AI services',
+      message: 'Failed to test AI service',
       error: error.message
     });
   }

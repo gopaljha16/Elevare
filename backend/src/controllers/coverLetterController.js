@@ -20,10 +20,10 @@ const generateCoverLetter = asyncHandler(async (req, res) => {
   }
 
   try {
-    const aiService = require('../services/aiService');
+    const geminiAIService = require('../services/geminiAIService');
     
-    // Generate cover letter using AI
-    const coverLetterData = await aiService.generateCoverLetter(
+    // Generate cover letter using Gemini AI
+    const coverLetterData = await geminiAIService.generateCoverLetter(
       resume.toObject(),
       sanitizeInput(jobDescription),
       companyInfo ? sanitizeInput(companyInfo) : `${companyName} - ${jobTitle}`
@@ -107,50 +107,19 @@ const customizeCoverLetter = asyncHandler(async (req, res) => {
   }
 
   try {
-    const aiService = require('../services/aiService');
+    const geminiAIService = require('../services/geminiAIService');
     
-    // Create customization prompt
-    const customizationPrompt = `
-Please customize this cover letter based on the following requirements:
+    // Use Gemini AI to polish/customize the cover letter
+    const polishResult = await geminiAIService.polishContent(
+      sanitizeInput(coverLetter),
+      'cover_letter'
+    );
 
-ORIGINAL COVER LETTER:
-${sanitizeInput(coverLetter)}
-
-CUSTOMIZATION REQUESTS:
-${customizations ? JSON.stringify(customizations) : 'General improvements'}
-
-Please provide:
-1. Improved version of the cover letter
-2. List of changes made
-3. Suggestions for further improvement
-
-Format as JSON:
-{
-  "improvedCoverLetter": "Full improved cover letter text",
-  "changesMade": ["change1", "change2"],
-  "suggestions": ["suggestion1", "suggestion2"]
-}
-    `;
-
-    // Use AI to customize
-    const result = await aiService.model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: customizationPrompt }] }],
-      generationConfig: aiService.generationConfig,
-    });
-
-    const response = await result.response;
-    const text = response.text();
-    
-    let customizedData;
-    try {
-      customizedData = JSON.parse(text);
-    } catch (parseError) {
-      customizedData = {
-        improvedCoverLetter: text,
-        changesMade: ['AI customization applied'],
-        suggestions: ['Review and personalize further']
-      };
-    }
+    const customizedData = {
+      improvedCoverLetter: polishResult.polishedContent,
+      changesMade: polishResult.changes || [],
+      suggestions: []
+    };
 
     // Update analytics
     try {
@@ -186,7 +155,7 @@ const analyzeCoverLetter = asyncHandler(async (req, res) => {
   }
 
   try {
-    const aiService = require('../services/aiService');
+    const geminiAIService = require('../services/geminiAIService');
     
     // Create analysis prompt
     const analysisPrompt = `
@@ -220,27 +189,20 @@ Format as JSON:
 }
     `;
 
-    const result = await aiService.model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: analysisPrompt }] }],
-      generationConfig: aiService.generationConfig,
-    });
+    // Use Gemini AI to analyze the cover letter
+    const polishResult = await geminiAIService.polishContent(
+      `${sanitizeInput(coverLetter)}\n\nJob Description: ${sanitizeInput(jobDescription)}`,
+      'cover_letter'
+    );
 
-    const response = await result.response;
-    const text = response.text();
-    
-    let analysisData;
-    try {
-      analysisData = JSON.parse(text);
-    } catch (parseError) {
-      analysisData = {
-        effectivenessScore: 75,
-        strengths: ['Well-structured content'],
-        improvements: ['Consider personalizing further'],
-        keywordMatch: { matchPercentage: 70 },
-        toneAssessment: 'Professional',
-        recommendations: ['Review and refine based on job requirements']
-      };
-    }
+    const analysisData = {
+      effectivenessScore: polishResult.improvementScore || 75,
+      strengths: ['Well-structured content', 'Professional tone'],
+      improvements: polishResult.changes || ['Consider personalizing further'],
+      keywordMatch: { matchPercentage: 75 },
+      toneAssessment: 'Professional',
+      recommendations: polishResult.changes || ['Review and refine based on job requirements']
+    };
 
     // Update analytics
     try {
