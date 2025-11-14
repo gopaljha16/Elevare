@@ -21,7 +21,8 @@ const GoogleCallback = () => {
 
     if (token && refreshToken) {
       // Fetch user profile with the token
-      fetch('http://localhost:5000/api/auth/profile', {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      fetch(`${backendUrl}/api/auth/profile`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

@@ -3,9 +3,13 @@
   "version": "1.0.0",
   "description": "AI-powered resume builder and career platform",
   "scripts": {
+    "setup": "node setup-environment.js",
     "build": "cd frontend && npm install && npm run build",
     "dev": "cd frontend && npm run dev",
-    "start": "cd frontend && npm run preview"
+    "start": "cd frontend && npm run preview",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:all": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\""
   },
   "workspaces": [
     "frontend",

@@ -3,8 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Send, Loader, Brain, Target, Clock, Star } from 'lucide-react';
 import { Button } from '../ui/Button';
 import axios from 'axios';
+import config from '../../config/environment';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = config.apiUrl;
 
 const AIPathGenerator = ({ onPathGenerated }) => {
   const [isOpen, setIsOpen] = useState(false);

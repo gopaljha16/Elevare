@@ -3,8 +3,9 @@ import { motion } from 'framer-motion';
 import { Plus, Trash2, Save, Eye } from 'lucide-react';
 import { Button } from '../ui/Button';
 import axios from 'axios';
+import config from '../../config/environment';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = config.apiUrl;
 
 const AdminPathCreator = () => {
   const [path, setPath] = useState({

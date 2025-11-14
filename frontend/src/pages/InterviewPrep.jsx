@@ -12,6 +12,7 @@ import {
   Building2, ArrowRight, Star, Trophy, Flame
 } from 'lucide-react';
 import axios from 'axios';
+import config from '../config/environment';
 import { SetupView, SessionView, ResultsView } from '../components/interview/InterviewViews';
 
 const InterviewPrep = () => {
@@ -53,7 +54,7 @@ const InterviewPrep = () => {
       const token = localStorage.getItem('token');
       if (!token) return;
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/interviews/stats`,
+        `${config.backendUrl}/api/interviews/stats`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (response.data.success) {
@@ -80,7 +81,7 @@ const InterviewPrep = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/interviews/start`,
+        `${config.backendUrl}/api/interviews/start`,
         sessionConfig,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -109,7 +110,7 @@ const InterviewPrep = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/interviews/${currentSession.id}/answer`,
+        `${config.backendUrl}/api/interviews/${currentSession.id}/answer`,
         { answer: currentAnswer, timeSpent: timeElapsed, useAI: sessionConfig.useAI },
         { headers: { Authorization: `Bearer ${token}` } }
       );
