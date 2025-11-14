@@ -83,17 +83,17 @@ const ProgressTracker = ({ userId }) => {
       </div>
 
       {/* Active Paths */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+      <div className="bg-[#121625]/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+        <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
           <TrendingUp className="w-5 h-5" />
           Your Learning Paths
         </h3>
 
         {userProgress.length === 0 ? (
           <div className="text-center py-8">
-            <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-            <p className="text-gray-500">No learning paths yet</p>
-            <p className="text-sm text-gray-400">Start your learning journey today!</p>
+            <BookOpen className="w-12 h-12 text-white/30 mx-auto mb-3" />
+            <p className="text-white/70">No learning paths yet</p>
+            <p className="text-sm text-white/50">Start your learning journey today!</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -103,7 +103,7 @@ const ProgressTracker = ({ userId }) => {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                className="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-colors"
               >
                 {/* Progress Circle */}
                 <div className="flex-shrink-0">
@@ -116,22 +116,22 @@ const ProgressTracker = ({ userId }) => {
 
                 {/* Path Info */}
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-gray-900 truncate">
+                  <h4 className="font-semibold text-white truncate">
                     {progress.pathDetails?.pathName || progress.pathId}
                   </h4>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-white/60">
                     {progress.completedNodes?.length || 0} nodes completed
                   </p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className={`text-xs px-2 py-1 rounded ${
-                      progress.status === 'Completed' ? 'bg-green-100 text-green-700' :
-                      progress.status === 'In Progress' ? 'bg-blue-100 text-blue-700' :
-                      'bg-gray-100 text-gray-700'
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      progress.status === 'Completed' ? 'bg-green-500/20 text-green-300' :
+                      progress.status === 'In Progress' ? 'bg-blue-500/20 text-blue-300' :
+                      'bg-white/10 text-white/70'
                     }`}>
                       {progress.status}
                     </span>
                     {progress.totalTimeSpent > 0 && (
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-white/50">
                         {Math.round(progress.totalTimeSpent / 60)}h spent
                       </span>
                     )}
@@ -141,7 +141,7 @@ const ProgressTracker = ({ userId }) => {
                 {/* Action Button */}
                 <button
                   onClick={() => window.location.href = `/learning-paths/${progress.pathId}`}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                  className="px-4 py-2 bg-gradient-to-r from-[#EC4899] to-[#8B5CF6] text-white rounded-lg hover:from-[#F97316] hover:to-[#A855F7] transition-colors text-sm font-medium border-0"
                 >
                   Continue
                 </button>
@@ -152,8 +152,8 @@ const ProgressTracker = ({ userId }) => {
       </div>
 
       {/* Overall Progress */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-xl font-bold text-gray-900 mb-4">Overall Progress</h3>
+      <div className="bg-[#121625]/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+        <h3 className="text-xl font-bold text-white mb-4">Overall Progress</h3>
         <div className="flex items-center justify-center">
           <CircularProgress
             value={stats.avgProgress}
@@ -162,7 +162,7 @@ const ProgressTracker = ({ userId }) => {
             showLabel={true}
           />
         </div>
-        <p className="text-center text-gray-600 mt-4">
+        <p className="text-center text-white/60 mt-4">
           Average completion across all paths
         </p>
       </div>

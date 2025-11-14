@@ -2,20 +2,91 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthContext } from '../contexts/AuthContext';
+import { BriefcaseBusiness, Building2, Code2, Globe2, Link2, Network, Palette, Rocket, Sparkles, Target, Users } from 'lucide-react';
 
 const trustLogos = ['Codexa', 'Nexonnect', 'Lynkr'];
 
 const navLinks = [
-  { label: 'Features', href: '#features', hasDropdown: true },
-  { label: 'Templates', href: '#templates', hasDropdown: true },
-  { label: 'Pricing', href: '#pricing' },
-  { label: 'Resources', href: '#resources', hasDropdown: true },
-  { label: 'About', href: '#about' }
+  {
+    label: 'Features',
+    href: '#features',
+    hasDropdown: true,
+    dropdownItems: [
+      {
+        title: 'ATS Optimization',
+        description: 'Pass Applicant Tracking Systems with keyword and formatting checks.',
+        href: '#features'
+      },
+      {
+        title: 'AI Resume Writer',
+        description: 'Generate impact bullet points and professional summaries.',
+        href: '#features'
+      },
+      {
+        title: 'Interview Prep',
+        description: 'Practice technical and behavioral questions with AI feedback.',
+        href: '#features'
+      }
+    ]
+  },
+  {
+    label: 'Templates',
+    href: '#templates',
+    hasDropdown: true,
+    dropdownItems: [
+      {
+        title: 'Resume Templates',
+        description: 'Modern, classic, and creative layouts for every role.',
+        href: '#templates'
+      },
+      {
+        title: 'Portfolio Layouts',
+        description: 'Showcase your projects with beautiful, responsive designs.',
+        href: '#templates'
+      },
+      {
+        title: 'Cover Letter Styles',
+        description: 'Matching cover letter designs to pair with your resume.',
+        href: '#templates'
+      }
+    ]
+  },
+  {
+    label: 'Pricing',
+    href: '#pricing'
+  },
+  {
+    label: 'Resources',
+    href: '#resources',
+    hasDropdown: true,
+    dropdownItems: [
+      {
+        title: 'Career Blog',
+        description: 'Articles on resumes, interviews, and career growth.',
+        href: '#blog'
+      },
+      {
+        title: 'Guides & Playbooks',
+        description: 'Step-by-step guides for landing interviews faster.',
+        href: '#guides'
+      },
+      {
+        title: 'Resume Examples',
+        description: 'Role-specific examples for top tech and non-tech jobs.',
+        href: '#examples'
+      }
+    ]
+  },
+  {
+    label: 'About',
+    href: '#about'
+  }
 ];
 
 const HomePage = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [activeNav, setActiveNav] = useState(null);
   const userMenuRef = useRef(null);
   const navigate = useNavigate();
 
@@ -35,6 +106,25 @@ const HomePage = () => {
       });
     }
     setIsMenuOpen(false);
+  };
+
+  const handleFeatureCardClick = (featureKey) => {
+    switch (featureKey) {
+      case 'ats':
+      case 'ai-content':
+      case 'real-time':
+      case 'export-share':
+        navigate('/resume-builder?demo=true');
+        break;
+      case 'templates':
+        scrollToSection('#templates');
+        break;
+      case 'career':
+        navigate('/interview-prep');
+        break;
+      default:
+        break;
+    }
   };
 
   const handleLogout = async () => {
@@ -98,35 +188,71 @@ const HomePage = () => {
             </div>
           </div>
 
-          <header className="border-b border-white/10 bg-[#121625]/80 backdrop-blur">
+          <header className="relative z-50 border-b border-white/10 bg-[#121625]/80 backdrop-blur">
             <div className="mx-auto flex h-20 max-w-6xl items-center justify-between px-4 sm:px-6">
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#EC4899] text-2xl font-bold">
-                  E
-                </div>
+
                 <span className="text-2xl font-semibold tracking-tight">Elevare</span>
               </div>
 
               <nav className="hidden items-center gap-8 text-sm font-medium text-white/70 lg:flex">
-                {navLinks.map(({ label, href, hasDropdown }) => (
-                  <button
-                    key={label}
-                    onClick={() => scrollToSection(href)}
-                    className="flex items-center gap-1 transition-colors duration-150 hover:text-white"
+                {navLinks.map((link) => (
+                  <div
+                    key={link.label}
+                    className="relative group"
+                    onMouseEnter={() => setActiveNav(link.hasDropdown ? link.label : null)}
+                    onMouseLeave={() => setActiveNav(null)}
                   >
-                    {label}
-                    {hasDropdown && (
-                      <svg
-                        className="h-4 w-4"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                      </svg>
+                    <button
+                      onClick={() => scrollToSection(link.href)}
+                      className="flex items-center gap-1 rounded-full px-3 py-2 transition-all duration-150 hover:text-white hover:bg-white/5"
+                    >
+                      {link.label}
+                      {link.hasDropdown && (
+                        <svg
+                          className={`h-4 w-4 transition-transform duration-150 ${activeNav === link.label ? 'rotate-180' : ''}`}
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
+                    </button>
+
+                    {link.hasDropdown && (
+                      <AnimatePresence>
+                        {activeNav === link.label && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 6 }}
+                            transition={{ duration: 0.18 }}
+                            className="absolute left-1/2 top-10 z-50 w-80 -translate-x-1/2 rounded-2xl border border-white/10 bg-[#121625]/95 shadow-xl backdrop-blur"
+                          >
+                            <div className="p-3 space-y-1">
+                              {link.dropdownItems?.map((item) => (
+                                <button
+                                  key={item.title}
+                                  onClick={() => {
+                                    scrollToSection(item.href);
+                                    setActiveNav(null);
+                                  }}
+                                  className="flex w-full flex-col items-start rounded-xl px-3 py-2 text-left text-sm text-white/80 transition-colors duration-150 hover:bg-white/5"
+                                >
+                                  <span className="font-medium">{item.title}</span>
+                                  {item.description && (
+                                    <span className="mt-1 text-xs text-white/60">{item.description}</span>
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     )}
-                  </button>
+                  </div>
                 ))}
               </nav>
 
@@ -431,7 +557,8 @@ const HomePage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* ATS Optimization */}
             <motion.div
-              className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 p-8 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300"
+              onClick={() => handleFeatureCardClick('ats')}
+              className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 p-8 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
@@ -451,7 +578,8 @@ const HomePage = () => {
 
             {/* AI Content Generation */}
             <motion.div
-              className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 p-8 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300"
+              onClick={() => handleFeatureCardClick('ai-content')}
+              className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 p-8 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
@@ -471,7 +599,8 @@ const HomePage = () => {
 
             {/* Professional Templates */}
             <motion.div
-              className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 p-8 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300"
+              onClick={() => handleFeatureCardClick('templates')}
+              className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 p-8 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
@@ -491,7 +620,8 @@ const HomePage = () => {
 
             {/* Real-time Analysis */}
             <motion.div
-              className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 p-8 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300"
+              onClick={() => handleFeatureCardClick('real-time')}
+              className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 p-8 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
@@ -511,7 +641,8 @@ const HomePage = () => {
 
             {/* Export & Share */}
             <motion.div
-              className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 p-8 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300"
+              onClick={() => handleFeatureCardClick('export-share')}
+              className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 p-8 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
@@ -531,7 +662,8 @@ const HomePage = () => {
 
             {/* Career Guidance */}
             <motion.div
-              className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 p-8 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300"
+              onClick={() => handleFeatureCardClick('career')}
+              className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 p-8 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.6 }}
@@ -590,7 +722,7 @@ const HomePage = () => {
             </motion.div>
 
             <motion.div
-              className="relative"
+              className="relative rounded-[32px] border border-white/10 bg-gradient-to-br from-[#080B16] via-[#050712] to-[#050713] p-6 lg:p-8 shadow-[0_30px_90px_rgba(0,0,0,0.8)]"
               initial={{ opacity: 0, x: 50 }}
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.4 }}
@@ -599,7 +731,7 @@ const HomePage = () => {
               {/* Central Elevare Logo */}
               <div className="absolute inset-0 flex items-center justify-center">
                 <motion.div
-                  className="w-24 h-24 rounded-3xl bg-gradient-to-br from-[#EC4899] to-[#8B5CF6] flex items-center justify-center text-3xl font-bold text-white shadow-2xl"
+                  className="w-24 h-24 rounded-3xl bg-gradient-to-br from-[#EC4899] to-[#8B5CF6] flex items-center justify-center text-3xl font-bold text-white shadow-2xl ring-4 ring-white/10"
                   animate={{
                     rotate: [0, 5, -5, 0],
                     scale: [1, 1.05, 1]
@@ -615,43 +747,54 @@ const HomePage = () => {
               </div>
 
               {/* Animated Integration Icons */}
-              <div className="grid grid-cols-4 gap-6 relative">
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 sm:gap-6 relative">
                 {[
-                  { name: 'LinkedIn', color: 'bg-blue-600', icon: 'Li' },
-                  { name: 'Indeed', color: 'bg-blue-800', icon: 'In' },
-                  { name: 'GitHub', color: 'bg-gray-800', icon: 'Gh' },
-                  { name: 'Behance', color: 'bg-blue-500', icon: 'Be' },
-                  { name: 'Dribbble', color: 'bg-pink-500', icon: 'Dr' },
-                  { name: 'AngelList', color: 'bg-black', icon: 'An' },
-                  { name: 'Glassdoor', color: 'bg-green-600', icon: 'Gl' },
-                  { name: 'Monster', color: 'bg-purple-600', icon: 'Mo' },
-                  { name: 'ZipRecruiter', color: 'bg-blue-700', icon: 'Zi' },
-                  { name: 'CareerBuilder', color: 'bg-orange-500', icon: 'Ca' },
-                  { name: 'Upwork', color: 'bg-green-500', icon: 'Up' },
-                  { name: 'Freelancer', color: 'bg-blue-600', icon: 'Fr' }
+                  { name: 'LinkedIn', short: 'Li', color: 'bg-blue-600', Icon: Network },
+                  { name: 'Indeed', short: 'In', color: 'bg-blue-800', Icon: BriefcaseBusiness },
+                  { name: 'GitHub', short: 'Gh', color: 'bg-gray-900', Icon: Code2 },
+                  { name: 'Behance', short: 'Be', color: 'bg-blue-500', Icon: Palette },
+                  { name: 'Dribbble', short: 'Dr', color: 'bg-pink-500', Icon: Sparkles },
+                  { name: 'AngelList', short: 'An', color: 'bg-black', Icon: Rocket },
+                  { name: 'Glassdoor', short: 'Gl', color: 'bg-green-600', Icon: Building2 },
+                  { name: 'Monster', short: 'Mo', color: 'bg-purple-600', Icon: Target },
+                  { name: 'ZipRecruiter', short: 'Zi', color: 'bg-blue-700', Icon: Globe2 },
+                  { name: 'CareerBuilder', short: 'Ca', color: 'bg-orange-500', Icon: Users },
+                  { name: 'Upwork', short: 'Up', color: 'bg-green-500', Icon: BriefcaseBusiness },
+                  { name: 'Freelancer', short: 'Fr', color: 'bg-blue-600', Icon: Link2 }
                 ].map((platform, index) => (
                   <motion.div
                     key={platform.name}
-                    className={`aspect-square rounded-2xl ${platform.color} flex items-center justify-center text-white font-bold text-xs shadow-lg border border-white/10`}
-                    initial={{ opacity: 0, scale: 0 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
+                    className={`group relative aspect-square rounded-2xl ${platform.color} flex flex-col items-center justify-center text-white shadow-[0_18px_40px_rgba(0,0,0,0.6)] border border-white/10 overflow-hidden transition-transform duration-200`}
+                    initial={{ opacity: 0, scale: 0.9, y: 8 }}
+                    whileInView={{ opacity: 1, scale: 1, y: 0 }}
                     transition={{
-                      duration: 0.5,
-                      delay: index * 0.1,
+                      duration: 0.4,
+                      delay: index * 0.06,
                       type: "spring",
-                      stiffness: 100
+                      stiffness: 120
                     }}
                     whileHover={{
-                      scale: 1.1,
-                      rotate: 5,
-                      transition: { duration: 0.2 }
+                      scale: 1.04,
+                      translateY: -2
                     }}
                     viewport={{ once: true }}
                   >
-                    {platform.icon}
+                    <div className="relative flex flex-col items-center justify-center gap-2">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-black/20 border border-white/20 backdrop-blur-sm">
+                        {platform.Icon && (
+                          <platform.Icon className="w-5 h-5 text-white/90" strokeWidth={1.8} />
+                        )}
+                      </div>
+                      <div className="text-sm font-semibold tracking-wide">
+                        {platform.short}
+                      </div>
+                      <div className="text-[10px] text-white/70 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                        {platform.name}
+                      </div>
+                    </div>
                     {/* Connection lines */}
                     <motion.div
-                      className="absolute w-px h-8 bg-gradient-to-b from-white/20 to-transparent"
+                      className="pointer-events-none absolute w-px h-10 bg-gradient-to-b from-white/30 to-transparent"
                       style={{
                         top: '50%',
                         left: '50%',
@@ -660,7 +803,7 @@ const HomePage = () => {
                       }}
                       initial={{ scaleY: 0 }}
                       whileInView={{ scaleY: 1 }}
-                      transition={{ duration: 0.8, delay: 1 + index * 0.1 }}
+                      transition={{ duration: 0.8, delay: 0.8 + index * 0.08 }}
                       viewport={{ once: true }}
                     />
                   </motion.div>
@@ -842,7 +985,6 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Main Hero Section */}
       <section className="py-24 bg-[#0A0C14]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-12">
@@ -941,6 +1083,227 @@ const HomePage = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="templates" className="py-24 bg-[#0E101A]">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+              Templates that feel like you
+            </h2>
+            <p className="text-white/60 max-w-2xl mx-auto">
+              Choose from resume, portfolio, and cover letter templates designed for modern tech and business roles.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 hover:border-white/25 transition-all duration-200">
+              <h3 className="text-xl font-semibold text-white mb-3">Resume Templates</h3>
+              <p className="text-white/60 text-sm mb-4">
+                Clean, ATS-friendly layouts with smart spacing and typography.
+              </p>
+              <ul className="space-y-2 text-sm text-white/70">
+                <li>• Modern and minimal styles</li>
+                <li>• One-page and multi-page layouts</li>
+                <li>• Tailored for product, engineering, design, and more</li>
+              </ul>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 hover:border-white/25 transition-all duration-200">
+              <h3 className="text-xl font-semibold text-white mb-3">Portfolio Layouts</h3>
+              <p className="text-white/60 text-sm mb-4">
+                Showcase your projects like a product, not just a list of screenshots.
+              </p>
+              <ul className="space-y-2 text-sm text-white/70">
+                <li>• Case study–driven layouts</li>
+                <li>• Project impact and metrics sections</li>
+                <li>• Live preview and easy publishing</li>
+              </ul>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 hover:border-white/25 transition-all duration-200">
+              <h3 className="text-xl font-semibold text-white mb-3">Cover Letters</h3>
+              <p className="text-white/60 text-sm mb-4">
+                Matching cover letter templates that follow the same visual language.
+              </p>
+              <ul className="space-y-2 text-sm text-white/70">
+                <li>• AI-assisted phrasing and structure</li>
+                <li>• Role-specific starter templates</li>
+                <li>• Export-ready for every application</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="pricing" className="py-24 bg-[#0A0C14]">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+              Simple pricing, built for job seekers
+            </h2>
+            <p className="text-white/60 max-w-2xl mx-auto">
+              Start free, then upgrade only when you're ready to scale your applications.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 flex flex-col">
+              <h3 className="text-xl font-semibold text-white mb-1">Starter</h3>
+              <p className="text-white/50 text-sm mb-4">For early career and first-time job seekers.</p>
+              <div className="text-3xl font-bold text-white mb-4">Free</div>
+              <ul className="space-y-2 text-sm text-white/70 mb-6 flex-1">
+                <li>• Basic resume builder</li>
+                <li>• 1 resume template</li>
+                <li>• Limited AI suggestions</li>
+                <li>• Export to PDF</li>
+              </ul>
+              <button className="w-full rounded-full bg-white text-gray-900 py-2 text-sm font-semibold hover:bg-gray-100 transition-colors">
+                Get started free
+              </button>
+            </div>
+
+            <div className="rounded-2xl border border-pink-500/60 bg-gradient-to-b from-pink-500/15 to-purple-500/15 p-6 flex flex-col shadow-[0_20px_60px_rgba(236,72,153,0.35)]">
+              <div className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white mb-3 self-start">
+                Most popular
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-1">Pro</h3>
+              <p className="text-white/50 text-sm mb-4">For active job seekers targeting top companies.</p>
+              <div className="text-3xl font-bold text-white mb-1">₹499</div>
+              <p className="text-xs text-white/50 mb-4">one-time or per month (your choice)</p>
+              <ul className="space-y-2 text-sm text-white/80 mb-6 flex-1">
+                <li>• Unlimited resumes & versions</li>
+                <li>• All templates & portfolio layouts</li>
+                <li>• Full AI resume and portfolio assistant</li>
+                <li>• ATS score and keyword insights</li>
+                <li>• Interview prep sessions with AI</li>
+              </ul>
+              <button className="w-full rounded-full bg-gradient-to-r from-[#EC4899] via-[#F472B6] to-[#8B5CF6] py-2 text-sm font-semibold text-white hover:brightness-110 transition-all">
+                Upgrade to Pro
+              </button>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 flex flex-col">
+              <h3 className="text-xl font-semibold text-white mb-1">Career Plus</h3>
+              <p className="text-white/50 text-sm mb-4">For power users and career switchers.</p>
+              <div className="text-3xl font-bold text-white mb-4">Custom</div>
+              <ul className="space-y-2 text-sm text-white/70 mb-6 flex-1">
+                <li>• Everything in Pro</li>
+                <li>• Priority AI credits</li>
+                <li>• Dedicated support for portfolio & interview prep</li>
+                <li>• Team / cohort access (on request)</li>
+              </ul>
+              <button className="w-full rounded-full border border-white/25 text-white py-2 text-sm font-semibold hover:bg-white/10 transition-colors">
+                Talk to us
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="resources" className="py-24 bg-[#0E101A]">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+              Learn how to stand out
+            </h2>
+            <p className="text-white/60 max-w-2xl mx-auto">
+              Practical resources to help you write better resumes, portfolios, and prepare for interviews.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div id="blog" className="rounded-2xl border border-white/10 bg-white/5 p-6 hover:border-white/25 transition-all duration-200">
+              <h3 className="text-xl font-semibold text-white mb-3">Career Blog</h3>
+              <p className="text-white/60 text-sm mb-4">
+                Weekly breakdowns of real resumes, interview experiences, and career stories.
+              </p>
+              <p className="text-xs text-white/50">Coming soon to Elevare.</p>
+            </div>
+
+            <div id="guides" className="rounded-2xl border border-white/10 bg-white/5 p-6 hover:border-white/25 transition-all duration-200">
+              <h3 className="text-xl font-semibold text-white mb-3">Guides & Playbooks</h3>
+              <p className="text-white/60 text-sm mb-4">
+                Step-by-step guides for switching careers, cracking product roles, and more.
+              </p>
+              <p className="text-xs text-white/50">Save your spot & get early access.</p>
+            </div>
+
+            <div id="examples" className="rounded-2xl border border-white/10 bg-white/5 p-6 hover:border-white/25 transition-all duration-200">
+              <h3 className="text-xl font-semibold text-white mb-3">Resume & Portfolio Examples</h3>
+              <p className="text-white/60 text-sm mb-4">
+                Curated examples for software engineers, designers, PMs, and freshers.
+              </p>
+              <p className="text-xs text-white/50">New examples are added regularly.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="about" className="py-24 bg-[#0A0C14]">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+          <div>
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+              Built for ambitious job seekers
+            </h2>
+            <p className="text-white/70 mb-4">
+              Elevare started with a simple goal: make it easier for people to tell their story in a way that recruiters and ATS actually understand.
+            </p>
+            <p className="text-white/60 mb-4">
+              Instead of juggling separate tools for resumes, portfolios, and interview prep, Elevare brings everything into one AI-powered workspace.
+            </p>
+            <p className="text-white/60">
+              Whether you are applying to your first internship or switching careers into tech, Elevare helps you present your experience with confidence.
+            </p>
+          </div>
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-white/60">Resumes optimized</p>
+                <p className="text-2xl font-semibold text-white">5,000+</p>
+              </div>
+              <div className="rounded-full bg-gradient-to-r from-[#EC4899] to-[#8B5CF6] px-4 py-2 text-xs font-semibold">
+                Across multiple roles & industries
+              </div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-white/60">Avg. ATS score improvement</p>
+                <p className="text-2xl font-semibold text-white">+35%</p>
+              </div>
+              <div className="rounded-full bg-white/10 px-4 py-2 text-xs font-semibold text-white/80">
+                With AI-powered suggestions
+              </div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <p className="text-white/70 text-sm">
+                "I wanted a single place where my resume, portfolio, and interview prep all feel connected. Elevare is that workspace."
+              </p>
+              <p className="mt-3 text-xs text-white/50">Founder, Elevare</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="contact" className="py-20 bg-[#0E101A]">
+        <div className="max-w-3xl mx-auto px-6 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+            Have questions or ideas?
+          </h2>
+          <p className="text-white/60 mb-6">
+            Tell us what you'd like to see next in Elevare – more templates, interview prep flows, or portfolio features.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <input
+              type="email"
+              placeholder="Enter your email"
+              className="w-full sm:w-72 rounded-full border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-white/40"
+            />
+            <button className="rounded-full bg-gradient-to-r from-[#EC4899] via-[#F472B6] to-[#8B5CF6] px-6 py-3 text-sm font-semibold text-white hover:brightness-110 transition-all">
+              Get in touch
+            </button>
           </div>
         </div>
       </section>

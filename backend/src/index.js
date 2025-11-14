@@ -24,6 +24,9 @@ const chatRoutes = require('./routes/chat');
 const portfolioRoutes = require('./routes/portfolio');
 const resumeRoutes = require('./routes/resume');
 const analyticsRoutes = require('./routes/analytics');
+const subscriptionRoutes = require('./routes/subscription');
+const webhookRoutes = require('./routes/webhooks');
+const cronService = require('./services/cronService');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const logger = require('./utils/logger');
 const {
@@ -215,6 +218,8 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/portfolio', portfolioRoutes);
 app.use('/api/resumes', resumeRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/webhooks', webhookRoutes);
 
 // seed route (development only)
 if (process.env.NODE_ENV === 'development') {
@@ -244,6 +249,11 @@ app.listen(PORT, () => {
   console.log(`   Port: ${PORT}`);
   console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`   Health Check: http://localhost:${PORT}/health`);
+
+  // Initialize cron jobs
+  if (process.env.NODE_ENV === 'production') {
+    cronService.init();
+  }
 
   console.log('\n🌐 URL Configuration:');
   console.log(`   Frontend URL: ${process.env.FRONTEND_URL || '❌ NOT SET (using fallback: http://localhost:5173)'}`);
@@ -284,5 +294,3 @@ app.listen(PORT, () => {
   console.log('📝 All CORS requests will be logged above');
   console.log('════════════════════════════════════════════════════════════════\n');
 });
-
-s

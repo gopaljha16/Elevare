@@ -73,6 +73,8 @@ if (useRealRedis) {
         redisClient = redis.createClient({
             url: redisUrl,
             socket: {
+                tls: true,
+                rejectUnauthorized: false, // For cloud Redis services
                 reconnectStrategy: (retries) => {
                     if (retries > 10) {
                         console.error('❌ Max Redis reconnection attempts reached. Using mock client.');

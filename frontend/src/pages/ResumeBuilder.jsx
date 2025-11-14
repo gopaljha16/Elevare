@@ -360,9 +360,9 @@ const ResumeBuilder = () => {
   const downloadPDF = async () => {
     try {
       console.log('🔄 Starting PDF generation...');
-      
+
       const previewElement = document.getElementById('resume-preview');
-      
+
       if (!previewElement) {
         console.error('❌ Preview element not found');
         alert('Preview not found. Please wait for the preview to load.');
@@ -375,8 +375,6 @@ const ResumeBuilder = () => {
         return;
       }
 
-      console.log('✅ Preview element found, creating loading indicator...');
-
       // Show loading state
       const loadingDiv = document.createElement('div');
       loadingDiv.id = 'pdf-loading';
@@ -385,17 +383,14 @@ const ResumeBuilder = () => {
       document.body.appendChild(loadingDiv);
 
       // Wait for loading UI to render
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
-      console.log('📸 Capturing resume as image...');
-
-      // Helper function to convert oklch/color-mix to rgb
+      // Helper to convert oklch/color-mix to rgb
       const convertColorToRgb = (colorString) => {
         if (!colorString || (!colorString.includes('oklch') && !colorString.includes('color-mix'))) {
           return colorString;
         }
-        
-        // Create temporary element to get computed RGB
+
         const temp = document.createElement('div');
         temp.style.color = colorString;
         temp.style.display = 'none';
@@ -405,7 +400,6 @@ const ResumeBuilder = () => {
         return computed || 'rgb(0, 0, 0)';
       };
 
-      // Generate canvas from HTML with better options
       const canvas = await html2canvas(previewElement, {
         scale: 2,
         useCORS: true,
@@ -414,70 +408,57 @@ const ResumeBuilder = () => {
         backgroundColor: '#ffffff',
         windowWidth: previewElement.scrollWidth,
         windowHeight: previewElement.scrollHeight,
-        ignoreElements: (element) => {
-          // Ignore elements that might cause issues
-          return element.classList && element.classList.contains('no-pdf');
-        },
-        onclone: (clonedDoc, clonedElement) => {
-          const resumePreview = clonedDoc.getElementById('resume-preview');
-          if (resumePreview) {
-            // Get all elements in the cloned document
-            const allElements = resumePreview.querySelectorAll('*');
-            
-            // Convert all oklch colors to rgb by reading computed styles from original
-            const originalElements = previewElement.querySelectorAll('*');
-            
-            allElements.forEach((clonedEl, index) => {
-              if (originalElements[index]) {
-                const originalEl = originalElements[index];
-                const computedStyle = window.getComputedStyle(originalEl);
-                
-                // Convert and apply background color
-                const bgColor = computedStyle.backgroundColor;
-                if (bgColor && (bgColor.includes('oklch') || bgColor.includes('color-mix'))) {
-                  clonedEl.style.backgroundColor = convertColorToRgb(bgColor);
-                } else if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)') {
-                  clonedEl.style.backgroundColor = bgColor;
-                }
-                
-                // Convert and apply text color
-                const textColor = computedStyle.color;
-                if (textColor && (textColor.includes('oklch') || textColor.includes('color-mix'))) {
-                  clonedEl.style.color = convertColorToRgb(textColor);
-                } else if (textColor) {
-                  clonedEl.style.color = textColor;
-                }
-                
-                // Convert and apply border color
-                const borderColor = computedStyle.borderColor;
-                if (borderColor && (borderColor.includes('oklch') || borderColor.includes('color-mix'))) {
-                  clonedEl.style.borderColor = convertColorToRgb(borderColor);
-                } else if (borderColor && borderColor !== 'rgb(0, 0, 0)') {
-                  clonedEl.style.borderColor = borderColor;
-                }
-              }
-            });
-            
-            // Ensure dimensions
-            resumePreview.style.width = previewElement.scrollWidth + 'px';
-            resumePreview.style.height = 'auto';
-          }
+        ignoreElements: (element) =>
+          element.classList && element.classList.contains('no-pdf'),
+        onclone: (clonedDoc) => {
+          const clonedPreview = clonedDoc.getElementById('resume-preview');
+          if (!clonedPreview) return;
+
+          const originalElements = previewElement.querySelectorAll('*');
+          const clonedElements = clonedPreview.querySelectorAll('*');
+
+          clonedElements.forEach((clonedEl, index) => {
+            const originalEl = originalElements[index];
+            if (!originalEl) return;
+
+            const computedStyle = window.getComputedStyle(originalEl);
+
+            const bgColor = computedStyle.backgroundColor;
+            if (bgColor && (bgColor.includes('oklch') || bgColor.includes('color-mix'))) {
+              clonedEl.style.backgroundColor = convertColorToRgb(bgColor);
+            } else if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)') {
+              clonedEl.style.backgroundColor = bgColor;
+            }
+
+            const textColor = computedStyle.color;
+            if (textColor && (textColor.includes('oklch') || textColor.includes('color-mix'))) {
+              clonedEl.style.color = convertColorToRgb(textColor);
+            } else if (textColor) {
+              clonedEl.style.color = textColor;
+            }
+
+            const borderColor = computedStyle.borderColor;
+            if (borderColor && (borderColor.includes('oklch') || borderColor.includes('color-mix'))) {
+              clonedEl.style.borderColor = convertColorToRgb(borderColor);
+            } else if (borderColor && borderColor !== 'rgb(0, 0, 0)') {
+              clonedEl.style.borderColor = borderColor;
+            }
+          });
+
+          clonedPreview.style.width = previewElement.scrollWidth + 'px';
+          clonedPreview.style.height = 'auto';
         }
       });
 
       console.log('✅ Canvas created:', canvas.width, 'x', canvas.height);
 
-      // A4 dimensions in mm
       const pdfWidth = 210;
       const pdfHeight = 297;
-      
-      // Calculate image dimensions to fit A4
       const imgWidth = pdfWidth;
       const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-      
+
       console.log('📄 Creating PDF document...');
-      
-      // Create PDF with jsPDF 3.x API
+
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -485,67 +466,51 @@ const ResumeBuilder = () => {
         compress: true
       });
 
-      // Convert canvas to image data
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      
-      console.log('🖼️ Adding image to PDF...');
 
-      // Handle multiple pages if content is longer than one page
       let heightLeft = imgHeight;
       let position = 0;
-      let page = 1;
 
-      // Add first page
       pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
       heightLeft -= pdfHeight;
 
-      // Add additional pages if needed
       while (heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
         pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
         heightLeft -= pdfHeight;
-        page++;
       }
 
-      console.log(`✅ PDF created with ${page} page(s)`);
-      
-      // Generate filename
-      const fileName = `${resumeData?.personalInfo?.fullName?.replace(/\s+/g, '_') || 'Resume'}_${new Date().toISOString().split('T')[0]}.pdf`;
-      
+      const fileName = `${
+        resumeData?.personalInfo?.fullName?.replace(/\s+/g, '_') || 'Resume'
+      }_${new Date().toISOString().split('T')[0]}.pdf`;
+
       console.log('💾 Saving PDF:', fileName);
-      
-      // Save PDF
+
       pdf.save(fileName);
-      
-      // Remove loading state
+
       const loadingElement = document.getElementById('pdf-loading');
       if (loadingElement) {
         document.body.removeChild(loadingElement);
       }
-      
+
       console.log('✅ PDF downloaded successfully!');
-      
-      // Show success message
+
       setTimeout(() => {
         alert(`✅ Resume downloaded successfully as ${fileName}`);
       }, 100);
-      
     } catch (error) {
       console.error('❌ PDF generation error:', error);
       console.error('Error stack:', error.stack);
-      
-      // Remove loading state if it exists
+
       const loadingElement = document.getElementById('pdf-loading');
       if (loadingElement) {
         document.body.removeChild(loadingElement);
       }
-      
-      // Show detailed error message
+
       const errorMsg = `Failed to generate PDF.\n\nError: ${error.message}\n\nTrying print dialog as fallback...`;
       alert(errorMsg);
-      
-      // Fallback to print
+
       console.log('🖨️ Falling back to print dialog...');
       setTimeout(() => {
         window.print();
@@ -577,218 +542,223 @@ const ResumeBuilder = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <FileText className="w-8 h-8 text-blue-600" />
-              <div>
-                <div className="flex items-center space-x-2">
-                  <h1 className="text-2xl font-bold text-gray-900">Resume Builder</h1>
-                  {isDemo && (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                      <Eye className="w-3 h-3 mr-1" />
-                      Demo Mode
-                    </span>
-                  )}
-                </div>
-                <p className="text-sm text-gray-500">
-                  {isDemo ? 'Viewing demo resume - Create your own to edit' : 
-                   autoSaving ? '💾 Saving...' :
-                   lastSaved ? `✅ Saved ${new Date(lastSaved).toLocaleTimeString()}` :
-                   `Create / ${mode === 'upload' ? 'Upload' : 'Create new'}`}
-                </p>
+    <div className="min-h-screen bg-[#0E101A] text-white">
+    {/* Background Effects */}
+    <div className="fixed inset-0 overflow-hidden pointer-events-none">
+      <div className="absolute -top-40 -left-32 h-[420px] w-[420px] rounded-full bg-[#7C3AED]/20 blur-3xl" />
+      <div className="absolute -bottom-40 -right-32 h-[420px] w-[420px] rounded-full bg-[#EC4899]/20 blur-3xl" />
+    </div>
+
+    {/* Header */}
+    <header className="relative bg-[#121625]/80 border-b border-white/10 sticky top-0 z-50 backdrop-blur">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <FileText className="w-8 h-8 text-[#EC4899]" />
+            <div>
+              <div className="flex items-center space-x-2">
+                <h1 className="text-2xl font-bold text-white">Resume Builder</h1>
+                {isDemo && (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/15 text-yellow-200 border border-yellow-400/40">
+                    <Eye className="w-3 h-3 mr-1" />
+                    Demo Mode
+                  </span>
+                )}
               </div>
+              <p className="text-sm text-white/60">
+                {isDemo ? 'Viewing demo resume - Create your own to edit' : 
+                 autoSaving ? '💾 Saving...' :
+                 lastSaved ? `✅ Saved ${new Date(lastSaved).toLocaleTimeString()}` :
+                 `Create / ${mode === 'upload' ? 'Upload' : 'Create new'}`}
+              </p>
             </div>
+          </div>
 
-            <div className="flex items-center space-x-3">
-              {!isDemo && (
-                <>
-                  <button
-                    onClick={async () => {
-                      try {
-                        const response = await axiosClient.get('/resumes/diagnostics');
-                        console.log('Diagnostics:', response.data);
-                        const diag = response.data.diagnostics;
-                        const aiStatus = diag.services.aiModelAvailable ? '✅ Working' : '❌ Not Working';
-                        alert(`🔍 System Diagnostics:\n\n` +
-                          `👤 User: ${diag.user?.email || 'Not logged in'}\n` +
-                          `🔑 Gemini Key: ${diag.environment.hasGeminiKey ? '✅ Present (' + diag.environment.geminiKeyLength + ' chars)' : '❌ Missing'}\n` +
-                          `🤖 AI Service: ${diag.services.aiServiceInitialized ? '✅ Initialized' : '❌ Failed'}\n` +
-                          `🧠 AI Model: ${aiStatus}\n` +
-                          `📄 PDF Parser: ${diag.dependencies.pdfParse ? '✅ Available' : '❌ Missing'}\n` +
-                          `📝 DOCX Parser: ${diag.dependencies.mammoth ? '✅ Available' : '❌ Missing'}\n\n` +
-                          `${!diag.services.aiModelAvailable ? '⚠️ AI features may not work. Check backend logs.' : '✅ All systems operational!'}`
-                        );
-                      } catch (error) {
-                        console.error('Diagnostics failed:', error);
-                        alert('❌ Diagnostics failed: ' + (error.response?.data?.message || error.message));
-                      }
-                    }}
-                    className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
-                  >
-                    🔍 Diagnostics
-                  </button>
-
-                  <button
-                    onClick={async () => {
-                      try {
-                        console.log('Testing AI service...');
-                        const response = await axiosClient.post('/resumes/test-ai', {});
-                        console.log('AI Test Response:', response.data);
-                        alert('✅ AI Test Successful!\n\n' + 
-                          'Response: ' + response.data.testResult + '\n\n' +
-                          'AI service is working properly!');
-                      } catch (error) {
-                        console.error('AI test failed:', error);
-                        console.error('Error details:', error.response?.data);
-                        alert('❌ AI Test Failed!\n\n' + 
-                          'Error: ' + (error.response?.data?.message || error.message) + '\n\n' +
-                          'Check backend logs for details.');
-                      }
-                    }}
-                    className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
-                  >
-                    🤖 Test AI
-                  </button>
-
-                  <button
-                    onClick={async () => {
-                      const input = document.createElement('input');
-                      input.type = 'file';
-                      input.accept = '.pdf,.docx';
-                      input.onchange = async (e) => {
-                        const file = e.target.files[0];
-                        if (!file) return;
-                        
-                        const formData = new FormData();
-                        formData.append('resume', file);
-                        
-                        try {
-                          // Test public upload first (no auth required)
-                          const response = await axiosClient.post('/resumes/public-test-upload', formData, {
-                            headers: { 'Content-Type': 'multipart/form-data' }
-                          });
-                          console.log('Public upload test:', response.data);
-                          alert('Public upload test successful: ' + response.data.file.originalname);
-                        } catch (error) {
-                          console.error('Public upload test failed:', error);
-                          alert('Public upload test failed: ' + (error.response?.data?.message || error.message));
-                        }
-                      };
-                      input.click();
-                    }}
-                    className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-                  >
-                    Test Upload
-                  </button>
-
-                  <button
-                    onClick={getAISuggestions}
-                    disabled={loading}
-                    className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-colors flex items-center space-x-2"
-                  >
-                    <Wand2 className="w-4 h-4" />
-                    <span>AI Improve</span>
-                  </button>
-
-                  <button
-                    onClick={calculateATS}
-                    disabled={loading}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    <span>ATS Score</span>
-                  </button>
-                  
-                  <button
-                    onClick={saveResume}
-                    disabled={saving || autoSaving}
-                    className={`px-4 py-2 ${autoSaving ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded-lg transition-colors flex items-center space-x-2`}
-                  >
-                    <Save className="w-4 h-4" />
-                    <span>
-                      {saving ? 'Saving...' : 
-                       autoSaving ? 'Auto-saving...' :
-                       currentResumeId ? 'Save' : 'Save'}
-                    </span>
-                  </button>
-                </>
-              )}
-
-              <button 
-                onClick={downloadPDF}
-                className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2"
-              >
-                <Download className="w-4 h-4" />
-                <span>Download</span>
-              </button>
-
-              {!isDemo && (
-                <button 
-                  onClick={generateShareLink}
-                  className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors flex items-center space-x-2"
+          <div className="flex items-center space-x-3">
+            {!isDemo && (
+              <>
+                <button
+                  onClick={async () => {
+                    try {
+                      const response = await axiosClient.get('/resumes/diagnostics');
+                      console.log('Diagnostics:', response.data);
+                      const diag = response.data.diagnostics;
+                      const aiStatus = diag.services.aiModelAvailable ? '✅ Working' : '❌ Not Working';
+                      alert(`🔍 System Diagnostics:\n\n` +
+                        `👤 User: ${diag.user?.email || 'Not logged in'}\n` +
+                        `🔑 Gemini Key: ${diag.environment.hasGeminiKey ? '✅ Present (' + diag.environment.geminiKeyLength + ' chars)' : '❌ Missing'}\n` +
+                        `🤖 AI Service: ${diag.services.aiServiceInitialized ? '✅ Initialized' : '❌ Failed'}\n` +
+                        `🧠 AI Model: ${aiStatus}\n` +
+                        `📄 PDF Parser: ${diag.dependencies.pdfParse ? '✅ Available' : '❌ Missing'}\n` +
+                        `📝 DOCX Parser: ${diag.dependencies.mammoth ? '✅ Available' : '❌ Missing'}\n\n` +
+                        `${!diag.services.aiModelAvailable ? '⚠️ AI features may not work. Check backend logs.' : '✅ All systems operational!'}`
+                      );
+                    } catch (error) {
+                      console.error('Diagnostics failed:', error);
+                      alert('❌ Diagnostics failed: ' + (error.response?.data?.message || error.message));
+                    }
+                  }}
+                  className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
                 >
-                  <Share2 className="w-4 h-4" />
-                  <span>Share</span>
+                  🔍 Diagnostics
                 </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Sidebar - Form Sections */}
-          <div className="lg:col-span-1 space-y-4">
-            {isDemo && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4">
-                <div className="flex items-start space-x-3">
-                  <Eye className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h3 className="font-semibold text-yellow-900 mb-1">Demo Resume Preview</h3>
-                    <p className="text-sm text-yellow-800 mb-3">
-                      This is a sample resume to showcase our builder's capabilities. Explore the sections below to see what you can create!
-                    </p>
-                    <button
-                      onClick={() => window.location.href = '/resume-builder'}
-                      className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm font-medium"
-                    >
-                      Create Your Own Resume
-                    </button>
-                  </div>
-                </div>
-              </div>
+                <button
+                  onClick={async () => {
+                    try {
+                      console.log('Testing AI service...');
+                      const response = await axiosClient.post('/resumes/test-ai', {});
+                      console.log('AI Test Response:', response.data);
+                      alert('✅ AI Test Successful!\n\n' + 
+                        'Response: ' + response.data.testResult + '\n\n' +
+                        'AI service is working properly!');
+                    } catch (error) {
+                      console.error('AI test failed:', error);
+                      console.error('Error details:', error.response?.data);
+                      alert('❌ AI Test Failed!\n\n' + 
+                        'Error: ' + (error.response?.data?.message || error.message) + '\n\n' +
+                        'Check backend logs for details.');
+                    }
+                  }}
+                  className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
+                >
+                  🤖 Test AI
+                </button>
+
+                <button
+                  onClick={async () => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = '.pdf,.docx';
+                    input.onchange = async (e) => {
+                      const file = e.target.files[0];
+                      if (!file) return;
+
+                      const formData = new FormData();
+                      formData.append('resume', file);
+
+                      try {
+                        const response = await axiosClient.post('/resumes/public-test-upload', formData, {
+                          headers: { 'Content-Type': 'multipart/form-data' }
+                        });
+                        console.log('Public upload test:', response.data);
+                        alert('Public upload test successful: ' + response.data.file.originalname);
+                      } catch (error) {
+                        console.error('Public upload test failed:', error);
+                        alert('Public upload test failed: ' + (error.response?.data?.message || error.message));
+                      }
+                    };
+                    input.click();
+                  }}
+                  className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                >
+                  Test Upload
+                </button>
+
+                <button
+                  onClick={getAISuggestions}
+                  disabled={loading}
+                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-colors flex items-center space-x-2"
+                >
+                  <Wand2 className="w-4 h-4" />
+                  <span>AI Improve</span>
+                </button>
+
+                <button
+                  onClick={calculateATS}
+                  disabled={loading}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>ATS Score</span>
+                </button>
+                
+                <button
+                  onClick={saveResume}
+                  disabled={saving || autoSaving}
+                  className={`px-4 py-2 ${autoSaving ? 'bg-white/20' : 'bg-gradient-to-r from-[#3B82F6] to-[#6366F1] hover:from-[#2563EB] hover:to-[#4F46E5]'} text-white rounded-lg transition-colors flex items-center space-x-2 shadow-lg shadow-blue-500/20`}
+                >
+                  <Save className="w-4 h-4" />
+                  <span>
+                    {saving ? 'Saving...' : 
+                     autoSaving ? 'Auto-saving...' :
+                     currentResumeId ? 'Save' : 'Save'}
+                  </span>
+                </button>
+              </>
             )}
-            <FormSections 
-              resumeData={resumeData}
-              setResumeData={setResumeData}
-              activeSection={activeSection}
-              setActiveSection={setActiveSection}
-              onFileUpload={handleFileUpload}
-              loading={loading}
-              currentResumeId={currentResumeId}
-              isDemo={isDemo}
-            />
-          </div>
 
-          {/* Right Side - Live Preview */}
-          <div className="lg:col-span-2">
-            <LivePreview 
-              resumeData={resumeData}
-              template={selectedTemplate}
-              atsScore={atsScore}
-              aiSuggestions={aiSuggestions}
-              isDemo={isDemo}
-            />
+            <button 
+              onClick={downloadPDF}
+              className="px-4 py-2 bg-transparent border border-white/20 text-white rounded-lg hover:bg-white/10 transition-colors flex items-center space-x-2"
+            >
+              <Download className="w-4 h-4" />
+              <span>Download</span>
+            </button>
+
+            {!isDemo && (
+              <button 
+                onClick={generateShareLink}
+                className="px-4 py-2 bg-gradient-to-r from-[#EC4899] to-[#8B5CF6] text-white rounded-lg hover:scale-105 transition-transform flex items-center space-x-2 shadow-lg shadow-pink-500/30"
+              >
+                <Share2 className="w-4 h-4" />
+                <span>Share</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
+    </header>
+
+    {/* Main Content */}
+    <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Sidebar - Form Sections */}
+        <div className="lg:col-span-1 space-y-4">
+          {isDemo && (
+            <div className="bg-yellow-500/10 border border-yellow-400/40 rounded-xl p-4 mb-4">
+              <div className="flex items-start space-x-3">
+                <Eye className="w-5 h-5 text-yellow-300 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-yellow-100 mb-1">Demo Resume Preview</h3>
+                  <p className="text-sm text-yellow-100/80 mb-3">
+                    This is a sample resume to showcase our builder's capabilities. Explore the sections below to see what you can create!
+                  </p>
+                  <button
+                    onClick={() => window.location.href = '/resume-builder'}
+                    className="px-4 py-2 bg-yellow-400 text-black rounded-lg hover:bg-yellow-300 transition-colors text-sm font-medium"
+                  >
+                    Create Your Own Resume
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          <FormSections 
+            resumeData={resumeData}
+            setResumeData={setResumeData}
+            activeSection={activeSection}
+            setActiveSection={setActiveSection}
+            onFileUpload={handleFileUpload}
+            loading={loading}
+            currentResumeId={currentResumeId}
+            isDemo={isDemo}
+          />
+        </div>
+
+        {/* Right Side - Live Preview */}
+        <div className="lg:col-span-2">
+          <LivePreview 
+            resumeData={resumeData}
+            template={selectedTemplate}
+            atsScore={atsScore}
+            aiSuggestions={aiSuggestions}
+            isDemo={isDemo}
+          />
+        </div>
+      </div>
     </div>
+  </div>
   );
 };
 

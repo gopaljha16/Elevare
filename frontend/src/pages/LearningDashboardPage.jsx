@@ -21,12 +21,18 @@ const LearningDashboardPage = () => {
   }, [dispatch, userId]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[#0E101A] text-white">
+      {/* Background Effects */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -left-32 h-[420px] w-[420px] rounded-full bg-[#7C3AED]/20 blur-3xl" />
+        <div className="absolute -bottom-40 -right-32 h-[420px] w-[420px] rounded-full bg-[#EC4899]/20 blur-3xl" />
+      </div>
+
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Learning Dashboard</h1>
-          <p className="text-gray-600">Track your progress and continue learning</p>
+          <h1 className="text-4xl font-bold mb-2">Learning Dashboard</h1>
+          <p className="text-white/60">Track your progress and continue learning</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -37,16 +43,16 @@ const LearningDashboardPage = () => {
 
           {/* Sidebar - Recommendations */}
           <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <Star className="w-5 h-5 text-yellow-500" />
+            <div className="bg-[#121625]/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                <Star className="w-5 h-5 text-yellow-400" />
                 Recommended for You
               </h3>
 
               {recommendations.length === 0 ? (
                 <div className="text-center py-6">
-                  <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-500 text-sm">No recommendations yet</p>
+                  <BookOpen className="w-12 h-12 text-white/30 mx-auto mb-3" />
+                  <p className="text-white/60 text-sm">No recommendations yet</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -56,11 +62,11 @@ const LearningDashboardPage = () => {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                      className="p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer border border-white/5"
                       onClick={() => navigate(`/learning-paths/${path.pathId}`)}
                     >
                       <h4 className="font-medium text-gray-900 text-sm mb-1">{path.pathName}</h4>
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <div className="flex items-center gap-2 text-xs text-white/60">
                         <span>{path.category}</span>
                         <span>•</span>
                         <span>{path.estimatedHours}h</span>
@@ -73,14 +79,14 @@ const LearningDashboardPage = () => {
               <Button
                 onClick={() => navigate('/learning-paths')}
                 variant="outline"
-                className="w-full mt-4"
+                className="w-full mt-4 border-white/20 text-white hover:bg-white/10"
               >
                 Explore All Paths
               </Button>
             </div>
 
             {/* Quick Stats */}
-            <div className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg p-6 text-white">
+            <div className="bg-gradient-to-br from-[#4C1D95] via-[#7C3AED] to-[#EC4899] rounded-2xl p-6 text-white border border-white/10">
               <h3 className="text-lg font-bold mb-4">Keep Learning!</h3>
               <p className="text-sm text-purple-100 mb-4">
                 Consistency is key to mastering new skills. Try to learn something new every day.

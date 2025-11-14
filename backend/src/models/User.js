@@ -101,10 +101,14 @@ const userSchema = new mongoose.Schema({
     },
     status: {
       type: String,
-      enum: ['active', 'inactive', 'cancelled'],
+      enum: ['active', 'inactive', 'cancelled', 'expired', 'trial'],
       default: 'active'
     },
-    expiresAt: Date
+    expiresAt: Date,
+    subscriptionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Subscription'
+    }
   },
   role: {
     type: String,

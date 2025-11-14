@@ -215,28 +215,34 @@ const ResumeDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
+      <div className="min-h-screen bg-[#0E101A] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your resumes...</p>
+          <div className="w-16 h-16 border-4 border-[#EC4899] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-white/60">Loading your resumes...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-[#0E101A] text-white">
+      {/* Background Effects */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -left-32 h-[420px] w-[420px] rounded-full bg-[#7C3AED]/20 blur-3xl" />
+        <div className="absolute -bottom-40 -right-32 h-[420px] w-[420px] rounded-full bg-[#EC4899]/20 blur-3xl" />
+      </div>
+
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+      <header className="bg-[#121625]/80 border-b border-white/10 sticky top-0 z-50 backdrop-blur">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">My Resumes</h1>
-              <p className="text-gray-500 mt-1">Manage and create your professional resumes</p>
+              <h1 className="text-3xl font-bold text-white">My Resumes</h1>
+              <p className="text-white/60 mt-1">Manage and create your professional resumes</p>
             </div>
             <button
               onClick={() => navigate('/resume-builder')}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all flex items-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-105"
+              className="px-6 py-3 bg-gradient-to-r from-[#EC4899] to-[#8B5CF6] text-white rounded-lg transition-all flex items-center space-x-2 shadow-lg shadow-pink-500/30 transform hover:scale-105"
             >
               <Plus className="w-5 h-5" />
               <span>Create New Resume</span>
@@ -275,16 +281,16 @@ const ResumeDashboard = () => {
         </div>
 
         {/* Search and Filter */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="bg-[#121625]/80 rounded-2xl border border-white/10 p-6 mb-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40 w-5 h-5" />
               <input
                 type="text"
                 placeholder="Search resumes by name or job title..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full pl-10 pr-4 py-3 bg-[#121625] border border-white/10 rounded-lg text-white placeholder-white/40 focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent outline-none"
               />
             </div>
             <div className="flex gap-2">
@@ -293,8 +299,8 @@ const ResumeDashboard = () => {
                   key={status}
                   onClick={() => setFilterStatus(status)}
                   className={`px-4 py-3 rounded-lg font-medium transition-all capitalize ${filterStatus === status
-                    ? 'bg-blue-600 text-white shadow-lg'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-gradient-to-r from-[#EC4899] to-[#8B5CF6] text-white shadow-lg shadow-pink-500/30'
+                    : 'bg-white/5 text-white/70 hover:bg-white/10'
                     }`}
                 >
                   {status}
@@ -309,11 +315,11 @@ const ResumeDashboard = () => {
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-xl font-bold text-gray-900 flex items-center space-x-2">
-                  <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                <h2 className="text-xl font-bold text-white flex items-center space-x-2">
+                  <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
                   <span>Demo Resume</span>
                 </h2>
-                <p className="text-sm text-gray-500 mt-1">Explore this example to see what you can create</p>
+                <p className="text-sm text-white/60 mt-1">Explore this example to see what you can create</p>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -339,7 +345,7 @@ const ResumeDashboard = () => {
         {/* User Resumes Section */}
         {userResumes.length > 0 && (
           <div>
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Your Resumes</h2>
+            <h2 className="text-xl font-bold text-white mb-4">Your Resumes</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {userResumes.map((resume) => (
                 <ResumeCard
@@ -357,15 +363,15 @@ const ResumeDashboard = () => {
 
         {/* Empty State - Only show if no user resumes */}
         {userResumes.length === 0 && demoResumes.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-            <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Ready to create your resume?</h3>
-            <p className="text-gray-500 mb-6">
+          <div className="bg-[#121625]/80 rounded-2xl shadow-sm border border-white/10 p-12 text-center">
+            <FileText className="w-16 h-16 text-white/20 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-white mb-2">Ready to create your resume?</h3>
+            <p className="text-white/60 mb-6">
               Check out the demo above, then create your own professional resume
             </p>
             <button
               onClick={() => navigate('/resume-builder')}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all inline-flex items-center space-x-2"
+              className="px-6 py-3 bg-gradient-to-r from-[#EC4899] to-[#8B5CF6] text-white rounded-lg hover:scale-105 transition-all inline-flex items-center space-x-2 shadow-lg shadow-pink-500/30"
             >
               <Plus className="w-5 h-5" />
               <span>Create Your First Resume</span>
@@ -380,22 +386,22 @@ const ResumeDashboard = () => {
 // Stat Card Component
 const StatCard = ({ icon: Icon, label, value, color }) => {
   const colorClasses = {
-    blue: 'bg-blue-50 text-blue-600',
-    yellow: 'bg-yellow-50 text-yellow-600',
-    green: 'bg-green-50 text-green-600',
-    purple: 'bg-purple-50 text-purple-600'
+    blue: 'bg-blue-500/20 text-blue-300',
+    yellow: 'bg-yellow-500/20 text-yellow-200',
+    green: 'bg-green-500/20 text-green-300',
+    purple: 'bg-purple-500/20 text-purple-300'
   };
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
+      className="bg-[#121625]/80 rounded-2xl shadow-sm border border-white/10 p-6"
     >
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-gray-500 mb-1">{label}</p>
-          <p className="text-3xl font-bold text-gray-900">{value}</p>
+          <p className="text-sm text-white/60 mb-1">{label}</p>
+          <p className="text-3xl font-bold text-white">{value}</p>
         </div>
         <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
           <Icon className="w-6 h-6" />
@@ -409,9 +415,9 @@ const StatCard = ({ icon: Icon, label, value, color }) => {
 const ResumeCard = ({ resume, onEdit, onDelete, onDuplicate, onDownload, isDemo = false }) => {
   const getStatusColor = (status) => {
     switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'draft': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'completed': return 'bg-green-500/20 text-green-300';
+      case 'draft': return 'bg-yellow-500/20 text-yellow-200';
+      default: return 'bg-white/10 text-white/70';
     }
   };
 
@@ -420,10 +426,10 @@ const ResumeCard = ({ resume, onEdit, onDelete, onDuplicate, onDownload, isDemo 
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       whileHover={{ y: -4 }}
-      className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-all"
+      className="bg-[#121625] rounded-2xl shadow-sm border border-white/10 overflow-hidden hover:border-[#EC4899]/40 transition-all"
     >
       {/* Preview */}
-      <div className={`h-48 bg-gradient-to-br p-6 relative overflow-hidden ${isDemo ? 'from-yellow-50 to-orange-100' : 'from-blue-50 to-indigo-100'
+      <div className={`h-48 bg-gradient-to-br p-6 relative overflow-hidden ${isDemo ? 'from-yellow-400/30 to-orange-500/40' : 'from-[#3B82F6]/30 to-[#6366F1]/40'
         }`}>
         <div className="absolute inset-0 opacity-10">
           <div className="h-full w-full" style={{
@@ -432,20 +438,20 @@ const ResumeCard = ({ resume, onEdit, onDelete, onDuplicate, onDownload, isDemo 
         </div>
         <div className="relative">
           {isDemo && (
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 mb-2">
-              <Star className="w-3 h-3 mr-1 fill-yellow-600" />
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-200 border border-yellow-400/40 mb-2">
+              <Star className="w-3 h-3 mr-1 fill-yellow-400" />
               Demo
             </span>
           )}
-          <h3 className="text-xl font-bold text-gray-900 mb-1 truncate">
+          <h3 className="text-xl font-bold text-white mb-1 truncate">
             {resume.personalInfo.fullName || 'Untitled Resume'}
           </h3>
-          <p className="text-sm text-gray-600 truncate">{resume.personalInfo.jobTitle}</p>
+          <p className="text-sm text-white/70 truncate">{resume.personalInfo.jobTitle}</p>
 
           {resume.atsScore && (
-            <div className="mt-4 inline-flex items-center space-x-2 bg-white rounded-full px-3 py-1 shadow-sm">
-              <Sparkles className="w-4 h-4 text-purple-600" />
-              <span className="text-sm font-semibold text-gray-900">
+            <div className="mt-4 inline-flex items-center space-x-2 bg-black/40 border border-white/20 rounded-full px-3 py-1 shadow-sm">
+              <Sparkles className="w-4 h-4 text-purple-300" />
+              <span className="text-sm font-semibold text-white">
                 ATS: {resume.atsScore.score}/100
               </span>
             </div>
@@ -459,7 +465,7 @@ const ResumeCard = ({ resume, onEdit, onDelete, onDuplicate, onDownload, isDemo 
           <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(resume.status)}`}>
             {resume.status}
           </span>
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-white/40">
             {new Date(resume.lastModified).toLocaleDateString()}
           </span>
         </div>
@@ -469,8 +475,8 @@ const ResumeCard = ({ resume, onEdit, onDelete, onDuplicate, onDownload, isDemo 
           <button
             onClick={onEdit}
             className={`px-4 py-2 rounded-lg transition-colors flex items-center justify-center space-x-2 text-sm font-medium ${isDemo
-              ? 'bg-yellow-600 text-white hover:bg-yellow-700'
-              : 'bg-blue-600 text-white hover:bg-blue-700'
+              ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-black hover:brightness-110'
+              : 'bg-gradient-to-r from-[#3B82F6] to-[#6366F1] text-white hover:brightness-110'
               }`}
           >
             {isDemo ? <Eye className="w-4 h-4" /> : <Edit className="w-4 h-4" />}
@@ -478,21 +484,21 @@ const ResumeCard = ({ resume, onEdit, onDelete, onDuplicate, onDownload, isDemo 
           </button>
           <button
             onClick={onDownload}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2 text-sm font-medium"
+            className="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors flex items-center justify-center space-x-2 text-sm font-medium"
           >
             <Download className="w-4 h-4" />
             <span>PDF</span>
           </button>
           <button
             onClick={onDuplicate}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center space-x-2 text-sm font-medium"
+            className="px-4 py-2 bg-white/5 text-white/80 rounded-lg hover:bg-white/10 transition-colors flex items-center justify-center space-x-2 text-sm font-medium"
           >
             <Copy className="w-4 h-4" />
             <span>Duplicate</span>
           </button>
           <button
             onClick={onDelete}
-            className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center space-x-2 text-sm font-medium"
+            className="px-4 py-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors flex items-center justify-center space-x-2 text-sm font-medium"
           >
             <Trash2 className="w-4 h-4" />
             <span>Delete</span>
