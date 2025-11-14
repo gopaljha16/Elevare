@@ -129,17 +129,17 @@ app.use(cors({
     corsRequestCount++;
     const timestamp = new Date().toISOString();
     const requestId = `CORS-${corsRequestCount}`;
-    
+
     console.log(`\n[${timestamp}] [${requestId}] 🔍 CORS Request Check`);
     console.log(`   Origin Header: ${origin || '(no origin header)'}`);
-    
+
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) {
       console.log(`   Decision: ✅ ALLOWED (no origin - server-to-server or tool)`);
       console.log(`   ────────────────────────────────────────────────────────────`);
       return callback(null, true);
     }
-    
+
     if (allowedOrigins.includes(origin)) {
       console.log(`   Decision: ✅ ALLOWED`);
       console.log(`   Matched: ${origin}`);
@@ -174,7 +174,7 @@ app.use(passport.initialize());
 app.use((req, res, next) => {
   const timestamp = new Date().toISOString();
   const origin = req.headers.origin || req.headers.referer || 'no-origin';
-  
+
   // Log all incoming requests with origin information
   if (req.method === 'OPTIONS') {
     console.log(`\n[${timestamp}] 🔄 PREFLIGHT REQUEST`);
@@ -191,7 +191,7 @@ app.use((req, res, next) => {
     console.log(`   Content-Type: ${req.headers['content-type'] || 'not specified'}`);
     console.log(`   Authorization: ${req.headers.authorization ? 'Present' : 'Not present'}`);
   }
-  
+
   next();
 });
 
@@ -239,35 +239,35 @@ app.listen(PORT, () => {
   console.log('\n╔════════════════════════════════════════════════════════════════╗');
   console.log('║                  🚀 SERVER STARTED SUCCESSFULLY                ║');
   console.log('╚════════════════════════════════════════════════════════════════╝\n');
-  
+
   console.log('📡 Server Information:');
   console.log(`   Port: ${PORT}`);
   console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`   Health Check: http://localhost:${PORT}/health`);
-  
+
   console.log('\n🌐 URL Configuration:');
   console.log(`   Frontend URL: ${process.env.FRONTEND_URL || '❌ NOT SET (using fallback: http://localhost:5173)'}`);
   console.log(`   Backend URL: http://localhost:${PORT}`);
-  
+
   console.log('\n🔐 Authentication Configuration:');
   console.log(`   JWT Secret: ${process.env.JWT_SECRET ? '✅ Set' : '❌ NOT SET'}`);
   console.log(`   Google OAuth Client ID: ${process.env.GOOGLE_CLIENT_ID ? '✅ Set' : '❌ NOT SET'}`);
   console.log(`   Google OAuth Secret: ${process.env.GOOGLE_CLIENT_SECRET ? '✅ Set' : '❌ NOT SET'}`);
-  
+
   console.log('\n💾 Database Configuration:');
   console.log(`   MongoDB: ${process.env.DATABASE_URL ? '✅ Connected' : '❌ NOT SET'}`);
   console.log(`   Redis: ${process.env.REDIS_HOST ? '✅ Configured' : '❌ NOT SET'}`);
-  
+
   console.log('\n🤖 AI Configuration:');
   console.log(`   Gemini API Keys: ${process.env.GEMINI_API_KEYS ? '✅ Set' : '❌ NOT SET'}`);
   console.log(`   Gemini Model: ${process.env.GEMINI_MODEL || 'gemini-1.5-pro'}`);
-  
+
   console.log('\n📸 Media Configuration:');
   console.log(`   Cloudinary: ${process.env.CLOUDINARY_CLOUD_NAME ? '✅ Configured' : '❌ NOT SET'}`);
-  
+
   console.log('\n💳 Payment Configuration:');
   console.log(`   Razorpay: ${process.env.RAZORPAY_KEY ? '✅ Configured' : '❌ NOT SET'}`);
-  
+
   console.log('\n⚠️  Critical Warnings:');
   if (!process.env.FRONTEND_URL) {
     console.log('   ⚠️  FRONTEND_URL not set - CORS may fail in production!');
@@ -278,10 +278,11 @@ app.listen(PORT, () => {
   if (!process.env.DATABASE_URL) {
     console.log('   ⚠️  DATABASE_URL not set - database operations will fail!');
   }
-  
+
   console.log('\n════════════════════════════════════════════════════════════════');
   console.log('✅ Server is ready to accept requests');
   console.log('📝 All CORS requests will be logged above');
   console.log('════════════════════════════════════════════════════════════════\n');
 });
 
+s
