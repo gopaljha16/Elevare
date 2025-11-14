@@ -4,7 +4,7 @@
   "description": "AI-powered resume builder and career platform",
   "scripts": {
     "setup": "node setup-environment.js",
-    "build": "cd frontend && npm install && npm run build",
+    "build": "cd frontend && npm ci --legacy-peer-deps && npm run build",
     "dev": "cd frontend && npm run dev",
     "start": "cd frontend && npm run preview",
     "dev:backend": "cd backend && npm run dev",
