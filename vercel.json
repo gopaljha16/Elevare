@@ -2,10 +2,12 @@
   "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/dist",
   "installCommand": "cd frontend && npm install",
-  "env": {
-    "VITE_API_URL": "https://elevare-hvtr.onrender.com/api",
-    "VITE_BACKEND_URL": "https://elevare-hvtr.onrender.com",
-    "VITE_FRONTEND_URL": "https://elevare-seven.vercel.app"
+  "build": {
+    "env": {
+      "VITE_API_URL": "https://elevare-hvtr.onrender.com/api",
+      "VITE_BACKEND_URL": "https://elevare-hvtr.onrender.com",
+      "VITE_FRONTEND_URL": "https://elevare-seven.vercel.app"
+    }
   },
   "rewrites": [
     {
