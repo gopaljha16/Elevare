@@ -1,6 +1,20 @@
-const pdf = require('pdf-parse');
 const mammoth = require('mammoth');
 const { AppError } = require('../middleware/errorHandler');
+
+// Lazy load pdf-parse to avoid startup errors if native dependencies are missing
+let pdfParse = null;
+const loadPdfParse = () => {
+  if (!pdfParse) {
+    try {
+      pdfParse = require('pdf-parse');
+    } catch (error) {
+      console.warn('⚠️ pdf-parse not available - PDF parsing will be disabled');
+      console.warn('Error:', error.message);
+      return null;
+    }
+  }
+  return pdfParse;
+};
 
 /**
  * Extract text content from uploaded file based on file type
@@ -37,6 +51,15 @@ const extractTextFromFile = async (file) => {
  * @returns {Promise<string>} - Extracted text
  */
 const extractFromPDF = async (buffer) => {
+  const pdf = loadPdfParse();
+  
+  if (!pdf) {
+    throw new AppError(
+      'PDF parsing is currently unavailable on this server. Please upload a Word document (.docx) or text file (.txt) instead.',
+      503
+    );
+  }
+  
   try {
     const data = await pdf(buffer);
     const text = data.text;
@@ -119,6 +142,14 @@ const validateFile = (file) => {
 
   if (file.size > maxSize) {
     throw new AppError('File size too large. Maximum size is 10MB.', 400);
+  }
+
+  // Warn if PDF parsing is not available
+  if (file.mimetype === 'application/pdf' && !loadPdfParse()) {
+    throw new AppError(
+      'PDF parsing is currently unavailable. Please upload a Word document (.docx) or text file (.txt) instead.',
+      503
+    );
   }
 
   return true;
