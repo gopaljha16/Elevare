@@ -9,9 +9,9 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
+      - key: PORT_NO
         value: 10000
-      - key: MONGODB_URI
+      - key: DATABASE_URL
         sync: false
       - key: JWT_SECRET
         sync: false
@@ -19,11 +19,33 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_SECRET
         sync: false
-      - key: GEMINI_API_KEY
+      - key: GEMINI_API_KEYS
         sync: false
-      - key: REDIS_URL
+      - key: GEMINI_MODEL
+        value: gemini-1.5-pro
+      - key: REDIS_HOST
         sync: false
-      - key: SESSION_SECRET
+      - key: REDIS_PORT
+        sync: false
+      - key: REDIS_PASSWORD
         sync: false
       - key: FRONTEND_URL
         sync: false
+      - key: AI_REQUEST_TIMEOUT
+        value: 30000
+      - key: AI_RETRY_ATTEMPTS
+        value: 3
+      - key: AI_RETRY_DELAY
+        value: 1000
+      - key: AI_RATE_LIMIT_PER_DAY
+        value: 1000
+      - key: AI_RATE_LIMIT_PER_HOUR
+        value: 100
+      - key: AI_RATE_LIMIT_PER_MINUTE
+        value: 10
+      - key: AI_CACHE_ENABLED
+        value: true
+      - key: AI_LOGGING_ENABLED
+        value: true
+      - key: AI_LOG_LEVEL
+        value: info
