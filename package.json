@@ -11,10 +11,7 @@
     "dev:frontend": "cd frontend && npm run dev",
     "dev:all": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\""
   },
-  "workspaces": [
-    "frontend",
-    "backend"
-  ],
+
   "engines": {
     "node": "20.x",
     "npm": ">=10.0.0"
