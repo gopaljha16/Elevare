@@ -88,33 +88,78 @@ class AIConfig {
   _validateGeminiConfig() {
     const { gemini } = this.config;
     
+    console.log('\n=== API Key Validation ===');
+    
     // Validate API keys array
     if (!gemini.apiKeys || gemini.apiKeys.length === 0) {
+      console.error('❌ GEMINI_API_KEYS: Not set or empty');
+      console.error('   Please set GEMINI_API_KEYS environment variable');
+      console.error('   Format: key1,key2,key3 (comma-separated for multiple keys)');
       this.validationErrors.push('GEMINI_API_KEYS or GEMINI_API_KEY is required');
       throw new Error('Gemini API key(s) missing');
     }
     
+    console.log(`✅ GEMINI_API_KEYS: ${gemini.apiKeys.length} key(s) found`);
+    
     // Validate each API key
     for (let i = 0; i < gemini.apiKeys.length; i++) {
       const key = gemini.apiKeys[i];
+      const maskedKey = this._maskApiKey(key);
+      
+      console.log(`   Validating key ${i + 1}/${gemini.apiKeys.length}: ${maskedKey}`);
       
       if (typeof key !== 'string' || key.length < 20) {
+        console.error(`   ❌ Key ${i + 1} is invalid (too short: ${key.length} chars)`);
         this.validationErrors.push(`API key ${i + 1} appears to be invalid (too short)`);
         throw new Error(`Gemini API key ${i + 1} appears to be invalid`);
       }
       
       // Validate API key format (basic check)
       if (!key.startsWith('AIza')) {
+        console.warn(`   ⚠️  Key ${i + 1} does not match expected format (should start with 'AIza')`);
         this.validationErrors.push(`API key ${i + 1} does not match expected format`);
         if (this.config.environment === 'production') {
           throw new Error(`Gemini API key ${i + 1} does not match expected format`);
         } else {
-          console.warn(`⚠️ API key ${i + 1} does not match expected format, continuing in development mode`);
+          console.warn(`   Continuing in development mode...`);
         }
+      } else {
+        console.log(`   ✅ Key ${i + 1} format is valid`);
       }
     }
     
-    console.log(`✅ Validated ${gemini.apiKeys.length} Gemini API key(s)`);
+    console.log(`✅ All ${gemini.apiKeys.length} Gemini API key(s) validated`);
+    
+    // Validate Google OAuth credentials
+    console.log('\n🔐 OAuth Credentials:');
+    if (process.env.GOOGLE_CLIENT_ID) {
+      console.log(`   ✅ GOOGLE_CLIENT_ID: Set (${process.env.GOOGLE_CLIENT_ID.substring(0, 20)}...)`);
+    } else {
+      console.warn(`   ⚠️  GOOGLE_CLIENT_ID: Not set - Google OAuth will not work`);
+    }
+    
+    if (process.env.GOOGLE_CLIENT_SECRET) {
+      console.log(`   ✅ GOOGLE_CLIENT_SECRET: Set (${this._maskApiKey(process.env.GOOGLE_CLIENT_SECRET)})`);
+    } else {
+      console.warn(`   ⚠️  GOOGLE_CLIENT_SECRET: Not set - Google OAuth will not work`);
+    }
+    
+    // Validate JWT Secret
+    console.log('\n🔑 JWT Configuration:');
+    if (process.env.JWT_SECRET) {
+      const jwtLength = process.env.JWT_SECRET.length;
+      console.log(`   ✅ JWT_SECRET: Set (${jwtLength} chars)`);
+      if (jwtLength < 32) {
+        console.warn(`   ⚠️  JWT_SECRET is short (${jwtLength} chars) - recommend at least 32 chars`);
+      }
+    } else {
+      console.error(`   ❌ JWT_SECRET: Not set - authentication will fail!`);
+      if (this.config.environment === 'production') {
+        throw new Error('JWT_SECRET is required in production');
+      }
+    }
+    
+    console.log('==========================\n');
     
     // Validate model name - must be a valid Gemini model
     const validModels = ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-2.0-flash-exp'];

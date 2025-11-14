@@ -96,28 +96,73 @@ const errorMonitoring = (err, req, res, next) => {
  * Health check endpoint
  */
 const healthCheck = (req, res) => {
+  const mongoose = require('mongoose');
+  const { redisClient } = require('../config/redis');
+  
   const health = monitoring.getHealthStatus();
   const metrics = monitoring.getMetrics();
   
+  // Check database connection status
+  const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 
+                   mongoose.connection.readyState === 2 ? 'connecting' :
+                   mongoose.connection.readyState === 3 ? 'disconnecting' : 'disconnected';
+  
+  // Check Redis connection status
+  const redisStatus = redisClient && (redisClient.isReady || redisClient.isOpen) ? 'connected' : 
+                      redisClient && redisClient.isMock ? 'mock' : 'disconnected';
+  
+  // Check API keys
+  const apiKeysValid = !!(process.env.GEMINI_API_KEYS && 
+                          process.env.GOOGLE_CLIENT_ID && 
+                          process.env.GOOGLE_CLIENT_SECRET &&
+                          process.env.JWT_SECRET);
+  
+  // Determine overall health status
+  const isHealthy = dbStatus === 'connected' && apiKeysValid;
+  
   const response = {
-    status: health.status,
+    status: isHealthy ? 'healthy' : 'unhealthy',
     timestamp: new Date().toISOString(),
     uptime: health.uptime,
-    environment: process.env.NODE_ENV,
+    environment: process.env.NODE_ENV || 'development',
     version: process.env.npm_package_version || '1.0.0',
+    services: {
+      database: dbStatus,
+      databaseName: mongoose.connection.name || 'unknown',
+      redis: redisStatus,
+      apiKeys: apiKeysValid ? 'valid' : 'invalid',
+      ai: metrics.ai.requests > 0 ? 'active' : 'idle'
+    },
+    config: {
+      frontendUrl: process.env.FRONTEND_URL || 'not set',
+      corsOrigins: [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'https://elevare-seven.vercel.app',
+        process.env.FRONTEND_URL
+      ].filter(Boolean),
+      nodeEnv: process.env.NODE_ENV || 'development'
+    },
     health: {
       issues: health.issues,
       metrics: health.metrics
     },
-    services: {
-      database: 'connected', // This would be checked in a real implementation
-      redis: 'connected',     // This would be checked in a real implementation
-      ai: metrics.ai.requests > 0 ? 'active' : 'idle'
-    }
+    errors: []
   };
   
+  // Add specific error messages
+  if (dbStatus !== 'connected') {
+    response.errors.push(`Database is ${dbStatus}`);
+  }
+  if (!apiKeysValid) {
+    response.errors.push('One or more API keys are missing');
+  }
+  
+  // Log health check request
+  console.log(`[Health Check] Status: ${response.status}, DB: ${dbStatus}, Redis: ${redisStatus}, API Keys: ${apiKeysValid ? 'valid' : 'invalid'}`);
+  
   // Return 503 if there are critical issues
-  const statusCode = health.status === 'healthy' ? 200 : 503;
+  const statusCode = isHealthy ? 200 : 503;
   
   res.status(statusCode).json(response);
 };

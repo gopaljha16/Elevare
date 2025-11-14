@@ -30,6 +30,35 @@ axiosClient.interceptors.response.use(
   },
   async (error) => {
     const originalRequest = error.config;
+    const timestamp = new Date().toISOString();
+
+    // Enhanced error logging
+    console.group(`%c❌ API Request Failed [${timestamp}]`, 'color: #f44336; font-weight: bold');
+    console.log(`%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'color: #f44336');
+    
+    if (error.config) {
+      console.log(`🔗 URL: %c${error.config.url}`, 'color: #FF9800');
+      console.log(`📤 Method: %c${error.config.method?.toUpperCase()}`, 'color: #FF9800');
+      console.log(`📡 Base URL: %c${error.config.baseURL}`, 'color: #FF9800');
+    }
+    
+    if (error.response) {
+      console.log(`📊 Status: %c${error.response.status} ${error.response.statusText}`, 'color: #f44336; font-weight: bold');
+      console.log(`📝 Response Data:`, error.response.data);
+    } else if (error.request) {
+      console.log(`%c🌐 Network Error - No Response Received`, 'color: #f44336; font-weight: bold');
+      console.log(`   This usually means:`);
+      console.log(`   1. Backend server is down or unreachable`);
+      console.log(`   2. CORS is blocking the request`);
+      console.log(`   3. Invalid API URL configuration`);
+      console.log(`   4. Network connectivity issues`);
+      console.log(`\n   Current API URL: %c${config.apiUrl}`, 'color: #FF9800; font-weight: bold');
+    } else {
+      console.log(`⚠️  Error: %c${error.message}`, 'color: #f44336');
+    }
+    
+    console.log(`%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'color: #f44336');
+    console.groupEnd();
 
     // Handle 401 errors (token expired)
     if (error.response?.status === 401 && !originalRequest._retry) {
@@ -83,12 +112,20 @@ axiosClient.interceptors.response.use(
 
     // Handle network errors
     if (!error.response) {
-      console.error('❌ Network error:', error.message);
+      console.error('\n💡 Troubleshooting Steps:');
+      console.error('   1. Check if backend is running: ' + config.backendUrl + '/health');
+      console.error('   2. Verify CORS configuration allows your frontend origin');
+      console.error('   3. Check browser console for CORS errors');
+      console.error('   4. Verify environment variables are set correctly');
+      
       // Network error - no response from server
       error.message = 'Unable to connect to server. Please check your internet connection.';
     } else if (error.response.status >= 500) {
       console.error('❌ Server error:', error.response.status);
       error.message = 'Server error. Please try again later.';
+    } else if (error.response.status === 403) {
+      console.error('❌ CORS or Permission error');
+      console.error('   Check if your origin is allowed in backend CORS configuration');
     }
 
     return Promise.reject(error);

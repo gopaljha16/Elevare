@@ -75,10 +75,29 @@ export const config = {
   getApiEndpoint,
 };
 
-// Log environment detection on module load
-console.log(`🌍 Environment detected: ${isDevelopment ? 'DEVELOPMENT' : 'PRODUCTION'}`);
-console.log(`📡 API Base URL: ${getApiUrl()}`);
-console.log(`🖥️  Backend URL: ${getBackendUrl()}`);
-console.log(`🌐 Frontend URL: ${getFrontendUrl()}`);
+// Log environment detection on module load with enhanced formatting
+console.group('🌍 Environment Configuration');
+console.log(`%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'color: #4CAF50');
+console.log(`%cEnvironment: ${isDevelopment ? 'DEVELOPMENT' : 'PRODUCTION'}`, 'color: #2196F3; font-weight: bold');
+console.log(`%cMode: ${import.meta.env.MODE}`, 'color: #2196F3');
+console.log(`%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'color: #4CAF50');
+console.log(`📡 API Base URL: %c${getApiUrl()}`, 'color: #FF9800; font-weight: bold');
+console.log(`🖥️  Backend URL: %c${getBackendUrl()}`, 'color: #FF9800; font-weight: bold');
+console.log(`🌐 Frontend URL: %c${getFrontendUrl()}`, 'color: #FF9800; font-weight: bold');
+console.log(`%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'color: #4CAF50');
+
+// Log environment variables status
+console.log('📋 Environment Variables:');
+console.log(`   VITE_API_URL: ${import.meta.env.VITE_API_URL ? '✅ Set' : '❌ Not Set (using fallback)'}`);
+console.log(`   VITE_BACKEND_URL: ${import.meta.env.VITE_BACKEND_URL ? '✅ Set' : '❌ Not Set (using fallback)'}`);
+console.log(`   VITE_FRONTEND_URL: ${import.meta.env.VITE_FRONTEND_URL ? '✅ Set' : '❌ Not Set (using fallback)'}`);
+
+if (!import.meta.env.VITE_API_URL && isProduction) {
+  console.warn('⚠️  WARNING: VITE_API_URL not set in production - using hardcoded fallback');
+  console.warn('   This may cause issues if backend URL changes');
+}
+
+console.log(`%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'color: #4CAF50');
+console.groupEnd();
 
 export default config;

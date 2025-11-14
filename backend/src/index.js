@@ -44,6 +44,12 @@ const {
 const app = express();
 const PORT = process.env.PORT_NO || 5000;
 
+// validate environment variables first
+const { validateEnvironment: validateEnvVars } = require('./utils/envValidator');
+console.log('\n=== Environment Validation ===');
+const envValidation = validateEnvVars();
+console.log('==============================\n');
+
 // validate ai configuration
 console.log('🔧 Validating AI configuration...');
 try {
@@ -89,24 +95,33 @@ const allowedOrigins = [
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
-console.log('🔒 CORS Configuration:');
-console.log('   Allowed Origins:', allowedOrigins);
-console.log('   Credentials:', true);
-console.log('   Methods:', ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH']);
+console.log('\n=== CORS Configuration ===');
+console.log('🔒 Allowed Origins:');
+allowedOrigins.forEach((origin, index) => {
+  console.log(`   ${index + 1}. ${origin}`);
+});
+console.log('   Credentials: Enabled');
+console.log('   Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH');
+console.log('   Headers: Content-Type, Authorization, X-Requested-With');
+console.log('==========================\n');
 
 app.use(cors({
   origin: (origin, callback) => {
+    const timestamp = new Date().toISOString();
+    
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) {
-      console.log('✅ CORS: Allowing request with no origin');
+      console.log(`[${timestamp}] [CORS] ✅ Allowing request with no origin (server-to-server or tool)`);
       return callback(null, true);
     }
     
     if (allowedOrigins.includes(origin)) {
-      console.log(`✅ CORS: Allowing origin: ${origin}`);
+      console.log(`[${timestamp}] [CORS] ✅ ALLOWED - Origin: ${origin}`);
       callback(null, true);
     } else {
-      console.log(`❌ CORS: Blocking origin: ${origin}`);
+      console.log(`[${timestamp}] [CORS] ❌ BLOCKED - Origin: ${origin}`);
+      console.log(`[${timestamp}] [CORS]    Allowed origins:`, allowedOrigins);
+      console.log(`[${timestamp}] [CORS]    💡 Add this origin to FRONTEND_URL or allowedOrigins array`);
       callback(new Error('Not allowed by CORS'));
     }
   },
