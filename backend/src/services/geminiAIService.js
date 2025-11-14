@@ -184,7 +184,21 @@ class GeminiAIService {
     // Available models: gemini-1.5-pro (recommended), gemini-1.5-flash (faster), gemini-2.0-flash-exp (experimental)
     // Note: gemini-1.5-pro is production-ready and most reliable
     this.model = process.env.GEMINI_MODEL || 'gemini-1.5-pro';
-    console.log(`🎯 Using model: ${this.model}`);
+
+    this.modelPriority = Array.from(new Set([
+      this.model,
+      'gemini-1.5-pro',
+      'gemini-1.5-flash',
+      'gemini-pro'
+    ])).filter(Boolean);
+
+    if (this.modelPriority.length === 0) {
+      this.modelPriority = ['gemini-1.5-pro'];
+    }
+
+    this.currentModelIndex = 0;
+
+    console.log(`🎯 Using model: ${this.modelPriority[this.currentModelIndex]}`);
     
     // Generation configurations
     this.defaultConfig = {
@@ -236,9 +250,11 @@ class GeminiAIService {
     
     return {
       status: 'healthy',
-      model: this.model,
+      model: this.getCurrentModel(),
       totalKeys: this.keyManager.apiKeys.length,
       currentKeyIndex: this.keyManager.getCurrentKeyIndex(),
+      currentModelIndex: this.currentModelIndex,
+      currentModel: this.getCurrentModel(),
       keyStats: this.keyManager.getUsageStats()
     };
   }
@@ -267,7 +283,16 @@ class GeminiAIService {
     if (message.includes('network') || message.includes('connection')) {
       return 'connection_error';
     }
-    
+    if (
+      message.includes('model') &&
+      (message.includes('does not exist') ||
+       message.includes('not found') ||
+       message.includes('no permission') ||
+       message.includes('permission denied'))
+    ) {
+      return 'model_not_available';
+    }
+
     return 'unknown';
   }
 
@@ -285,6 +310,33 @@ class GeminiAIService {
     return ['quota_exceeded', 'rate_limit', 'invalid_key', 'billing_error'].includes(errorType);
   }
 
+  shouldSwitchModel(errorType) {
+    return errorType === 'model_not_available';
+  }
+
+  getCurrentModel() {
+    return this.modelPriority[this.currentModelIndex] || this.modelPriority[0];
+  }
+
+  rotateModel(reason = 'unknown') {
+    if (!this.modelPriority || this.modelPriority.length <= 1) {
+      return false;
+    }
+
+    const previousModel = this.getCurrentModel();
+    const nextIndex = (this.currentModelIndex + 1) % this.modelPriority.length;
+
+    if (nextIndex === this.currentModelIndex) {
+      return false;
+    }
+
+    this.currentModelIndex = nextIndex;
+    const newModel = this.getCurrentModel();
+
+    console.warn(`🔁 Model rotation: ${previousModel} → ${newModel} (Reason: ${reason})`);
+    return newModel !== previousModel;
+  }
+
   /**
    * Make AI request with retry logic and key rotation
    */
@@ -296,19 +348,21 @@ class GeminiAIService {
     const finalConfig = { ...this.defaultConfig, ...config };
     let lastError;
     let attemptCount = 0;
-    
-    while (attemptCount < this.retryConfig.attempts) {
+    const maxAttempts = Math.max(this.retryConfig.attempts, this.modelPriority.length || 1);
+
+    while (attemptCount < maxAttempts) {
       const currentKeyIndex = this.keyManager.getCurrentKeyIndex();
-      
+      const currentModel = this.getCurrentModel();
+
       try {
         const startTime = Date.now();
-        
+
         // Initialize Gemini with current key
         const genAI = new GoogleGenerativeAI(this.keyManager.getCurrentKey());
-        const model = genAI.getGenerativeModel({ model: this.model });
-        
-        console.log(`🤖 AI Request (attempt ${attemptCount + 1}, key ${currentKeyIndex + 1})`);
-        
+        const model = genAI.getGenerativeModel({ model: currentModel });
+
+        console.log(`🤖 AI Request (attempt ${attemptCount + 1}, key ${currentKeyIndex + 1}, model ${currentModel})`);
+
         // Make request with timeout
         const result = await Promise.race([
           model.generateContent({
@@ -319,56 +373,72 @@ class GeminiAIService {
             setTimeout(() => reject(new Error('Request timeout')), this.retryConfig.timeout)
           )
         ]);
-        
+
         const response = await result.response;
         const text = response.text();
-        
+
         const processingTime = Date.now() - startTime;
-        
+
         // Record success
         this.keyManager.recordSuccess(currentKeyIndex);
-        
-        console.log(`✅ AI Request successful (${processingTime}ms, key ${currentKeyIndex + 1})`);
-        
+
+        console.log(`✅ AI Request successful (${processingTime}ms, key ${currentKeyIndex + 1}, model ${currentModel})`);
+
+        this.model = currentModel;
+        this.currentModelIndex = this.modelPriority.indexOf(currentModel);
+
         return text;
-        
+
       } catch (error) {
         lastError = error;
         attemptCount++;
-        
+
         // Record failure
         this.keyManager.recordFailure(currentKeyIndex, error);
-        
+
         // Classify error
         const errorType = this.classifyError(error);
-        console.warn(`⚠️ AI Request failed (attempt ${attemptCount}, key ${currentKeyIndex + 1}): ${errorType}`);
-        
+        console.warn(`⚠️ AI Request failed (attempt ${attemptCount}, key ${currentKeyIndex + 1}, model ${currentModel}): ${errorType}`);
+
+        if (this.shouldSwitchModel(errorType)) {
+          const rotated = this.rotateModel(errorType);
+          if (rotated) {
+            attemptCount--;
+            continue;
+          }
+        }
+
         // Rotate key if needed
         if (this.shouldRotateKey(errorType)) {
           this.keyManager.rotateKey(errorType);
         }
-        
+
         // Don't retry if not retryable or out of attempts
-        if (!this.isRetryable(errorType) || attemptCount >= this.retryConfig.attempts) {
+        if (!this.isRetryable(errorType) || attemptCount >= maxAttempts) {
           break;
         }
-        
+
         // Wait before retry with exponential backoff
         const delay = this.retryConfig.delay * Math.pow(2, attemptCount - 1);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
-    
+
     // All attempts failed
     console.error(`❌ All AI request attempts failed after ${attemptCount} tries`);
-    
+
     // Check if all keys are exhausted
     const allKeysUnhealthy = this.keyManager.keyStats.every(stat => !stat.isHealthy);
     if (allKeysUnhealthy) {
       throw new AppError('All Gemini API keys exhausted. Please add new API keys.', 503);
     }
-    
-    throw new AppError(`AI service temporarily unavailable: ${lastError.message}`, 503);
+
+    const finalErrorType = this.classifyError(lastError || new Error('Unknown error'));
+    if (finalErrorType === 'model_not_available') {
+      throw new AppError('No accessible Gemini models. Please verify your API key model permissions.', 503);
+    }
+
+    throw new AppError(`AI service temporarily unavailable: ${lastError?.message || 'Unknown error'}`, 503);
   }
 
   /**
