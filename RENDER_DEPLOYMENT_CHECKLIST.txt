@@ -1,0 +1,106 @@
+RENDER DEPLOYMENT CHECKLIST
+===========================
+
+PRE-DEPLOYMENT
+--------------
+[ ] All code changes committed
+[ ] Tested build locally: bash frontend/render-build.sh
+[ ] Backend is running: https://elevare-hvtr.onrender.com/health
+[ ] Have all API keys ready (see RENDER_ENV_VARIABLES.md)
+
+DEPLOYMENT STEPS
+----------------
+[ ] 1. Push to GitHub
+       git add .
+       git commit -m "Deploy to Render"
+       git push
+
+[ ] 2. Create Static Site on Render
+       - Go to dashboard.render.com
+       - New + → Static Site
+       - Connect GitHub repo
+       - Name: elevare-frontend
+       - Build: bash frontend/render-build.sh
+       - Publish: frontend/dist
+
+[ ] 3. Add Environment Variables (3 required)
+       - VITE_API_URL=https://elevare-hvtr.onrender.com/api
+       - VITE_BACKEND_URL=https://elevare-hvtr.onrender.com
+       - VITE_FRONTEND_URL=https://elevare-frontend.onrender.com
+
+[ ] 4. Wait for Build (5-10 minutes)
+       - Check logs for errors
+       - Look for "✅ Build successful"
+
+[ ] 5. Get Your Frontend URL
+       - Copy from Render Dashboard
+       - Format: https://elevare-frontend.onrender.com
+
+POST-DEPLOYMENT
+---------------
+[ ] 6. Update Backend FRONTEND_URL
+       - Go to backend service on Render
+       - Environment → FRONTEND_URL
+       - Set to your new frontend URL
+       - Save (auto-redeploys)
+
+[ ] 7. Update Google OAuth
+       - Go to console.cloud.google.com
+       - APIs & Services → Credentials
+       - Add JavaScript origin: https://elevare-frontend.onrender.com
+       - Add redirect URI: https://elevare-frontend.onrender.com/auth/google/callback
+       - Save
+
+TESTING
+-------
+[ ] 8. Test Frontend
+       - Visit your Render URL
+       - Page loads correctly
+       - No console errors
+
+[ ] 9. Test Backend Connection
+       - Check Network tab
+       - API calls succeed
+       - No CORS errors
+
+[ ] 10. Test Google OAuth
+        - Click "Sign in with Google"
+        - Redirects correctly
+        - Login succeeds
+
+[ ] 11. Test Core Features
+        - Resume upload works
+        - AI analysis works
+        - Portfolio builder works
+        - File uploads work (Cloudinary)
+
+VERIFICATION
+------------
+[ ] Frontend URL works: https://elevare-frontend.onrender.com
+[ ] Backend URL works: https://elevare-hvtr.onrender.com/health
+[ ] No errors in browser console
+[ ] No errors in Render logs
+[ ] Google OAuth works
+[ ] All API calls succeed
+
+DONE! 🎉
+--------
+Your app is live on Render!
+
+Frontend: https://elevare-frontend.onrender.com
+Backend: https://elevare-hvtr.onrender.com
+
+TROUBLESHOOTING
+---------------
+If anything fails, check:
+1. RENDER_TROUBLESHOOTING.md
+2. Build logs in Render Dashboard
+3. Browser console for errors
+4. Environment variables are set correctly
+
+SUPPORT
+-------
+- Quick Start: RENDER_QUICK_START.md
+- Full Guide: RENDER_DEPLOYMENT_GUIDE.md
+- Env Variables: RENDER_ENV_VARIABLES.md
+- Troubleshooting: RENDER_TROUBLESHOOTING.md

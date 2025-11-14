@@ -15,13 +15,13 @@ cd frontend
 
 # Clean previous builds
 echo "🧹 Cleaning previous builds..."
-rm -rf node_modules package-lock.json dist
+rm -rf node_modules package-lock.json dist .vite
 echo "   ✅ Cleaned"
 echo ""
 
-# Install dependencies
+# Install dependencies with force to rebuild native modules
 echo "📦 Installing dependencies..."
-npm install --legacy-peer-deps
+npm install --legacy-peer-deps --force
 if [ $? -ne 0 ]; then
     echo "❌ Installation failed"
     exit 1
@@ -52,7 +52,7 @@ echo ""
 
 # Build the application
 echo "🔨 Building frontend..."
-npm run build
+NODE_ENV=production npm run build
 if [ $? -ne 0 ]; then
     echo "❌ Build failed"
     exit 1
