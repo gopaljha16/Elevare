@@ -75,29 +75,77 @@ export const config = {
   getApiEndpoint,
 };
 
-// Log environment detection on module load with enhanced formatting
-console.group('🌍 Environment Configuration');
-console.log(`%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'color: #4CAF50');
-console.log(`%cEnvironment: ${isDevelopment ? 'DEVELOPMENT' : 'PRODUCTION'}`, 'color: #2196F3; font-weight: bold');
-console.log(`%cMode: ${import.meta.env.MODE}`, 'color: #2196F3');
-console.log(`%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'color: #4CAF50');
-console.log(`📡 API Base URL: %c${getApiUrl()}`, 'color: #FF9800; font-weight: bold');
-console.log(`🖥️  Backend URL: %c${getBackendUrl()}`, 'color: #FF9800; font-weight: bold');
-console.log(`🌐 Frontend URL: %c${getFrontendUrl()}`, 'color: #FF9800; font-weight: bold');
-console.log(`%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'color: #4CAF50');
+// Enhanced startup logging with production debugging information
+console.log('\n%c╔════════════════════════════════════════════════════════════════╗', 'color: #4CAF50; font-weight: bold');
+console.log('%c║           🌍 FRONTEND ENVIRONMENT CONFIGURATION                ║', 'color: #4CAF50; font-weight: bold');
+console.log('%c╚════════════════════════════════════════════════════════════════╝', 'color: #4CAF50; font-weight: bold');
 
-// Log environment variables status
-console.log('📋 Environment Variables:');
-console.log(`   VITE_API_URL: ${import.meta.env.VITE_API_URL ? '✅ Set' : '❌ Not Set (using fallback)'}`);
-console.log(`   VITE_BACKEND_URL: ${import.meta.env.VITE_BACKEND_URL ? '✅ Set' : '❌ Not Set (using fallback)'}`);
-console.log(`   VITE_FRONTEND_URL: ${import.meta.env.VITE_FRONTEND_URL ? '✅ Set' : '❌ Not Set (using fallback)'}`);
+console.log('\n%c📋 Build Information:', 'color: #2196F3; font-weight: bold');
+console.log(`   Environment: %c${isDevelopment ? 'DEVELOPMENT' : 'PRODUCTION'}`, 'color: #FF9800; font-weight: bold');
+console.log(`   Mode: %c${import.meta.env.MODE}`, 'color: #FF9800');
+console.log(`   Build Time: %c${new Date().toISOString()}`, 'color: #FF9800');
 
-if (!import.meta.env.VITE_API_URL && isProduction) {
-  console.warn('⚠️  WARNING: VITE_API_URL not set in production - using hardcoded fallback');
-  console.warn('   This may cause issues if backend URL changes');
+console.log('\n%c🌐 URL Configuration:', 'color: #2196F3; font-weight: bold');
+console.log(`   API Base URL: %c${getApiUrl()}`, 'color: #FF9800; font-weight: bold');
+console.log(`   Backend URL: %c${getBackendUrl()}`, 'color: #FF9800; font-weight: bold');
+console.log(`   Frontend URL: %c${getFrontendUrl()}`, 'color: #FF9800; font-weight: bold');
+
+console.log('\n%c📦 Environment Variables Status:', 'color: #2196F3; font-weight: bold');
+const viteApiUrl = import.meta.env.VITE_API_URL;
+const viteBackendUrl = import.meta.env.VITE_BACKEND_URL;
+const viteFrontendUrl = import.meta.env.VITE_FRONTEND_URL;
+
+console.log(`   VITE_API_URL: ${viteApiUrl ? `%c✅ Set (${viteApiUrl})` : '%c❌ Not Set (using fallback)'}`, viteApiUrl ? 'color: #4CAF50' : 'color: #f44336');
+console.log(`   VITE_BACKEND_URL: ${viteBackendUrl ? `%c✅ Set (${viteBackendUrl})` : '%c❌ Not Set (using fallback)'}`, viteBackendUrl ? 'color: #4CAF50' : 'color: #f44336');
+console.log(`   VITE_FRONTEND_URL: ${viteFrontendUrl ? `%c✅ Set (${viteFrontendUrl})` : '%c❌ Not Set (using fallback)'}`, viteFrontendUrl ? 'color: #4CAF50' : 'color: #f44336');
+
+console.log('\n%c🔍 Actual Values Being Used:', 'color: #2196F3; font-weight: bold');
+console.log(`   API URL: %c${getApiUrl()}`, 'color: #9C27B0; font-weight: bold');
+console.log(`   Backend URL: %c${getBackendUrl()}`, 'color: #9C27B0; font-weight: bold');
+console.log(`   Frontend URL: %c${getFrontendUrl()}`, 'color: #9C27B0; font-weight: bold');
+
+// Production-specific warnings
+if (isProduction) {
+  console.log('\n%c⚠️  Production Environment Checks:', 'color: #FF9800; font-weight: bold');
+  
+  const warnings = [];
+  if (!viteApiUrl) {
+    warnings.push('VITE_API_URL not set - using hardcoded fallback');
+  }
+  if (!viteBackendUrl) {
+    warnings.push('VITE_BACKEND_URL not set - using hardcoded fallback');
+  }
+  if (!viteFrontendUrl) {
+    warnings.push('VITE_FRONTEND_URL not set - using hardcoded fallback');
+  }
+  
+  if (warnings.length > 0) {
+    warnings.forEach(warning => {
+      console.warn(`   ⚠️  ${warning}`);
+    });
+    console.log('\n%c💡 Fix: Set environment variables in Vercel dashboard:', 'color: #2196F3');
+    console.log('   1. Go to Vercel project settings');
+    console.log('   2. Navigate to Environment Variables');
+    console.log('   3. Add VITE_API_URL, VITE_BACKEND_URL, VITE_FRONTEND_URL');
+    console.log('   4. Redeploy the application');
+  } else {
+    console.log('   %c✅ All environment variables are properly set', 'color: #4CAF50; font-weight: bold');
+  }
 }
 
-console.log(`%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'color: #4CAF50');
-console.groupEnd();
+console.log('\n%c🔐 CORS & Authentication:', 'color: #2196F3; font-weight: bold');
+console.log('   Credentials: %cEnabled (cookies & auth headers will be sent)', 'color: #4CAF50');
+console.log('   Origin: %c' + window.location.origin, 'color: #9C27B0');
+console.log('   Expected Backend Origin: %c' + getBackendUrl(), 'color: #9C27B0');
+
+console.log('\n%c💡 Debugging Tips:', 'color: #2196F3; font-weight: bold');
+console.log('   • All API requests will be logged below');
+console.log('   • Check Network tab for CORS errors');
+console.log('   • Verify backend allows origin: ' + window.location.origin);
+console.log('   • Check that backend is running: ' + getBackendUrl() + '/health');
+
+console.log('\n%c════════════════════════════════════════════════════════════════', 'color: #4CAF50; font-weight: bold');
+console.log('%c✅ Frontend initialized and ready', 'color: #4CAF50; font-weight: bold');
+console.log('%c════════════════════════════════════════════════════════════════\n', 'color: #4CAF50; font-weight: bold');
 
 export default config;

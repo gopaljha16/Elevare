@@ -95,33 +95,64 @@ const allowedOrigins = [
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
-console.log('\n=== CORS Configuration ===');
-console.log('🔒 Allowed Origins:');
+// Enhanced CORS Configuration Logging
+console.log('\n╔════════════════════════════════════════════════════════════════╗');
+console.log('║              🔒 CORS CONFIGURATION DETAILS                     ║');
+console.log('╚════════════════════════════════════════════════════════════════╝');
+console.log('\n📋 Environment Information:');
+console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
+console.log(`   PORT: ${PORT}`);
+console.log(`   FRONTEND_URL env var: ${process.env.FRONTEND_URL || '❌ NOT SET'}`);
+console.log('\n🌐 Allowed Origins (${allowedOrigins.length} total):');
 allowedOrigins.forEach((origin, index) => {
-  console.log(`   ${index + 1}. ${origin}`);
+  const source = origin === process.env.FRONTEND_URL ? '(from FRONTEND_URL env)' : '(hardcoded)';
+  console.log(`   ${index + 1}. ${origin} ${source}`);
 });
-console.log('   Credentials: Enabled');
-console.log('   Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH');
-console.log('   Headers: Content-Type, Authorization, X-Requested-With');
-console.log('==========================\n');
+console.log('\n⚙️  CORS Settings:');
+console.log('   ✓ Credentials: Enabled (cookies & auth headers allowed)');
+console.log('   ✓ Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH');
+console.log('   ✓ Headers: Content-Type, Authorization, X-Requested-With');
+console.log('\n💡 CORS Behavior:');
+console.log('   • Requests with no origin (server-to-server) → ALLOWED');
+console.log('   • Requests from allowed origins → ALLOWED');
+console.log('   • Requests from other origins → BLOCKED');
+console.log('   • All CORS decisions will be logged below');
+console.log('\n════════════════════════════════════════════════════════════════\n');
+
+// CORS request counter for debugging
+let corsRequestCount = 0;
 
 app.use(cors({
   origin: (origin, callback) => {
+    corsRequestCount++;
     const timestamp = new Date().toISOString();
+    const requestId = `CORS-${corsRequestCount}`;
+    
+    console.log(`\n[${timestamp}] [${requestId}] 🔍 CORS Request Check`);
+    console.log(`   Origin Header: ${origin || '(no origin header)'}`);
     
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) {
-      console.log(`[${timestamp}] [CORS] ✅ Allowing request with no origin (server-to-server or tool)`);
+      console.log(`   Decision: ✅ ALLOWED (no origin - server-to-server or tool)`);
+      console.log(`   ────────────────────────────────────────────────────────────`);
       return callback(null, true);
     }
     
     if (allowedOrigins.includes(origin)) {
-      console.log(`[${timestamp}] [CORS] ✅ ALLOWED - Origin: ${origin}`);
+      console.log(`   Decision: ✅ ALLOWED`);
+      console.log(`   Matched: ${origin}`);
+      console.log(`   ────────────────────────────────────────────────────────────`);
       callback(null, true);
     } else {
-      console.log(`[${timestamp}] [CORS] ❌ BLOCKED - Origin: ${origin}`);
-      console.log(`[${timestamp}] [CORS]    Allowed origins:`, allowedOrigins);
-      console.log(`[${timestamp}] [CORS]    💡 Add this origin to FRONTEND_URL or allowedOrigins array`);
+      console.log(`   Decision: ❌ BLOCKED`);
+      console.log(`   Reason: Origin not in allowed list`);
+      console.log(`   \n   📋 Allowed Origins:`);
+      allowedOrigins.forEach((allowed, idx) => {
+        console.log(`      ${idx + 1}. ${allowed}`);
+      });
+      console.log(`   \n   💡 Fix: Add "${origin}" to FRONTEND_URL environment variable`);
+      console.log(`          or update allowedOrigins array in backend/src/index.js`);
+      console.log(`   ────────────────────────────────────────────────────────────`);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -136,6 +167,31 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // passport middleware
 app.use(passport.initialize());
+
+// Enhanced request logging middleware for debugging production issues
+app.use((req, res, next) => {
+  const timestamp = new Date().toISOString();
+  const origin = req.headers.origin || req.headers.referer || 'no-origin';
+  
+  // Log all incoming requests with origin information
+  if (req.method === 'OPTIONS') {
+    console.log(`\n[${timestamp}] 🔄 PREFLIGHT REQUEST`);
+    console.log(`   Method: OPTIONS (CORS preflight)`);
+    console.log(`   Path: ${req.path}`);
+    console.log(`   Origin: ${origin}`);
+    console.log(`   Access-Control-Request-Method: ${req.headers['access-control-request-method'] || 'not specified'}`);
+    console.log(`   Access-Control-Request-Headers: ${req.headers['access-control-request-headers'] || 'not specified'}`);
+  } else if (req.path.startsWith('/api/auth')) {
+    console.log(`\n[${timestamp}] 🔐 AUTH REQUEST`);
+    console.log(`   Method: ${req.method}`);
+    console.log(`   Path: ${req.path}`);
+    console.log(`   Origin: ${origin}`);
+    console.log(`   Content-Type: ${req.headers['content-type'] || 'not specified'}`);
+    console.log(`   Authorization: ${req.headers.authorization ? 'Present' : 'Not present'}`);
+  }
+  
+  next();
+});
 
 // monitoring middleware
 app.use(requestMonitoring);
@@ -178,8 +234,52 @@ app.use(errorHandler);
 
 // start server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
+  console.log('\n╔════════════════════════════════════════════════════════════════╗');
+  console.log('║                  🚀 SERVER STARTED SUCCESSFULLY                ║');
+  console.log('╚════════════════════════════════════════════════════════════════╝\n');
+  
+  console.log('📡 Server Information:');
+  console.log(`   Port: ${PORT}`);
+  console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`   Health Check: http://localhost:${PORT}/health`);
+  
+  console.log('\n🌐 URL Configuration:');
+  console.log(`   Frontend URL: ${process.env.FRONTEND_URL || '❌ NOT SET (using fallback: http://localhost:5173)'}`);
+  console.log(`   Backend URL: http://localhost:${PORT}`);
+  
+  console.log('\n🔐 Authentication Configuration:');
+  console.log(`   JWT Secret: ${process.env.JWT_SECRET ? '✅ Set' : '❌ NOT SET'}`);
+  console.log(`   Google OAuth Client ID: ${process.env.GOOGLE_CLIENT_ID ? '✅ Set' : '❌ NOT SET'}`);
+  console.log(`   Google OAuth Secret: ${process.env.GOOGLE_CLIENT_SECRET ? '✅ Set' : '❌ NOT SET'}`);
+  
+  console.log('\n💾 Database Configuration:');
+  console.log(`   MongoDB: ${process.env.DATABASE_URL ? '✅ Connected' : '❌ NOT SET'}`);
+  console.log(`   Redis: ${process.env.REDIS_HOST ? '✅ Configured' : '❌ NOT SET'}`);
+  
+  console.log('\n🤖 AI Configuration:');
+  console.log(`   Gemini API Keys: ${process.env.GEMINI_API_KEYS ? '✅ Set' : '❌ NOT SET'}`);
+  console.log(`   Gemini Model: ${process.env.GEMINI_MODEL || 'gemini-1.5-pro'}`);
+  
+  console.log('\n📸 Media Configuration:');
+  console.log(`   Cloudinary: ${process.env.CLOUDINARY_CLOUD_NAME ? '✅ Configured' : '❌ NOT SET'}`);
+  
+  console.log('\n💳 Payment Configuration:');
+  console.log(`   Razorpay: ${process.env.RAZORPAY_KEY ? '✅ Configured' : '❌ NOT SET'}`);
+  
+  console.log('\n⚠️  Critical Warnings:');
+  if (!process.env.FRONTEND_URL) {
+    console.log('   ⚠️  FRONTEND_URL not set - CORS may fail in production!');
+  }
+  if (!process.env.JWT_SECRET) {
+    console.log('   ⚠️  JWT_SECRET not set - authentication will fail!');
+  }
+  if (!process.env.DATABASE_URL) {
+    console.log('   ⚠️  DATABASE_URL not set - database operations will fail!');
+  }
+  
+  console.log('\n════════════════════════════════════════════════════════════════');
+  console.log('✅ Server is ready to accept requests');
+  console.log('📝 All CORS requests will be logged above');
+  console.log('════════════════════════════════════════════════════════════════\n');
 });
 
