@@ -436,7 +436,7 @@ const FormSections = ({ resumeData, setResumeData, activeSection, setActiveSecti
             placeholder="Write a compelling professional summary..."
             rows={5}
             disabled={isDemo}
-            className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none ${
+            className={`w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none ${
               isDemo ? 'bg-gray-50 cursor-not-allowed' : ''
             }`}
           />
@@ -631,7 +631,7 @@ const Input = ({ label, isDemo, ...props }) => (
     <input
       {...props}
       disabled={isDemo || props.disabled}
-      className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all ${
+      className={`w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all ${
         isDemo ? 'bg-gray-50 cursor-not-allowed' : ''
       }`}
     />
@@ -644,7 +644,7 @@ const TextArea = ({ label, isDemo, ...props }) => (
     <textarea
       {...props}
       disabled={isDemo || props.disabled}
-      className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none ${
+      className={`w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none ${
         isDemo ? 'bg-gray-50 cursor-not-allowed' : ''
       }`}
     />
@@ -743,7 +743,7 @@ const ExperienceItem = ({ experience, index, onUpdate, onRemove, onAIEnhance, is
           placeholder="Describe your role and responsibilities..."
           rows={4}
           disabled={isDemo}
-          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none ${
+          className={`w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none ${
             isDemo ? 'bg-gray-50 cursor-not-allowed' : ''
           }`}
         />
@@ -904,7 +904,7 @@ const SkillsSection = ({ skills, onAdd, onRemove, isDemo = false }) => {
                   onFocus={() => newSkill[category] && setShowSuggestions(prev => ({ ...prev, [category]: true }))}
                   onBlur={() => setTimeout(() => setShowSuggestions(prev => ({ ...prev, [category]: false })), 200)}
                   placeholder={`Add ${category} skill`}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 />
                 
                 {/* Autocomplete Suggestions Dropdown */}

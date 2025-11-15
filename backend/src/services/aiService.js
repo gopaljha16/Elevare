@@ -26,16 +26,22 @@ class AIService {
     
     // Initialize with robust error handling
     try {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        console.error('❌ GEMINI_API_KEY not found in environment variables');
-        console.log('💡 Please set GEMINI_API_KEY in your .env file');
+      const apiKeysString = process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY;
+      if (!apiKeysString) {
+        console.error('❌ No Gemini API keys found in environment variables');
+        console.log('💡 Please set GEMINI_API_KEYS or GEMINI_API_KEY in your .env file');
         this.genAI = null;
         this.model = null;
         return;
       }
+
+      const apiKeys = apiKeysString.includes(',')
+        ? apiKeysString.split(',').map(k => k.trim()).filter(k => k)
+        : [apiKeysString.trim()];
+
+      const apiKey = apiKeys[0];
       
-      console.log('🔑 API Key found, initializing Gemini AI...');
+      console.log(`🔑 Found ${apiKeys.length} Gemini API key(s), initializing with primary key...`);
       this.genAI = new GoogleGenerativeAI(apiKey);
       
       // Try multiple models with fallback

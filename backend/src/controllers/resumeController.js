@@ -1,6 +1,8 @@
 const Resume = require('../models/Resume');
 const ResumeTemplate = require('../models/ResumeTemplate');
 const geminiAIService = require('../services/geminiAIService');
+const aiService = require('../services/aiService');
+const AdvancedATSScorer = require('../utils/advancedATSScoring');
 const multer = require('multer');
 const path = require('path');
 
@@ -362,18 +364,32 @@ exports.generateAISuggestions = async (req, res) => {
       targetRole
     );
 
-    // Update resume with suggestions
-    resume.aiSuggestions = {
-      ...suggestions,
+    // Map Gemini response into the aiSuggestions shape expected by the frontend
+    const mappedSuggestions = {
+      summary: suggestions.summary || '',
+      experienceImprovements: Array.isArray(suggestions.experience)
+        ? suggestions.experience
+            .flatMap(exp => Array.isArray(exp.achievements) ? exp.achievements : [])
+            .slice(0, 6)
+        : [],
+      skillRecommendations: suggestions.skills && Array.isArray(suggestions.skills.technical)
+        ? suggestions.skills.technical.slice(0, 10)
+        : [],
+      generalTips: Array.isArray(suggestions.suggestions)
+        ? suggestions.suggestions
+        : [],
       lastGenerated: new Date()
     };
+
+    // Update resume with mapped suggestions
+    resume.aiSuggestions = mappedSuggestions;
 
     await resume.save();
 
     res.status(200).json({
       success: true,
       message: 'AI suggestions generated successfully',
-      data: suggestions
+      data: mappedSuggestions
     });
   } catch (error) {
     console.error('Generate suggestions error:', error);
@@ -402,34 +418,47 @@ exports.calculateATSScore = async (req, res) => {
       });
     }
 
-    // Calculate ATS score using Gemini
+    // Build plain-text representation of the resume for ATS analysis
     const resumeText = `
-      ${resume.personalInfo?.firstName} ${resume.personalInfo?.lastName}
-      ${resume.professionalSummary || ''}
-      Experience: ${JSON.stringify(resume.experience)}
-      Education: ${JSON.stringify(resume.education)}
-      Skills: ${resume.skills?.join(', ')}
-      Projects: ${JSON.stringify(resume.projects)}
-      ${jobDescription ? `Job Description: ${jobDescription}` : ''}
-    `;
-    
-    const atsAnalysis = await geminiAIService.analyzeATSScore(resumeText);
+${resume.personalInfo?.fullName || ''}
+${resume.personalInfo?.jobTitle || ''}
+${resume.professionalSummary || ''}
 
-    // Update resume with ATS score
-    resume.atsScore = {
-      score: atsAnalysis.overallScore,
-      strengths: atsAnalysis.strengths,
-      improvements: atsAnalysis.criticalIssues,
-      missingKeywords: atsAnalysis.keywordAnalysis?.missingKeywords || [],
+Experience:
+${JSON.stringify(resume.experience || [])}
+
+Education:
+${JSON.stringify(resume.education || [])}
+
+Skills:
+${JSON.stringify(resume.skills || {})}
+
+Projects:
+${JSON.stringify(resume.projects || [])}
+
+${jobDescription ? `Target Job Description: ${jobDescription}` : ''}
+`; 
+
+    // Use AdvancedATSScorer (no external AI required)
+    const scorer = new AdvancedATSScorer();
+    const analysis = scorer.analyzeResume(resumeText);
+
+    const atsScore = {
+      score: analysis.atsScore,
+      strengths: Array.isArray(analysis.strengths) ? analysis.strengths : [],
+      improvements: Array.isArray(analysis.weaknesses) ? analysis.weaknesses : [],
+      missingKeywords: Array.isArray(analysis.keywordSuggestions) ? analysis.keywordSuggestions : [],
       lastAnalyzed: new Date()
     };
 
+    // Persist the simplified ATS score on the resume
+    resume.atsScore = atsScore;
     await resume.save();
 
     res.status(200).json({
       success: true,
       message: 'ATS score calculated successfully',
-      data: atsAnalysis
+      data: atsScore
     });
   } catch (error) {
     console.error('Calculate ATS score error:', error);

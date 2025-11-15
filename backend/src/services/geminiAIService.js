@@ -400,10 +400,14 @@ class GeminiAIService {
         const errorType = this.classifyError(error);
         console.warn(`⚠️ AI Request failed (attempt ${attemptCount}, key ${currentKeyIndex + 1}, model ${currentModel}): ${errorType}`);
 
+        // If the current model is not available for this API key, try another
+        // model in the priority list, but still respect the overall maxAttempts
         if (this.shouldSwitchModel(errorType)) {
           const rotated = this.rotateModel(errorType);
           if (rotated) {
-            attemptCount--;
+            // Do not decrement attemptCount here; each failed request counts
+            // towards maxAttempts to avoid infinite rotation when all models
+            // are unavailable.
             continue;
           }
         }

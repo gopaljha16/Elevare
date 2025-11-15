@@ -103,6 +103,11 @@ const Navbar = () => {
 
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">
+                <Link to="/dashboard">
+                  <Button variant="ghost" size="sm" className="hidden lg:inline-flex">
+                    Dashboard
+                  </Button>
+                </Link>
                 <div className="flex items-center space-x-2">
                   <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
                     <span className="text-white text-sm font-medium">
@@ -195,7 +200,12 @@ const Navbar = () => {
                       <div className="text-sm font-medium text-gray-500 dark:text-gray-400">{user?.email}</div>
                     </div>
                   </div>
-                  <div className="mt-3 px-2">
+                  <div className="mt-3 px-2 space-y-2">
+                    <Link to="/dashboard" className="block">
+                      <Button variant="ghost" size="sm" className="w-full">
+                        Dashboard
+                      </Button>
+                    </Link>
                     <Button variant="ghost" size="sm" onClick={handleLogout} className="w-full">
                       Logout
                     </Button>

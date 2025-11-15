@@ -28,6 +28,7 @@ import ResumeBuilder from './pages/ResumeBuilder';
 import ResumeDashboard from './pages/ResumeDashboard';
 import ProfilePage from './pages/ProfilePage';
 import GoogleCallback from './components/auth/GoogleCallback';
+import ModernDashboard from './components/dashboard/ModernDashboard';
 
 
 // Protected Route Component
@@ -100,7 +101,7 @@ const App = () => {
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <DashboardPage />
+                <ModernDashboard />
               </ProtectedRoute>
             }
           />

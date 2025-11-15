@@ -32,43 +32,88 @@ const ModernDashboard = () => {
   const { user, logout } = useAuthContext();
   const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
+  const [goalsData, setGoalsData] = useState(null);
+  const [weeklyData, setWeeklyData] = useState(null);
+  const [achievementsData, setAchievementsData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeSidebar, setActiveSidebar] = useState('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchDashboardData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchDashboardData = async () => {
     try {
-      const response = await axios.get('/api/dashboard/data', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
-      setDashboardData(response.data.data);
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+
+      const [mainRes, goalsRes, weeklyRes, achievementsRes] = await Promise.all([
+        axios.get('/api/dashboard/data', { headers }),
+        axios.get('/api/dashboard/goals', { headers }),
+        axios.get('/api/dashboard/weekly-progress', { headers }),
+        axios.get('/api/dashboard/achievements', { headers })
+      ]);
+
+      setDashboardData(mainRes.data.data);
+      setGoalsData(goalsRes.data.data);
+      setWeeklyData(weeklyRes.data.data);
+      setAchievementsData(achievementsRes.data.data);
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
-      // Set default data if fetch fails
-      setDashboardData({
-        summary: {
-          totalResumes: 0,
-          completedInterviews: 0,
-          activeLearningPaths: 0,
-          totalPortfolios: 0,
-          publishedPortfolios: 0
-        },
-        resumeStats: { averageATSScore: 0 },
-        portfolioStats: { totalViews: 0 },
-        recentActivity: []
-      });
+
+      if (!dashboardData) {
+        setDashboardData({
+          summary: {
+            totalResumes: 0,
+            completedInterviews: 0,
+            activeLearningPaths: 0,
+            totalPortfolios: 0,
+            publishedPortfolios: 0,
+            currentStreak: 0
+          },
+          resumeStats: { averageATSScore: 0, highestATSScore: 0 },
+          interviewStats: { totalSessions: 0, averageScore: 0 },
+          learningStats: { totalPaths: 0, averageProgress: 0, currentStreak: 0 },
+          portfolioStats: { totalViews: 0, totalPortfolios: 0 },
+          recentActivity: [],
+          careerReadinessScore: 0
+        });
+      }
+
+      if (!goalsData) {
+        setGoalsData({
+          weeklyGoals: {
+            resumeOptimizations: 1,
+            interviewSessions: 3,
+            learningHours: 5
+          },
+          currentProgress: {
+            resumeOptimizations: 0,
+            interviewSessions: 0,
+            learningHours: 0
+          },
+          progressPercentage: {
+            resumeOptimizations: 0,
+            interviewSessions: 0,
+            learningHours: 0
+          }
+        });
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
+  const resumeWeeklyCount = weeklyData?.resumeActivity?.reduce((sum, w) => sum + (w.count || 0), 0) || 0;
+  const interviewWeeklyCount = weeklyData?.interviewActivity?.reduce((sum, w) => sum + (w.count || 0), 0) || 0;
+  const learningWeeklyHours = weeklyData?.learningActivity?.reduce((sum, w) => sum + (w.totalTimeSpent || 0), 0) || 0;
+  const learningWeeklyHoursRounded = Math.round(learningWeeklyHours / 60) || 0;
+
   const sidebarItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-    { id: 'resumes', label: 'My Resumes', icon: FileText, path: '/resumes' },
+    { id: 'resumes', label: 'My Resumes', icon: FileText, path: '/resume-dashboard' },
     { id: 'portfolios', label: 'Portfolios', icon: Globe, path: '/portfolio-dashboard' },
     { id: 'interviews', label: 'Interview Prep', icon: MessageSquare, path: '/interview-prep' },
     { id: 'learning', label: 'Learning Paths', icon: BookOpen, path: '/learning-paths' },
@@ -257,7 +302,9 @@ const ModernDashboard = () => {
                 <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
                   <FileText className="w-6 h-6 text-purple-400" />
                 </div>
-                <span className="text-xs font-semibold text-green-400">+2 this month</span>
+                <span className="text-xs font-semibold text-green-400">
+                  {resumeWeeklyCount > 0 ? `+${resumeWeeklyCount} this week` : 'This week'}
+                </span>
               </div>
               <h3 className="text-sm text-white/60 mb-1">Resumes</h3>
               <p className="text-3xl font-bold text-white">{dashboardData?.summary?.totalResumes || 0}</p>
@@ -273,7 +320,9 @@ const ModernDashboard = () => {
                 <div className="w-12 h-12 bg-pink-500/20 rounded-xl flex items-center justify-center">
                   <Briefcase className="w-6 h-6 text-pink-400" />
                 </div>
-                <span className="text-xs font-semibold text-green-400">Active</span>
+                <span className="text-xs font-semibold text-green-400">
+                  {interviewWeeklyCount > 0 ? `+${interviewWeeklyCount} this week` : 'This week'}
+                </span>
               </div>
               <h3 className="text-sm text-white/60 mb-1">Interviews</h3>
               <p className="text-3xl font-bold text-white">{dashboardData?.summary?.completedInterviews || 0}</p>
@@ -410,24 +459,31 @@ const ModernDashboard = () => {
                     <span className="text-white font-semibold">{dashboardData?.resumeStats?.averageATSScore || 0}%</span>
                   </div>
                   <div className="flex gap-1 h-12">
-                    {[20, 35, 45, 30, 50, 40, 60].map((height, i) => (
-                      <div key={i} className="flex-1 bg-purple-500/20 rounded-t-lg relative overflow-hidden">
-                        <div
-                          className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-purple-500 to-pink-500 rounded-t-lg transition-all"
-                          style={{ height: `${height}%` }}
-                        ></div>
-                      </div>
-                    ))}
+                    {(weeklyData?.resumeActivity && weeklyData.resumeActivity.length > 0
+                      ? weeklyData.resumeActivity
+                      : [{ avgATSScore: dashboardData?.resumeStats?.averageATSScore || 0 }]
+                    ).map((entry, i) => {
+                      const value = entry.avgATSScore ?? dashboardData?.resumeStats?.averageATSScore ?? 0;
+                      const height = Math.max(8, Math.min(value, 100));
+                      return (
+                        <div key={i} className="flex-1 bg-purple-500/20 rounded-t-lg relative overflow-hidden">
+                          <div
+                            className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-purple-500 to-pink-500 rounded-t-lg transition-all"
+                            style={{ height: `${height}%` }}
+                          ></div>
+                        </div>
+                      );
+                    })}
                   </div>
                   <div className="flex justify-between text-xs text-white/40">
-                    <span>1-10 Aug</span>
-                    <span>11-20 Aug</span>
-                    <span>21-30 Aug</span>
+                    <span>Recent</span>
+                    <span>Weeks</span>
+                    <span>Trend</span>
                   </div>
                 </div>
               </motion.div>
 
-              {/* Your Mentor / Team Section */}
+              {/* Your Progress - powered by real weekly goals */}
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -435,43 +491,95 @@ const ModernDashboard = () => {
                 className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6"
               >
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-bold text-white">Your Progress</h3>
-                  <button className="text-purple-400 hover:text-purple-300 text-sm font-semibold">
-                    + Add Goal
-                  </button>
+                  <h3 className="text-lg font-bold text-white">Your Weekly Goals</h3>
+                  <span className="text-xs text-white/50">Auto-calculated from your activity</span>
                 </div>
 
                 <div className="space-y-4">
-                  {[
-                    { name: 'Resume Optimization', role: 'ATS Score', avatar: 'RO', status: 'online' },
-                    { name: 'Portfolio Building', role: 'Web Presence', avatar: 'PB', status: 'online' },
-                    { name: 'Interview Practice', role: 'Confidence', avatar: 'IP', status: 'offline' }
-                  ].map((item, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="relative">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm">
-                            {item.avatar}
-                          </div>
-                          <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#1a1a2e] ${
-                            item.status === 'online' ? 'bg-green-500' : 'bg-gray-500'
-                          }`}></div>
-                        </div>
-                        <div>
-                          <p className="text-white font-medium text-sm">{item.name}</p>
-                          <p className="text-white/60 text-xs">{item.role}</p>
-                        </div>
-                      </div>
-                      <button className="text-purple-400 hover:text-purple-300 text-sm font-semibold">
-                        Track
-                      </button>
-                    </div>
-                  ))}
+                  {goalsData ? (
+                    [
+                      { key: 'resumeOptimizations', label: 'Resume Optimizations', color: 'from-purple-500 to-pink-500' },
+                      { key: 'interviewSessions', label: 'Interview Sessions', color: 'from-blue-500 to-cyan-500' },
+                      { key: 'learningHours', label: 'Learning Hours', color: 'from-emerald-500 to-lime-500' }
+                    ].map((goal) => {
+                      const target = goalsData.weeklyGoals?.[goal.key] ?? 0;
+                      const current = goalsData.currentProgress?.[goal.key] ?? 0;
+                      const percent = goalsData.progressPercentage?.[goal.key] ?? 0;
 
-                  <button className="w-full py-3 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 rounded-xl text-purple-300 font-semibold transition-all">
-                    See All
-                  </button>
+                      return (
+                        <div key={goal.key} className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <p className="text-white font-medium">{goal.label}</p>
+                            <span className="text-white/60">
+                              {current}/{target || 1}
+                            </span>
+                          </div>
+                          <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full bg-gradient-to-r ${goal.color}`}
+                              style={{ width: `${Math.min(percent || 0, 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="text-sm text-white/60">
+                      Your weekly goals and progress will appear here as you use resumes, interview prep, and learning paths.
+                    </p>
+                  )}
                 </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+                className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Award className="w-5 h-5 text-yellow-400" />
+                    <h3 className="text-lg font-bold text-white">Achievements</h3>
+                  </div>
+                  <span className="text-xs text-white/50">
+                    {achievementsData?.totalAchievements || 0} total
+                  </span>
+                </div>
+
+                {achievementsData?.achievements && achievementsData.achievements.length > 0 ? (
+                  <div className="space-y-3 max-h-48 overflow-y-auto pr-1">
+                    {achievementsData.achievements.slice(0, 4).map((achievement, index) => (
+                      <div
+                        key={index}
+                        className="flex items-start justify-between gap-3 bg-white/5 rounded-xl px-3 py-2"
+                      >
+                        <div>
+                          <p className="text-sm font-medium text-white">
+                            {achievement.title || achievement.type}
+                          </p>
+                          {achievement.description && (
+                            <p className="text-xs text-white/60 line-clamp-2">
+                              {achievement.description}
+                            </p>
+                          )}
+                          <p className="text-[11px] text-white/40 mt-1">
+                            {achievement.earnedAt ? new Date(achievement.earnedAt).toLocaleDateString() : ''}
+                          </p>
+                        </div>
+                        {achievement.category && (
+                          <span className="text-[11px] font-medium px-2 py-1 rounded-full bg-white/10 text-white/70 capitalize">
+                            {achievement.category}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-white/60">
+                    Complete resumes, interviews, and learning paths to unlock achievements.
+                  </p>
+                )}
               </motion.div>
             </div>
           </div>
