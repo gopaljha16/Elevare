@@ -763,7 +763,20 @@ geminiAIService.chatResponse = async function(message, context = {}, history = [
 
   try {
     const result = await this.generateContent(prompt, config);
-    return ResponseParser.parseChatResponse(result.text);
+
+    const rawText = result && typeof result.text === 'string' ? result.text : '';
+
+    // If the model returned no text, avoid passing an empty/invalid value to the parser
+    if (!rawText.trim()) {
+      console.warn('⚠️ Chat response from AI was empty, using fallback message instead');
+      return {
+        response: "I'm here to help with your resume and portfolio. What would you like to improve?",
+        suggestions: [],
+        followUpQuestions: []
+      };
+    }
+
+    return ResponseParser.parseChatResponse(rawText);
   } catch (error) {
     console.error('Chat response generation failed:', error);
     throw error;
