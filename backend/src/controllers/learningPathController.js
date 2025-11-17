@@ -1,6 +1,7 @@
 const LearningPath = require('../models/LearningPath');
 const UserProgress = require('../models/UserProgress');
 const { v4: uuidv4 } = require('crypto');
+const geminiAIService = require('../services/geminiAIService');
 
 // Get all learning paths with filters
 exports.getAllPaths = async (req, res) => {
@@ -298,6 +299,76 @@ exports.getRecommendations = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error fetching recommendations',
+      error: error.message
+    });
+  }
+};
+
+// AI Learning Coach for a specific path
+exports.aiCoachForPath = async (req, res) => {
+  try {
+    const { pathId } = req.params;
+    const { userId, message, history = [] } = req.body;
+
+    if (!message || !message.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Message is required'
+      });
+    }
+
+    const path = await LearningPath.findOne({ pathId });
+
+    if (!path) {
+      return res.status(404).json({
+        success: false,
+        message: 'Learning path not found'
+      });
+    }
+
+    let progress = null;
+    if (userId) {
+      progress = await UserProgress.findOne({ userId, pathId });
+    }
+
+    const context = {
+      type: 'learning-path-coach',
+      path: {
+        pathId: path.pathId,
+        pathName: path.pathName,
+        category: path.category,
+        difficulty: path.difficulty,
+        estimatedHours: path.estimatedHours,
+        tags: path.tags,
+        totalNodes: path.nodes?.length || 0
+      },
+      progress: progress
+        ? {
+            status: progress.status,
+            progress: progress.progress,
+            completedNodes: progress.completedNodes?.length || 0,
+            currentNode: progress.currentNode,
+            totalTimeSpent: progress.totalTimeSpent
+          }
+        : null
+    };
+
+    const result = await geminiAIService.chatResponse(message, context, history);
+
+    res.json({
+      success: true,
+      data: {
+        response: result.response,
+        content: result.response,
+        suggestions: result.suggestions,
+        followUpQuestions: result.followUpQuestions
+      }
+    });
+  } catch (error) {
+    console.error('AI learning coach error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate AI learning coach response',
       error: error.message
     });
   }

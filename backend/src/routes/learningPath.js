@@ -10,6 +10,7 @@ router.get('/paths/:pathId', learningPathController.getPathById);
 router.post('/paths', learningPathController.createPath);
 router.put('/paths/:pathId', learningPathController.updatePath);
 router.delete('/paths/:pathId', learningPathController.deletePath);
+router.post('/paths/:pathId/ai/coach', learningPathController.aiCoachForPath);
 
 // Node Management Routes
 router.post('/paths/:pathId/nodes', learningPathController.addNode);

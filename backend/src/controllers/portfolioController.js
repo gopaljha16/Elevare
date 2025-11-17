@@ -329,7 +329,7 @@ async function enhanceResumeDataWithAI(resumeData) {
     }
 
     // Use the AI service instead of direct genAI
-    if (!aiService.model) {
+    if (!geminiAIService.isAvailable()) {
       console.warn('AI service not available, using fallback data');
       return fallbackData;
     }
@@ -414,8 +414,11 @@ async function enhanceResumeDataWithAI(resumeData) {
     - Return ONLY the JSON, no other text
     `;
 
-    const result = await aiService.model.generateContent(prompt);
-    const enhancedText = result.response.text();
+    const result = await geminiAIService.generateContent(
+      prompt,
+      geminiAIService.featureConfigs?.portfolio || {}
+    );
+    const enhancedText = result.text;
 
     try {
       // Clean the response to extract JSON

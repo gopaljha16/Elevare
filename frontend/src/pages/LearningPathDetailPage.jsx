@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchPathById, fetchPathProgress, enrollInPath } from '../store/slices/learningPathSlice';
 import RoadmapViewer from '../components/learning/RoadmapViewer';
+import LearningPathAICoach from '../components/learning/LearningPathAICoach';
 import { ArrowLeft, Clock, BookOpen, TrendingUp } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 
@@ -109,12 +110,24 @@ const LearningPathDetailPage = () => {
           </div>
         </div>
 
-        {/* Roadmap */}
-        <RoadmapViewer
-          path={currentPath}
-          progress={currentProgress}
-          userId={userId}
-        />
+        {/* Roadmap + AI Coach */}
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-6 items-start">
+          <div>
+            <RoadmapViewer
+              path={currentPath}
+              progress={currentProgress}
+              userId={userId}
+            />
+          </div>
+
+          <div className="mt-4 lg:mt-0">
+            <LearningPathAICoach
+              path={currentPath}
+              progress={currentProgress}
+              userId={userId}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
