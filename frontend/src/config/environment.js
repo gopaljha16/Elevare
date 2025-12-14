@@ -35,7 +35,7 @@ const getFrontendUrl = () => {
   }
   
   if (isProduction) {
-    return 'https://elevare-seven.vercel.app';
+    return 'https://elevare-frontend.onrender.com';
   }
   
   return 'http://localhost:5173';
@@ -43,7 +43,7 @@ const getFrontendUrl = () => {
 
 /**
  * Helper function to get the full API endpoint URL
- * In development: returns relative path to use Vite proxy
+ * In development: returns relative path to use Vite proxy (except for OAuth)
  * In production: returns full backend URL
  * 
  * @param {string} path - API path (e.g., '/auth/google', '/user/profile')
@@ -52,6 +52,13 @@ const getFrontendUrl = () => {
 const getApiEndpoint = (path) => {
   // Remove leading slash if present to normalize
   const normalizedPath = path.startsWith('/') ? path.slice(1) : path;
+  
+  // OAuth endpoints always need full URL for redirects
+  if (normalizedPath.includes('auth/google')) {
+    const endpoint = `${getBackendUrl()}/api/${normalizedPath}`;
+    console.log(`🔐 [OAuth] API Endpoint: ${endpoint} (full URL required for OAuth)`);
+    return endpoint;
+  }
   
   if (isDevelopment) {
     // In development, use relative path to leverage Vite proxy

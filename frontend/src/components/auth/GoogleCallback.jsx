@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { loginSuccess } from '../../store/slices/authSlice';
 import { config } from '../../config/environment';
+import { Spinner } from '../ui/LoadingOverlay';
 
 const GoogleCallback = () => {
   const [searchParams] = useSearchParams();
@@ -50,12 +51,12 @@ const GoogleCallback = () => {
   }, [searchParams, navigate, dispatch]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#1a1b3a] via-[#2d1b69] to-[#1a1b3a] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl p-8 border border-gray-700/50 shadow-2xl">
+        <div className="bg-[#1e1f3f]/80 backdrop-blur-xl rounded-3xl p-8 border border-[#2d2e5f]/50 shadow-2xl">
           <div className="text-center space-y-6">
-            <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto">
-              <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-16 h-16 bg-gradient-to-r from-[#ff6b6b] to-[#a855f7] rounded-2xl flex items-center justify-center mx-auto">
+              <Spinner size="lg" color="white" />
             </div>
             
             <div>

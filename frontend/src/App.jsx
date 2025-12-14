@@ -3,6 +3,8 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthContext } from './contexts/AuthContext';
 import { ToastProvider } from './components/ui/Toast';
 import ErrorBoundary from './components/ErrorBoundary';
+import DashboardLoader from './components/dashboard/DashboardLoader';
+import LoadingOverlay from './components/ui/LoadingOverlay';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
@@ -36,14 +38,7 @@ const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuthContext();
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="spinner w-8 h-8 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+    return <DashboardLoader />;
   }
 
   return isAuthenticated ? children : <Navigate to="/login" replace />;
@@ -55,12 +50,11 @@ const PublicRoute = ({ children }) => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="spinner w-8 h-8 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
+      <LoadingOverlay 
+        isVisible={true} 
+        message="Checking authentication..." 
+        size="lg"
+      />
     );
   }
 
@@ -173,7 +167,7 @@ const App = () => {
             path="/portfolio-builder"
             element={
               <ProtectedRoute>
-                <PortfolioBuilder />
+                <AIPortfolioBuilder />
               </ProtectedRoute>
             }
           />

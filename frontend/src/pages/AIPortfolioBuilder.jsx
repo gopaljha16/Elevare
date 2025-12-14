@@ -36,7 +36,7 @@ import '../styles/AIPortfolioBuilder.css';
 const AIPortfolioBuilder = () => {
   const { user } = useAuthContext();
   const [userName, setUserName] = useState('');
-  const [showNameInput, setShowNameInput] = useState(true);
+  const [showNameInput, setShowNameInput] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
@@ -74,6 +74,16 @@ const AIPortfolioBuilder = () => {
       chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [chatMessages]);
+
+  useEffect(() => {
+    // Prefill userName from authenticated user if available
+    if (user && !userName) {
+      const derivedName = user.firstName || user.name || (user.email ? user.email.split('@')[0] : '');
+      if (derivedName) {
+        setUserName(derivedName);
+      }
+    }
+  }, [user, userName]);
 
   useEffect(() => {
     // Update preview when code changes (debounced)
