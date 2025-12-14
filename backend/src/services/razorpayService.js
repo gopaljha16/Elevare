@@ -13,7 +13,22 @@ const { Subscription, Payment, Invoice } = require('../models');
 
 class RazorpayService {
   constructor() {
-    this.razorpay = getRazorpayInstance();
+    this.razorpay = null;
+    this.initializeRazorpay();
+  }
+
+  initializeRazorpay() {
+    try {
+      this.razorpay = getRazorpayInstance();
+      if (this.razorpay) {
+        console.log('✅ RazorpayService: Razorpay instance initialized');
+      } else {
+        console.warn('⚠️ RazorpayService: Razorpay not configured - payment features disabled');
+      }
+    } catch (error) {
+      console.error('❌ RazorpayService: Failed to initialize Razorpay:', error.message);
+      this.razorpay = null;
+    }
   }
 
   /**
@@ -23,8 +38,14 @@ class RazorpayService {
    */
   async createOrder(orderData) {
     try {
+      // Try to initialize if not already done
       if (!this.razorpay) {
-        throw new Error('Razorpay is not configured');
+        this.initializeRazorpay();
+      }
+
+      if (!this.razorpay) {
+        console.error('Razorpay not configured. Check RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET environment variables.');
+        throw new Error('Payment service is not configured. Please contact support.');
       }
 
       const { userId, plan, billingCycle, subscriptionId, discountCode } = orderData;

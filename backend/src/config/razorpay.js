@@ -8,6 +8,17 @@ const crypto = require('crypto');
 
 // Validate required environment variables
 const validateRazorpayConfig = () => {
+  // Support both new and legacy env var names
+  // Legacy: RAZORPAY_KEY / RAZORPAY_SECRET
+  // Current: RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET
+  if (!process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY) {
+    process.env.RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY;
+  }
+
+  if (!process.env.RAZORPAY_KEY_SECRET && process.env.RAZORPAY_SECRET) {
+    process.env.RAZORPAY_KEY_SECRET = process.env.RAZORPAY_SECRET;
+  }
+
   const requiredVars = ['RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET'];
   const missing = requiredVars.filter(varName => !process.env[varName]);
   

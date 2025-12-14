@@ -16,11 +16,29 @@ router.post('/create-order', authenticate, async (req, res) => {
     const { plan, billingCycle, discountCode } = req.body;
     const userId = req.user._id || req.user.id;
 
+    console.log('📦 Create order request:', { plan, billingCycle, userId: userId.toString() });
+
     // Validate input
     if (!plan || !billingCycle) {
       return res.status(400).json({
         success: false,
         message: 'Plan and billing cycle are required'
+      });
+    }
+
+    // Validate plan
+    if (!['pro', 'enterprise'].includes(plan)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid plan. Only pro and enterprise plans can be purchased.'
+      });
+    }
+
+    // Validate billing cycle
+    if (!['monthly', 'annual'].includes(billingCycle)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid billing cycle. Must be monthly or annual.'
       });
     }
 
@@ -33,6 +51,7 @@ router.post('/create-order', authenticate, async (req, res) => {
         plan: 'free',
         status: 'active'
       });
+      console.log('📝 Created new subscription for user:', userId.toString());
     }
 
     // Create order
@@ -46,17 +65,36 @@ router.post('/create-order', authenticate, async (req, res) => {
       userAgent: req.headers['user-agent']
     };
 
+    console.log('💳 Creating Razorpay order...');
     const order = await razorpayService.createOrder(orderData);
+    console.log('✅ Order created successfully:', order.orderId);
 
     return res.status(200).json({
       success: true,
       data: order
     });
   } catch (error) {
-    console.error('Create order error:', error);
-    return res.status(500).json({
+    console.error('❌ Create order error:', error);
+    
+    // Provide more specific error messages
+    let errorMessage = 'Failed to create order';
+    let statusCode = 500;
+
+    if (error.message.includes('not configured')) {
+      errorMessage = 'Payment service is temporarily unavailable. Please try again later.';
+      statusCode = 503;
+    } else if (error.message.includes('Invalid plan')) {
+      errorMessage = error.message;
+      statusCode = 400;
+    } else if (error.message.includes('billing cycle')) {
+      errorMessage = error.message;
+      statusCode = 400;
+    }
+
+    return res.status(statusCode).json({
       success: false,
-      message: error.message
+      message: errorMessage,
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });

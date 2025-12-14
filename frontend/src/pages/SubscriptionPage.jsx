@@ -79,7 +79,7 @@ const PLANS = {
 
 const SubscriptionPage = () => {
   const navigate = useNavigate();
-  const { user, token } = useAuthContext();
+  const { user, token, getToken, isAuthenticated } = useAuthContext();
   const [billingCycle, setBillingCycle] = useState('monthly');
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -87,18 +87,32 @@ const SubscriptionPage = () => {
   const [usage, setUsage] = useState(null);
   const [error, setError] = useState(null);
 
+  // Get fresh token from localStorage
+  const getAuthToken = () => {
+    return token || getToken?.() || localStorage.getItem('token');
+  };
+
   useEffect(() => {
-    fetchSubscriptionData();
-  }, []);
+    if (isAuthenticated) {
+      fetchSubscriptionData();
+    }
+  }, [isAuthenticated]);
 
   const fetchSubscriptionData = async () => {
+    const authToken = getAuthToken();
+    
+    if (!authToken) {
+      console.warn('No auth token available');
+      return;
+    }
+
     try {
       const [subResponse, usageResponse] = await Promise.all([
         fetch('/api/subscriptions/current', {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { 'Authorization': `Bearer ${authToken}` }
         }),
         fetch('/api/subscriptions/usage', {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { 'Authorization': `Bearer ${authToken}` }
         })
       ]);
 
@@ -122,6 +136,14 @@ const SubscriptionPage = () => {
       return;
     }
 
+    const authToken = getAuthToken();
+    
+    if (!authToken) {
+      setError('Please log in to upgrade your plan');
+      navigate('/login');
+      return;
+    }
+
     setSelectedPlan(planKey);
     setLoading(true);
     setError(null);
@@ -132,7 +154,7 @@ const SubscriptionPage = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify({
           plan: planKey,
@@ -140,12 +162,27 @@ const SubscriptionPage = () => {
         })
       });
 
+      const orderData = await orderResponse.json();
+
       if (!orderResponse.ok) {
-        throw new Error('Failed to create order');
+        // Handle unauthorized specifically
+        if (orderResponse.status === 401) {
+          setError('Session expired. Please log in again.');
+          navigate('/login');
+          return;
+        }
+        throw new Error(orderData.message || 'Failed to create order');
       }
 
-      const orderData = await orderResponse.json();
+      if (!orderData.success || !orderData.data) {
+        throw new Error(orderData.message || 'Invalid order response');
+      }
       
+      // Check if Razorpay script is loaded
+      if (!window.Razorpay) {
+        throw new Error('Payment gateway not loaded. Please refresh the page and try again.');
+      }
+
       // Initialize Razorpay checkout
       initializeRazorpay(orderData.data);
 
@@ -186,12 +223,14 @@ const SubscriptionPage = () => {
   };
 
   const verifyPayment = async (paymentResponse) => {
+    const authToken = getAuthToken();
+    
     try {
       const verifyResponse = await fetch('/api/subscriptions/verify-payment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify({
           razorpayOrderId: paymentResponse.razorpay_order_id,

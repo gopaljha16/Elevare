@@ -142,13 +142,13 @@ const HomePage = () => {
         navigate("/ats-analyzer");
         break;
       case "ai-content":
-        navigate("/resume-builder?demo=true");
+        navigate("/dashboard");
         break;
       case "real-time":
-        navigate("/resume-builder?demo=true");
+        navigate("/dashboard");
         break;
       case "export-share":
-        navigate("/resume-builder?demo=true");
+        navigate("/dashboard");
         break;
       case "templates":
         scrollToSection("#templates");

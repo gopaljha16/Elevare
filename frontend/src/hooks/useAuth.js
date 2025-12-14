@@ -171,12 +171,18 @@ export const useAuth = () => {
     setError(null);
   }, []);
 
+  // Get token from localStorage
+  const getToken = useCallback(() => {
+    return localStorage.getItem('token');
+  }, []);
+
   return {
     // State
     user,
     isAuthenticated,
     isLoading,
     error,
+    token: localStorage.getItem('token'), // Expose token directly
     
     // Actions
     login,
@@ -188,6 +194,7 @@ export const useAuth = () => {
     getUserStats,
     refreshProfile,
     clearError,
+    getToken, // Also expose getToken function for fresh token
   };
 };
 
