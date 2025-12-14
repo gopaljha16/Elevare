@@ -183,14 +183,20 @@ class GeminiAIService {
     // Model configuration
     // Available models: gemini-1.5-pro (recommended), gemini-1.5-flash (faster), gemini-2.0-flash-exp (experimental)
     // Note: gemini-1.5-pro is production-ready and most reliable
-    this.model = process.env.GEMINI_MODEL || 'gemini-1.5-pro';
+    const configuredModel = process.env.GEMINI_MODEL || 'gemini-1.5-pro';
+    
+    // Validate the configured model name (must not be empty or malformed)
+    this.model = configuredModel && configuredModel.length > 5 && !configuredModel.includes(',') 
+      ? configuredModel.trim() 
+      : 'gemini-1.5-pro';
 
+    // Build model priority list with fallbacks
     this.modelPriority = Array.from(new Set([
       this.model,
       'gemini-1.5-pro',
       'gemini-1.5-flash',
       'gemini-pro'
-    ])).filter(Boolean);
+    ])).filter(m => m && m.length > 5);
 
     if (this.modelPriority.length === 0) {
       this.modelPriority = ['gemini-1.5-pro'];
@@ -198,7 +204,8 @@ class GeminiAIService {
 
     this.currentModelIndex = 0;
 
-    console.log(`🎯 Using model: ${this.modelPriority[this.currentModelIndex]}`);
+    console.log(`🎯 Primary model: ${this.model}`);
+    console.log(`📋 Model fallback chain: ${this.modelPriority.join(' → ')}`);
     
     // Generation configurations
     this.defaultConfig = {

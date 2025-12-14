@@ -99,6 +99,8 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
   'https://elevare-seven.vercel.app',
+  'https://elevare-frontend.onrender.com',
+  'https://elevare-hvtr.onrender.com',
   process.env.FRONTEND_URL
 ].filter(Boolean);
 

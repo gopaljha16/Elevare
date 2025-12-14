@@ -28,7 +28,7 @@ import {
   User,
   Zap
 } from 'lucide-react';
-import axios from 'axios';
+import axiosClient from '../utils/axiosClient';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import '../styles/AIPortfolioBuilder.css';
@@ -36,7 +36,7 @@ import '../styles/AIPortfolioBuilder.css';
 const AIPortfolioBuilder = () => {
   const { user } = useAuthContext();
   const [userName, setUserName] = useState('');
-  const [showNameInput, setShowNameInput] = useState(false);
+  const [showNameInput, setShowNameInput] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
@@ -260,13 +260,11 @@ I'll remember our conversation and can make improvements as we go. Let's build s
     
     try {
       console.log('🚀 Requesting portfolio generation...');
-      const response = await axios.post('/api/portfolio/generate-code', {
+      const response = await axiosClient.post('/portfolio/generate-code', {
         prompt,
         userName,
         currentCode: isImprovement ? { html: htmlCode, css: cssCode, js: jsCode } : null,
         isImprovement
-      }, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       
       console.log('✅ Received response:', {
@@ -724,9 +722,7 @@ ${htmlCode}
             <button
               onClick={async () => {
                 try {
-                  await axios.delete('/api/portfolio/context', {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                  });
+                  await axiosClient.delete('/portfolio/context');
                   setChatMessages([{
                     id: Date.now(),
                     type: 'ai',

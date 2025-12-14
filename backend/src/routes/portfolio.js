@@ -63,6 +63,40 @@ const validateAIChat = [
   }
 ];
 
+// @route   GET /api/portfolio/ai-status
+// @desc    Public endpoint to check AI service status (no auth required)
+// @access  Public
+router.get('/ai-status', (req, res) => {
+  try {
+    const geminiAIService = require('../services/geminiAIService');
+    
+    const isAvailable = geminiAIService.isAvailable();
+    const healthStatus = geminiAIService.getHealthStatus();
+    
+    res.json({
+      success: true,
+      aiAvailable: isAvailable,
+      status: healthStatus.status || (isAvailable ? 'healthy' : 'unavailable'),
+      model: healthStatus.model || healthStatus.currentModel || 'not configured',
+      totalKeys: healthStatus.totalKeys || 0,
+      message: isAvailable 
+        ? 'AI service is ready for portfolio generation' 
+        : 'AI service unavailable - check GEMINI_API_KEYS environment variable',
+      envCheck: {
+        hasApiKeys: !!process.env.GEMINI_API_KEYS || !!process.env.GEMINI_API_KEY,
+        modelConfigured: !!process.env.GEMINI_MODEL
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      aiAvailable: false,
+      message: 'Failed to check AI service',
+      error: error.message
+    });
+  }
+});
+
 // @route   GET /api/portfolio/templates
 // @desc    Get available portfolio templates
 // @access  Private
@@ -400,23 +434,38 @@ router.get('/test-ai', authenticate, async (req, res) => {
     const geminiAIService = require('../services/geminiAIService');
 
     const healthStatus = geminiAIService.getHealthStatus();
+    
+    // Debug: Check environment variables
+    const envDebug = {
+      hasGeminiApiKeys: !!process.env.GEMINI_API_KEYS,
+      hasGeminiApiKey: !!process.env.GEMINI_API_KEY,
+      geminiModel: process.env.GEMINI_MODEL || 'not set',
+      nodeEnv: process.env.NODE_ENV || 'not set',
+      // Show first 10 chars of API key for debugging (safe to show partial)
+      apiKeyPreview: process.env.GEMINI_API_KEYS 
+        ? `${process.env.GEMINI_API_KEYS.substring(0, 10)}...` 
+        : (process.env.GEMINI_API_KEY ? `${process.env.GEMINI_API_KEY.substring(0, 10)}...` : 'none')
+    };
 
     res.json({
       success: true,
       message: 'AI service health check',
-      service: 'Gemini AI (gemini-2.5-pro)',
+      service: 'Gemini AI',
       status: healthStatus.status,
-      model: healthStatus.model,
+      model: healthStatus.model || healthStatus.currentModel,
       totalKeys: healthStatus.totalKeys,
       currentKeyIndex: healthStatus.currentKeyIndex,
       keyStats: healthStatus.keyStats,
-      available: geminiAIService.isAvailable()
+      available: geminiAIService.isAvailable(),
+      isConfigured: geminiAIService.isConfigured,
+      envDebug: envDebug
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Failed to test AI service',
-      error: error.message
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });

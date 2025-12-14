@@ -131,7 +131,26 @@ class ResponseParser {
    */
   static parsePortfolioCode(text) {
     try {
-      const parsed = this.parseJSON(text);
+      // First, try to clean and parse as JSON
+      let cleanedText = text.trim();
+      
+      // Remove markdown code blocks if the entire response is wrapped
+      cleanedText = cleanedText.replace(/^```json\s*\n?/i, '');
+      cleanedText = cleanedText.replace(/\n?```\s*$/i, '');
+      cleanedText = cleanedText.replace(/^```\s*\n?/i, '');
+      
+      // Try to find JSON object
+      const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        cleanedText = jsonMatch[0];
+      }
+      
+      const parsed = JSON.parse(cleanedText);
+      
+      // Validate we have the required fields
+      if (!parsed.html && !parsed.css && !parsed.js) {
+        throw new Error('Missing required code fields in response');
+      }
       
       return {
         html: parsed.html || '',
@@ -140,23 +159,37 @@ class ResponseParser {
         message: parsed.message || 'Portfolio generated successfully'
       };
     } catch (error) {
-      console.error('Portfolio code parsing failed:', error);
+      console.error('Portfolio code JSON parsing failed:', error.message);
+      console.log('Attempting to extract code blocks from response...');
       
-      // Try to extract code blocks directly
-      const htmlMatch = text.match(/```html\n?([\s\S]*?)\n?```/);
-      const cssMatch = text.match(/```css\n?([\s\S]*?)\n?```/);
-      const jsMatch = text.match(/```(?:javascript|js)\n?([\s\S]*?)\n?```/);
+      // Try to extract code blocks directly (fallback method)
+      const htmlMatch = text.match(/```html\n?([\s\S]*?)\n?```/i);
+      const cssMatch = text.match(/```css\n?([\s\S]*?)\n?```/i);
+      const jsMatch = text.match(/```(?:javascript|js)\n?([\s\S]*?)\n?```/i);
       
       if (htmlMatch || cssMatch || jsMatch) {
+        console.log('Successfully extracted code from markdown blocks');
         return {
-          html: htmlMatch ? htmlMatch[1] : '',
-          css: cssMatch ? cssMatch[1] : '',
-          js: jsMatch ? jsMatch[1] : '',
+          html: htmlMatch ? htmlMatch[1].trim() : '',
+          css: cssMatch ? cssMatch[1].trim() : '',
+          js: jsMatch ? jsMatch[1].trim() : '',
           message: 'Portfolio extracted from code blocks'
         };
       }
       
-      throw new Error(`Failed to parse portfolio code: ${error.message}`);
+      // Try to find HTML-like content directly
+      const htmlContentMatch = text.match(/<(?:section|div|header|main)[^>]*>[\s\S]*<\/(?:section|div|header|main)>/i);
+      if (htmlContentMatch) {
+        console.log('Found HTML content directly in response');
+        return {
+          html: htmlContentMatch[0],
+          css: '',
+          js: '',
+          message: 'Portfolio HTML extracted (CSS/JS may need to be added)'
+        };
+      }
+      
+      throw new Error(`Failed to parse portfolio code: ${error.message}. The AI response may not be in the expected format.`);
     }
   }
 

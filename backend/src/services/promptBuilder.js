@@ -116,28 +116,35 @@ Return ONLY valid JSON with the optimized resume in the same structure as the in
 
 User's Request: ${description}
 
-Create a complete, production-ready portfolio with:
-1. Modern, responsive design
-2. Smooth animations and transitions
-3. Professional color scheme
-4. Mobile-first approach
-5. Accessibility best practices
+IMPORTANT INSTRUCTIONS:
+1. Generate COMPLETE, WORKING code - not placeholders or comments
+2. The HTML should be a full page structure with all sections
+3. The CSS should include all styles needed for the design
+4. The JavaScript should include smooth scroll and animations
 
-Return ONLY valid JSON in this exact format:
+Create a complete, production-ready portfolio with:
+- Modern, responsive design with gradient backgrounds
+- Smooth animations and transitions using CSS and JS
+- Professional color scheme (purple/pink gradients work well)
+- Mobile-first approach with media queries
+- Sections: Hero (with name and title), About, Skills, Projects, Contact
+
+CRITICAL: Return ONLY valid JSON. No markdown, no code blocks, just pure JSON.
+
+The response MUST be in this exact JSON format:
 {
-  "html": "<!-- Complete HTML structure with semantic elements -->",
-  "css": "/* Complete CSS with modern styling, animations, and responsive design */",
-  "js": "// Complete JavaScript for interactivity and animations",
-  "message": "Brief description of what was created"
+  "html": "<section class='hero'>...complete HTML for all sections...</section>",
+  "css": "* { margin: 0; } ...complete CSS styles...",
+  "js": "document.addEventListener('DOMContentLoaded', function() { ...complete JS code... });",
+  "message": "Created a modern portfolio with [describe features]"
 }
 
-Requirements:
-- Use modern CSS (flexbox, grid, custom properties)
-- Include smooth scroll and scroll animations
-- Add hover effects and micro-interactions
-- Ensure mobile responsiveness
-- Use a cohesive color palette
-- Include sections: Hero, About, Skills, Projects, Contact`;
+Requirements for the code:
+- HTML: Use semantic elements (section, nav, header, footer), include all content
+- CSS: Include animations (@keyframes), hover effects, responsive design (@media queries), gradient backgrounds
+- JS: Include smooth scroll, scroll animations using IntersectionObserver, hover effects
+- Make it visually impressive with modern design trends
+- Use the user's name "${userName}" in the hero section`;
   }
 
   /**
@@ -147,25 +154,39 @@ Requirements:
     return `You are an expert web developer. Improve this existing portfolio based on the user's request.
 
 Current Code:
-HTML: ${currentCode.html}
-CSS: ${currentCode.css}
-JS: ${currentCode.js}
+HTML:
+${currentCode.html}
 
-Improvement Request: ${improvementRequest}
+CSS:
+${currentCode.css}
 
-Make the requested improvements while:
-1. Maintaining existing functionality
-2. Keeping the overall design cohesive
-3. Ensuring code quality and best practices
-4. Preserving responsive design
+JS:
+${currentCode.js}
 
-Return ONLY valid JSON in this exact format:
+User's Improvement Request: ${improvementRequest}
+
+IMPORTANT INSTRUCTIONS:
+1. Make the specific improvements requested by the user
+2. Keep all existing functionality that wasn't mentioned
+3. Return COMPLETE code, not just the changed parts
+4. Maintain the overall design cohesion
+5. Ensure responsive design is preserved
+
+CRITICAL: Return ONLY valid JSON. No markdown, no code blocks, just pure JSON.
+
+The response MUST be in this exact JSON format:
 {
-  "html": "<!-- Improved HTML -->",
-  "css": "/* Improved CSS */",
-  "js": "// Improved JavaScript",
-  "message": "Description of improvements made"
-}`;
+  "html": "<section class='hero'>...complete improved HTML...</section>",
+  "css": "* { margin: 0; } ...complete improved CSS...",
+  "js": "document.addEventListener('DOMContentLoaded', function() { ...complete improved JS... });",
+  "message": "Improved the portfolio by [describe specific changes made]"
+}
+
+Make sure to:
+- Apply the user's requested changes
+- Keep all existing sections and functionality
+- Enhance the visual appeal if possible
+- Maintain mobile responsiveness`;
   }
 
   /**

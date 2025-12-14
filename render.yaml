@@ -25,7 +25,7 @@ services:
       - key: JWT_SECRET
         sync: false
       - key: FRONTEND_URL
-        sync: false
+        value: https://elevare-frontend.onrender.com
       - key: GEMINI_API_KEYS
         sync: false
       - key: GEMINI_MODEL
