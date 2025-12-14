@@ -139,8 +139,14 @@ const HomePage = () => {
   const handleFeatureCardClick = (featureKey) => {
     switch (featureKey) {
       case "ats":
+        navigate("/ats-analyzer");
+        break;
       case "ai-content":
+        navigate("/resume-builder?demo=true");
+        break;
       case "real-time":
+        navigate("/resume-builder?demo=true");
+        break;
       case "export-share":
         navigate("/resume-builder?demo=true");
         break;
@@ -149,6 +155,22 @@ const HomePage = () => {
         break;
       case "career":
         navigate("/interview-prep");
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handlePricingClick = (plan) => {
+    switch (plan) {
+      case "starter":
+        navigate("/signup");
+        break;
+      case "pro":
+        navigate("/subscription");
+        break;
+      case "career-plus":
+        navigate("/subscription?plan=career-plus");
         break;
       default:
         break;
@@ -1341,7 +1363,12 @@ const HomePage = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 flex flex-col">
+            {/* Starter Plan */}
+            <motion.div 
+              onClick={() => handlePricingClick("starter")}
+              className="rounded-2xl border border-white/10 bg-white/5 p-6 flex flex-col cursor-pointer hover:border-white/20 transition-all duration-300"
+              whileHover={{ scale: 1.02, borderColor: "rgba(255, 255, 255, 0.3)" }}
+            >
               <h3 className="text-xl font-semibold text-white mb-1">Starter</h3>
               <p className="text-white/50 text-sm mb-4">
                 For early career and first-time job seekers.
@@ -1353,12 +1380,20 @@ const HomePage = () => {
                 <li>• Limited AI suggestions</li>
                 <li>• Export to PDF</li>
               </ul>
-              <button className="w-full rounded-full bg-white text-gray-900 py-2 text-sm font-semibold hover:bg-gray-100 transition-colors">
+              <button 
+                onClick={(e) => { e.stopPropagation(); handlePricingClick("starter"); }}
+                className="w-full rounded-full bg-white text-gray-900 py-2 text-sm font-semibold hover:bg-gray-100 transition-colors"
+              >
                 Get started free
               </button>
-            </div>
+            </motion.div>
 
-            <div className="rounded-2xl border border-pink-500/60 bg-gradient-to-b from-pink-500/15 to-purple-500/15 p-6 flex flex-col shadow-[0_20px_60px_rgba(236,72,153,0.35)]">
+            {/* Pro Plan */}
+            <motion.div 
+              onClick={() => handlePricingClick("pro")}
+              className="rounded-2xl border border-pink-500/60 bg-gradient-to-b from-pink-500/15 to-purple-500/15 p-6 flex flex-col shadow-[0_20px_60px_rgba(236,72,153,0.35)] cursor-pointer hover:border-pink-500/80 transition-all duration-300"
+              whileHover={{ scale: 1.02, borderColor: "rgba(236, 72, 153, 0.8)" }}
+            >
               <div className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white mb-3 self-start">
                 Most popular
               </div>
@@ -1377,12 +1412,20 @@ const HomePage = () => {
                 <li>• ATS score and keyword insights</li>
                 <li>• Interview prep sessions with AI</li>
               </ul>
-              <button className="w-full rounded-full bg-gradient-to-r from-[#EC4899] via-[#F472B6] to-[#8B5CF6] py-2 text-sm font-semibold text-white hover:brightness-110 transition-all">
+              <button 
+                onClick={(e) => { e.stopPropagation(); handlePricingClick("pro"); }}
+                className="w-full rounded-full bg-gradient-to-r from-[#EC4899] via-[#F472B6] to-[#8B5CF6] py-2 text-sm font-semibold text-white hover:brightness-110 transition-all"
+              >
                 Upgrade to Pro
               </button>
-            </div>
+            </motion.div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 flex flex-col">
+            {/* Career Plus Plan */}
+            <motion.div 
+              onClick={() => handlePricingClick("career-plus")}
+              className="rounded-2xl border border-white/10 bg-white/5 p-6 flex flex-col cursor-pointer hover:border-white/20 transition-all duration-300"
+              whileHover={{ scale: 1.02, borderColor: "rgba(255, 255, 255, 0.3)" }}
+            >
               <h3 className="text-xl font-semibold text-white mb-1">
                 Career Plus
               </h3>
@@ -1396,10 +1439,13 @@ const HomePage = () => {
                 <li>• Dedicated support for portfolio & interview prep</li>
                 <li>• Team / cohort access (on request)</li>
               </ul>
-              <button className="w-full rounded-full border border-white/25 text-white py-2 text-sm font-semibold hover:bg-white/10 transition-colors">
+              <button 
+                onClick={(e) => { e.stopPropagation(); handlePricingClick("career-plus"); }}
+                className="w-full rounded-full border border-white/25 text-white py-2 text-sm font-semibold hover:bg-white/10 transition-colors"
+              >
                 Talk to us
               </button>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>

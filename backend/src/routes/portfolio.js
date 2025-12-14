@@ -13,6 +13,7 @@ const {
 } = require('../controllers/portfolioController');
 const { authenticate } = require('../middleware/auth');
 const { body, validationResult } = require('express-validator');
+const { checkCredits, deductCreditsAfterSuccess, trackFailedOperation } = require('../middleware/usageLimits');
 
 // Validation middleware
 const validatePortfolioCreation = [
@@ -150,7 +151,18 @@ router.get('/templates', authenticate, (req, res) => {
 // @route   POST /api/portfolio/create
 // @desc    Create new portfolio from resume data
 // @access  Private
-router.post('/create', authenticate, validatePortfolioCreation, createPortfolio);
+// Credit cost: 3 credits for AI-enhanced portfolio creation
+router.post('/create', authenticate, validatePortfolioCreation, checkCredits(3), async (req, res, next) => {
+  try {
+    await createPortfolio(req, res);
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      await deductCreditsAfterSuccess(req, 'portfolio_generation');
+    }
+  } catch (error) {
+    await trackFailedOperation(req, 'portfolio_generation', error.message);
+    next(error);
+  }
+});
 
 // @route   GET /api/portfolio/my-portfolios
 // @desc    Get user's portfolios
@@ -255,7 +267,18 @@ router.post('/:id/duplicate', authenticate, async (req, res) => {
 // @route   POST /api/portfolio/:id/chat
 // @desc    AI chat for portfolio editing
 // @access  Private
-router.post('/:id/chat', authenticate, validateAIChat, portfolioAIChat);
+// Credit cost: 1 credit for AI chat
+router.post('/:id/chat', authenticate, validateAIChat, checkCredits(1), async (req, res, next) => {
+  try {
+    await portfolioAIChat(req, res);
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      await deductCreditsAfterSuccess(req, 'ai_chat');
+    }
+  } catch (error) {
+    await trackFailedOperation(req, 'ai_chat', error.message);
+    next(error);
+  }
+});
 
 // @route   POST /api/portfolio/:id/publish
 // @desc    Publish portfolio to deployment platform
@@ -343,7 +366,21 @@ router.get('/:id/analytics', authenticate, async (req, res) => {
 // @route   POST /api/portfolio/generate-code
 // @desc    Generate portfolio code with AI
 // @access  Private
-router.post('/generate-code', authenticate, generatePortfolioCode);
+// Credit cost: 3 credits for portfolio generation
+router.post('/generate-code', authenticate, checkCredits(3), async (req, res, next) => {
+  try {
+    // Call the controller
+    await generatePortfolioCode(req, res);
+    
+    // If successful (response sent), deduct credits
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      await deductCreditsAfterSuccess(req, 'portfolio_generation');
+    }
+  } catch (error) {
+    await trackFailedOperation(req, 'portfolio_generation', error.message);
+    next(error);
+  }
+});
 
 // @route   DELETE /api/portfolio/context
 // @desc    Clear user's portfolio generation context

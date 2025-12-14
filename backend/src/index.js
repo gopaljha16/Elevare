@@ -20,12 +20,14 @@ const learningPathRoutes = require('./routes/learningPath');
 const dashboardRoutes = require('./routes/dashboard');
 const coverLetterRoutes = require('./routes/coverLetter');
 const atsRoutes = require('./routes/ats');
+const atsV2Routes = require('./routes/atsV2');
 const chatRoutes = require('./routes/chat');
 const portfolioRoutes = require('./routes/portfolio');
 const resumeRoutes = require('./routes/resume');
 const analyticsRoutes = require('./routes/analytics');
 const subscriptionRoutes = require('./routes/subscription');
 const webhookRoutes = require('./routes/webhooks');
+const aiHealthRoutes = require('./routes/aiHealth');
 const cronService = require('./services/cronService');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const logger = require('./utils/logger');
@@ -214,12 +216,14 @@ app.use('/api/learning-paths', learningPathRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/cover-letters', coverLetterRoutes);
 app.use('/api/ats', atsRoutes);
+app.use('/api/ats/v2', atsV2Routes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/portfolio', portfolioRoutes);
 app.use('/api/resumes', resumeRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/webhooks', webhookRoutes);
+app.use('/api/ai', aiHealthRoutes);
 
 // seed route (development only)
 if (process.env.NODE_ENV === 'development') {

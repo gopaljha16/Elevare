@@ -1,21 +1,60 @@
-const { Subscription } = require('../models');
-
 /**
  * Feature Gate Middleware
  * Controls access to features based on subscription plan
+ * @version 1.0.0
  */
 
-// Plan hierarchy
-const PLAN_HIERARCHY = {
-  free: 0,
-  pro: 1,
-  enterprise: 2
+const { Subscription } = require('../models');
+
+// Plan feature access configuration
+const PLAN_FEATURES = {
+  free: {
+    resumeBuilder: true,
+    atsAnalysis: true,
+    portfolioBuilder: true,
+    interviewPrep: true,
+    coverLetter: true,
+    aiChat: true,
+    premiumTemplates: false,
+    advancedAnalytics: false,
+    prioritySupport: false,
+    teamFeatures: false,
+    apiAccess: false
+  },
+  pro: {
+    resumeBuilder: true,
+    atsAnalysis: true,
+    portfolioBuilder: true,
+    interviewPrep: true,
+    coverLetter: true,
+    aiChat: true,
+    premiumTemplates: true,
+    advancedAnalytics: true,
+    prioritySupport: false,
+    teamFeatures: false,
+    apiAccess: false
+  },
+  enterprise: {
+    resumeBuilder: true,
+    atsAnalysis: true,
+    portfolioBuilder: true,
+    interviewPrep: true,
+    coverLetter: true,
+    aiChat: true,
+    premiumTemplates: true,
+    advancedAnalytics: true,
+    prioritySupport: true,
+    teamFeatures: true,
+    apiAccess: true
+  }
 };
 
 /**
- * Check if user has required plan
+ * Check if user has access to a specific feature
+ * @param {string} feature - Feature name to check
+ * @returns {Function} Express middleware
  */
-const requirePlan = (requiredPlan) => {
+const requireFeature = (feature) => {
   return async (req, res, next) => {
     try {
       const userId = req.user?._id || req.user?.id;
@@ -23,96 +62,49 @@ const requirePlan = (requiredPlan) => {
       if (!userId) {
         return res.status(401).json({
           success: false,
-          message: 'Authentication required'
+          error: {
+            code: 'AUTH_REQUIRED',
+            message: 'Authentication required'
+          }
         });
       }
 
-      const subscription = await Subscription.findOne({ userId });
+      // Get user's subscription
+      let subscription = await Subscription.findOne({ userId });
       
       if (!subscription) {
-        return res.status(403).json({
-          success: false,
-          message: 'No subscription found',
-          upgradeRequired: true,
-          requiredPlan
+        // Create free subscription if none exists
+        subscription = await Subscription.create({
+          userId,
+          plan: 'free',
+          status: 'active'
         });
       }
 
-      // Check if subscription is active or trial
+      // Check subscription status
       if (!['active', 'trial'].includes(subscription.status)) {
         return res.status(403).json({
           success: false,
-          message: 'Subscription is not active',
-          upgradeRequired: true,
-          currentPlan: subscription.plan,
-          requiredPlan
+          error: {
+            code: 'SUBSCRIPTION_INACTIVE',
+            message: 'Your subscription is not active'
+          }
         });
       }
 
-      // Check plan hierarchy
-      const userPlanLevel = PLAN_HIERARCHY[subscription.plan] || 0;
-      const requiredPlanLevel = PLAN_HIERARCHY[requiredPlan] || 0;
-
-      if (userPlanLevel < requiredPlanLevel) {
-        return res.status(403).json({
-          success: false,
-          message: `This feature requires ${requiredPlan} plan`,
-          upgradeRequired: true,
-          currentPlan: subscription.plan,
-          requiredPlan
-        });
-      }
-
-      // Attach subscription to request
-      req.subscription = subscription;
-      next();
-    } catch (error) {
-      console.error('Feature gate error:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Error checking subscription'
-      });
-    }
-  };
-};
-
-/**
- * Check AI credits availability
- */
-const requireCredits = (creditsNeeded) => {
-  return async (req, res, next) => {
-    try {
-      const userId = req.user?._id || req.user?.id;
+      // Check feature access
+      const planFeatures = PLAN_FEATURES[subscription.plan] || PLAN_FEATURES.free;
       
-      if (!userId) {
-        return res.status(401).json({
-          success: false,
-          message: 'Authentication required'
-        });
-      }
-
-      const subscription = await Subscription.findOne({ userId });
-      
-      if (!subscription) {
+      if (!planFeatures[feature]) {
         return res.status(403).json({
           success: false,
-          message: 'No subscription found'
-        });
-      }
-
-      // Enterprise has unlimited credits
-      if (subscription.plan === 'enterprise') {
-        req.subscription = subscription;
-        return next();
-      }
-
-      // Check if user has enough credits
-      if (subscription.aiCredits.remaining < creditsNeeded) {
-        return res.status(403).json({
-          success: false,
-          message: 'Insufficient AI credits',
-          creditsNeeded,
-          creditsRemaining: subscription.aiCredits.remaining,
+          error: {
+            code: 'FEATURE_NOT_AVAILABLE',
+            message: `This feature requires a higher plan`,
+            feature,
+            currentPlan: subscription.plan,
+            requiredPlans: getPlansWithFeature(feature)
+          },
           upgradeRequired: true
         });
       }
@@ -120,87 +112,26 @@ const requireCredits = (creditsNeeded) => {
       req.subscription = subscription;
       next();
     } catch (error) {
-      console.error('Credits check error:', error);
+      console.error('Feature gate error:', error);
       return res.status(500).json({
         success: false,
-        message: 'Error checking credits'
+        error: {
+          code: 'FEATURE_CHECK_FAILED',
+          message: 'Failed to verify feature access'
+        }
       });
     }
   };
 };
 
 /**
- * Deduct AI credits after successful operation
+ * Check if user has a specific plan or higher
+ * @param {string|string[]} requiredPlans - Required plan(s)
+ * @returns {Function} Express middleware
  */
-const deductCredits = async (userId, amount, feature) => {
-  try {
-    const subscription = await Subscription.findOne({ userId });
-    
-    if (!subscription) {
-      throw new Error('Subscription not found');
-    }
-
-    const result = await subscription.deductCredits(amount);
-    
-    // Log usage
-    console.log(`Credits deducted: ${amount} for ${feature}, remaining: ${result.remaining}`);
-    
-    return result;
-  } catch (error) {
-    console.error('Error deducting credits:', error);
-    throw error;
-  }
-};
-
-/**
- * Check resume creation limit
- */
-const checkResumeLimit = async (req, res, next) => {
-  try {
-    const userId = req.user?._id || req.user?.id;
-    
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: 'Authentication required'
-      });
-    }
-
-    const subscription = await Subscription.findOne({ userId });
-    
-    if (!subscription) {
-      return res.status(403).json({
-        success: false,
-        message: 'No subscription found'
-      });
-    }
-
-    // Check if user can create resume
-    if (!subscription.canCreateResume()) {
-      return res.status(403).json({
-        success: false,
-        message: 'Resume creation limit reached',
-        limit: subscription.usageLimits.resumesLimit,
-        current: subscription.usageLimits.resumesCreated,
-        upgradeRequired: true
-      });
-    }
-
-    req.subscription = subscription;
-    next();
-  } catch (error) {
-    console.error('Resume limit check error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Error checking resume limit'
-    });
-  }
-};
-
-/**
- * Check template access
- */
-const checkTemplateAccess = (templateType) => {
+const requirePlan = (requiredPlans) => {
+  const plans = Array.isArray(requiredPlans) ? requiredPlans : [requiredPlans];
+  
   return async (req, res, next) => {
     try {
       const userId = req.user?._id || req.user?.id;
@@ -208,7 +139,10 @@ const checkTemplateAccess = (templateType) => {
       if (!userId) {
         return res.status(401).json({
           success: false,
-          message: 'Authentication required'
+          error: {
+            code: 'AUTH_REQUIRED',
+            message: 'Authentication required'
+          }
         });
       }
 
@@ -217,36 +151,77 @@ const checkTemplateAccess = (templateType) => {
       if (!subscription) {
         return res.status(403).json({
           success: false,
-          message: 'No subscription found'
+          error: {
+            code: 'NO_SUBSCRIPTION',
+            message: 'No subscription found'
+          }
         });
       }
 
-      // Premium templates require paid plan
-      if (templateType === 'premium' && subscription.plan === 'free') {
+      if (!plans.includes(subscription.plan)) {
         return res.status(403).json({
           success: false,
-          message: 'Premium templates require Pro or Enterprise plan',
-          upgradeRequired: true,
-          requiredPlan: 'pro'
+          error: {
+            code: 'PLAN_REQUIRED',
+            message: `This feature requires ${plans.join(' or ')} plan`,
+            currentPlan: subscription.plan,
+            requiredPlans: plans
+          },
+          upgradeRequired: true
         });
       }
 
       req.subscription = subscription;
       next();
     } catch (error) {
-      console.error('Template access check error:', error);
+      console.error('Plan check error:', error);
       return res.status(500).json({
         success: false,
-        message: 'Error checking template access'
+        error: {
+          code: 'PLAN_CHECK_FAILED',
+          message: 'Failed to verify plan'
+        }
       });
     }
   };
 };
 
+/**
+ * Get list of plans that have access to a feature
+ * @param {string} feature - Feature name
+ * @returns {string[]} List of plan names
+ */
+function getPlansWithFeature(feature) {
+  return Object.entries(PLAN_FEATURES)
+    .filter(([_, features]) => features[feature])
+    .map(([plan]) => plan);
+}
+
+/**
+ * Check if a plan has access to a feature
+ * @param {string} plan - Plan name
+ * @param {string} feature - Feature name
+ * @returns {boolean} Whether plan has feature access
+ */
+function planHasFeature(plan, feature) {
+  const planFeatures = PLAN_FEATURES[plan] || PLAN_FEATURES.free;
+  return !!planFeatures[feature];
+}
+
+/**
+ * Get all features for a plan
+ * @param {string} plan - Plan name
+ * @returns {Object} Feature access map
+ */
+function getPlanFeatures(plan) {
+  return PLAN_FEATURES[plan] || PLAN_FEATURES.free;
+}
+
 module.exports = {
+  requireFeature,
   requirePlan,
-  requireCredits,
-  deductCredits,
-  checkResumeLimit,
-  checkTemplateAccess
+  getPlansWithFeature,
+  planHasFeature,
+  getPlanFeatures,
+  PLAN_FEATURES
 };

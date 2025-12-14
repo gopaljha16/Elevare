@@ -29,6 +29,7 @@ import PortfolioPreview from './pages/PortfolioPreview';
 import ResumeBuilder from './pages/ResumeBuilder';
 import ResumeDashboard from './pages/ResumeDashboard';
 import ProfilePage from './pages/ProfilePage';
+import SubscriptionPage from './pages/SubscriptionPage';
 import GoogleCallback from './components/auth/GoogleCallback';
 import ModernDashboard from './components/dashboard/ModernDashboard';
 
@@ -224,6 +225,14 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/subscription"
+            element={
+              <ProtectedRoute>
+                <SubscriptionPage />
               </ProtectedRoute>
             }
           />

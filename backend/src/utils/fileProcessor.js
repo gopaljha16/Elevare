@@ -3,18 +3,29 @@ const { AppError } = require('../middleware/errorHandler');
 
 // Lazy load pdf-parse to avoid startup errors if native dependencies are missing
 let pdfParse = null;
+let pdfParseAttempted = false;
+
 const loadPdfParse = () => {
-  if (!pdfParse) {
-    try {
-      pdfParse = require('pdf-parse');
-    } catch (error) {
-      console.warn('⚠️ pdf-parse not available - PDF parsing will be disabled');
-      console.warn('Error:', error.message);
-      return null;
-    }
+  if (pdfParseAttempted) {
+    return pdfParse;
   }
+  
+  pdfParseAttempted = true;
+  
+  try {
+    pdfParse = require('pdf-parse');
+    console.log('✅ pdf-parse loaded successfully');
+  } catch (error) {
+    console.warn('⚠️ pdf-parse not available - PDF parsing will use fallback');
+    console.warn('Error:', error.message);
+    pdfParse = null;
+  }
+  
   return pdfParse;
 };
+
+// Try to load pdf-parse on module load
+loadPdfParse();
 
 /**
  * Extract text content from uploaded file based on file type
@@ -61,17 +72,62 @@ const extractFromPDF = async (buffer) => {
   }
   
   try {
-    const data = await pdf(buffer);
-    const text = data.text;
+    console.log('📄 Starting PDF extraction, buffer size:', buffer.length);
+    
+    // pdf-parse options for better extraction
+    const options = {
+      // Limit pages to prevent timeout on large documents
+      max: 10,
+      // Custom page render function for better text extraction
+      pagerender: function(pageData) {
+        return pageData.getTextContent()
+          .then(function(textContent) {
+            let lastY, text = '';
+            for (let item of textContent.items) {
+              if (lastY == item.transform[5] || !lastY) {
+                text += item.str;
+              } else {
+                text += '\n' + item.str;
+              }
+              lastY = item.transform[5];
+            }
+            return text;
+          });
+      }
+    };
+    
+    const data = await pdf(buffer, options);
+    let text = data.text;
+    
+    console.log('📄 PDF extraction result:', {
+      pages: data.numpages,
+      textLength: text?.length || 0,
+      info: data.info?.Title || 'No title'
+    });
     
     if (!text || text.trim().length === 0) {
-      throw new AppError('PDF appears to be empty or contains only images. Please use a text-based PDF.', 400);
+      throw new AppError('PDF appears to be empty or contains only images. Please use a text-based PDF or try uploading a DOCX file.', 400);
+    }
+    
+    // If text is very short, it might be a scanned PDF
+    if (text.trim().length < 50) {
+      throw new AppError('PDF contains very little text. It may be a scanned document. Please use a text-based PDF or upload a DOCX/TXT file.', 400);
     }
     
     return cleanExtractedText(text);
   } catch (error) {
+    console.error('PDF extraction error:', error);
     if (error instanceof AppError) throw error;
-    throw new AppError('Failed to parse PDF file. The file may be corrupted or password-protected.', 400);
+    
+    // Provide more specific error messages
+    if (error.message?.includes('password')) {
+      throw new AppError('PDF is password-protected. Please remove the password and try again.', 400);
+    }
+    if (error.message?.includes('Invalid')) {
+      throw new AppError('PDF file appears to be corrupted or invalid. Please try a different file.', 400);
+    }
+    
+    throw new AppError('Failed to parse PDF file. Please try uploading a DOCX or TXT file instead.', 400);
   }
 };
 
@@ -108,16 +164,20 @@ const extractFromWord = async (buffer) => {
  */
 const cleanExtractedText = (text) => {
   return text
-    // Remove excessive whitespace
-    .replace(/\s+/g, ' ')
-    // Remove special characters that might interfere with analysis
-    .replace(/[^\w\s@.-]/g, ' ')
-    // Normalize line breaks
+    // Normalize line breaks first
     .replace(/\r\n/g, '\n')
     .replace(/\r/g, '\n')
-    // Remove multiple consecutive newlines
+    // Remove null bytes and other control characters (except newlines and tabs)
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+    // Replace multiple spaces with single space (but preserve newlines)
+    .replace(/[^\S\n]+/g, ' ')
+    // Remove multiple consecutive newlines (more than 2)
     .replace(/\n{3,}/g, '\n\n')
-    // Trim whitespace
+    // Trim each line
+    .split('\n')
+    .map(line => line.trim())
+    .join('\n')
+    // Final trim
     .trim();
 };
 
@@ -135,22 +195,41 @@ const validateFile = (file) => {
   ];
 
   const maxSize = 10 * 1024 * 1024; // 10MB
+  const minSize = 100; // Minimum 100 bytes
+
+  if (!file) {
+    throw new AppError('No file provided.', 400);
+  }
 
   if (!allowedTypes.includes(file.mimetype)) {
-    throw new AppError('Invalid file type. Only PDF, DOC, DOCX, and TXT files are supported.', 400);
+    throw new AppError(`Invalid file type: ${file.mimetype}. Only PDF, DOC, DOCX, and TXT files are supported.`, 400);
   }
 
   if (file.size > maxSize) {
-    throw new AppError('File size too large. Maximum size is 10MB.', 400);
+    throw new AppError(`File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds maximum allowed size of 10MB.`, 400);
   }
 
-  // Warn if PDF parsing is not available
-  if (file.mimetype === 'application/pdf' && !loadPdfParse()) {
-    throw new AppError(
-      'PDF parsing is currently unavailable. Please upload a Word document (.docx) or text file (.txt) instead.',
-      503
-    );
+  if (file.size < minSize) {
+    throw new AppError('File appears to be empty or too small.', 400);
   }
+
+  // Check if PDF parsing is available for PDF files
+  if (file.mimetype === 'application/pdf') {
+    const pdf = loadPdfParse();
+    if (!pdf) {
+      console.warn('⚠️ PDF parsing unavailable, user should upload DOCX/TXT');
+      throw new AppError(
+        'PDF parsing is currently unavailable on this server. Please upload a Word document (.docx) or text file (.txt) instead.',
+        503
+      );
+    }
+  }
+
+  console.log('✅ File validation passed:', {
+    name: file.originalname,
+    type: file.mimetype,
+    size: `${(file.size / 1024).toFixed(2)}KB`
+  });
 
   return true;
 };
